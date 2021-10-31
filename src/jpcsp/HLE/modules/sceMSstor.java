@@ -517,9 +517,15 @@ public class sceMSstor extends HLEModule {
     }
 
     private Fat32VirtualFile openFile() {
-		IVirtualFileSystem vfs = new LocalVirtualFileSystem(Settings.getInstance().getDirectoryMapping("ms0"), true);
+    	if (sync != null) {
+    		sync.exit();
+    		sync = null;
+    	}
+
+    	IVirtualFileSystem vfs = new LocalVirtualFileSystem(Settings.getInstance().getDirectoryMapping("ms0"), true);
 		Fat32VirtualFile fat32VirtualFile = new Fat32VirtualFile("ms0:", vfs);
 		vFile = new WriteCacheVirtualFile(log, fat32VirtualFile);
+		fat32VirtualFile.setBaseVirtualFile(vFile);
 		IVirtualFileSystem input = new FatVirtualFileSystem("ms0", vFile);
 		sync = new SynchronizeVirtualFileSystems("ms0", input, vfs, writeLock);
 		if (log.isDebugEnabled()) {

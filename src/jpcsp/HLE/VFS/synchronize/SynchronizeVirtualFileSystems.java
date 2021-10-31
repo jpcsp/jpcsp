@@ -39,6 +39,22 @@ public class SynchronizeVirtualFileSystems extends BaseSynchronize {
 	private IVirtualFileSystem output;
 	private ScePspDateTime lastSyncDate;
 	private boolean somethingChanged;
+	private final Set<DirectoryEntryData> toBeDeleted = new HashSet<DirectoryEntryData>();
+
+	private static class DirectoryEntryData {
+		final String dirName;
+		final SceIoDirent dirent;
+
+		public DirectoryEntryData(String dirName, SceIoDirent dirent) {
+			this.dirName = dirName;
+			this.dirent = dirent;
+		}
+
+		@Override
+		public String toString() {
+			return String.format("%s, %s", dirName, dirent);
+		}
+	}
 
 	public SynchronizeVirtualFileSystems(String name, IVirtualFileSystem input, IVirtualFileSystem output, Object lock) {
 		super(name, lock);
@@ -98,6 +114,7 @@ public class SynchronizeVirtualFileSystems extends BaseSynchronize {
 	@Override
 	protected int deltaSynchronize() {
 		somethingChanged = false;
+		toBeDeleted.clear();
 
 		invalidateCachedData();
 		closeCachedFiles();
@@ -116,6 +133,16 @@ public class SynchronizeVirtualFileSystems extends BaseSynchronize {
 
 		if (somethingChanged) {
 			flushCachedData();
+
+			// Delete the directory entries as the very last step
+			for (DirectoryEntryData entry : toBeDeleted) {
+				int deleteResult = deleteEntry(entry.dirName, entry.dirent);
+				if (deleteResult != 0 && result == 0) {
+					result = deleteResult;
+				}
+			}
+			toBeDeleted.clear();
+
 			somethingChanged = false;
 		}
 
@@ -164,10 +191,6 @@ public class SynchronizeVirtualFileSystems extends BaseSynchronize {
 			return false;
 		}
 
-		if (dirent1.stat.size != dirent2.stat.size) {
-			return false;
-		}
-
 		return true;
 	}
 
@@ -191,6 +214,16 @@ public class SynchronizeVirtualFileSystems extends BaseSynchronize {
 		return entries;
 	}
 
+	private boolean isToBeUpdated(SceIoDirent inputEntry, SceIoDirent outputEntry) {
+		if (!isDirectory(inputEntry)) {
+			if (isModifiedSinceLastSync(inputEntry) || inputEntry.stat.size != outputEntry.stat.size) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
 	private int deltaSynchronize(String dirName) {
 		if (log.isTraceEnabled()) {
 			log.trace(String.format("deltaSynchronize '%s'", dirName));
@@ -205,6 +238,15 @@ public class SynchronizeVirtualFileSystems extends BaseSynchronize {
 			return IO_ERROR;
 		}
 
+		if (log.isTraceEnabled()) {
+			for (int i = 0; i < inputEntries.length; i++) {
+				log.trace(String.format("deltaSynchronize '%s', inputEntry#%d=%s", dirName, i, inputEntries[i]));
+			}
+			for (int i = 0; i < outputEntries.length; i++) {
+				log.trace(String.format("deltaSynchronize '%s', outputEntry#%d=%s", dirName, i, outputEntries[i]));
+			}
+		}
+
 		Set<SceIoDirent> toBeUpdated = new HashSet<SceIoDirent>();
 		Set<SceIoDirent> toBeCreated = new HashSet<SceIoDirent>();
 		for (int i = 0; i < inputEntries.length; i++) {
@@ -216,9 +258,9 @@ public class SynchronizeVirtualFileSystems extends BaseSynchronize {
 			boolean found = false;
 			for (int j = 0; j < outputEntries.length; j++) {
 				if (sameEntryNameAndAttributes(inputEntry, outputEntries[j])) {
-					if (!isDirectory(inputEntry) && isModifiedSinceLastSync(inputEntry)) {
+					if (isToBeUpdated(inputEntry, outputEntries[j])) {
 						if (log.isDebugEnabled()) {
-							log.debug(String.format("deltaSynchronize: entry to be updated inputEntry=%s, lastSyncDate=%s", inputEntry, lastSyncDate));
+							log.debug(String.format("deltaSynchronize: entry to be updated entry=%s, lastSyncDate=%s", inputEntry, lastSyncDate));
 						}
 						toBeUpdated.add(inputEntry);
 					}
@@ -230,7 +272,7 @@ public class SynchronizeVirtualFileSystems extends BaseSynchronize {
 
 			if (!found) {
 				if (log.isDebugEnabled()) {
-					log.debug(String.format("deltaSynchronize: entry to be created inputEntry=%s", inputEntry));
+					log.debug(String.format("deltaSynchronize: entry to be created entry=%s", inputEntry));
 				}
 				toBeCreated.add(inputEntry);
 			}
@@ -251,16 +293,15 @@ public class SynchronizeVirtualFileSystems extends BaseSynchronize {
 			}
 		}
 
-		// Delete entries as the last step
 		for (int i = 0; i < outputEntries.length; i++) {
 			if (outputEntries[i] != null) {
+				DirectoryEntryData entry = new DirectoryEntryData(dirName, outputEntries[i]);
 				if (log.isDebugEnabled()) {
-					log.debug(String.format("deltaSynchronize: entry to be deleted outputEntry=%s", outputEntries[i]));
+					log.debug(String.format("deltaSynchronize: entry to be deleted entry=%s", entry));
 				}
-				int result = deleteEntry(dirName, outputEntries[i]);
-				if (result != 0) {
-					return result;
-				}
+
+				toBeDeleted.add(entry);
+				somethingChanged = true;
 			}
 		}
 

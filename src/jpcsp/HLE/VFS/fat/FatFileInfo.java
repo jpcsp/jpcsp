@@ -326,7 +326,7 @@ public class FatFileInfo {
 				s.append(String.format("0x%X", clusters[i]));
 			}
 			if (length < clusters.length) {
-				s.append(", ...");
+				s.append(String.format(", ..., 0x%X", clusters[clusters.length - 1]));
 			}
 			s.append("]");
 		}

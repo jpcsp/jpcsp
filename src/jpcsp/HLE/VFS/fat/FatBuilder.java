@@ -21,6 +21,8 @@ import static jpcsp.HLE.VFS.fat.FatUtils.storeSectorInt32;
 import static jpcsp.HLE.VFS.fat.FatUtils.storeSectorInt8;
 import static jpcsp.HLE.VFS.fat.FatUtils.storeSectorString;
 import static jpcsp.HLE.kernel.types.pspAbstractMemoryMappedStructure.charset16;
+import static jpcsp.util.Utilities.hasFlag;
+import static jpcsp.util.Utilities.notHasFlag;
 
 import java.util.List;
 
@@ -82,12 +84,8 @@ public class FatBuilder {
 	}
 
 	public void setClusters(FatFileInfo fileInfo, int[] clusters) {
-		if (clusters != null) {
-			for (int i = 0; i < clusters.length; i++) {
-				vFile.setFatFileInfoMap(clusters[i], fileInfo);
-			}
-		}
 		fileInfo.setClusters(clusters);
+		vFile.setFatFileInfoMap(fileInfo);
 	}
 
 	private int allocateCluster() {
@@ -150,8 +148,8 @@ public class FatBuilder {
 			if (!".".equals(names[i]) && !"..".equals(names[i])) {
 				dir.filename = names[i];
 				if (vfs.ioDread(dirName, dir) >= 0) {
-					boolean directory = (dir.stat.attr & 0x10) != 0;
-					boolean readOnly = (dir.stat.mode & 0x2) == 0;
+					boolean directory = hasFlag(dir.stat.attr, 0x10);
+					boolean readOnly = notHasFlag(dir.stat.mode, 0x2);
 					FatFileInfo fileInfo = new FatFileInfo(vFile.getDeviceName(), dirName, dir.filename, directory, readOnly, dir.stat.mtime, dir.stat.size);
 
 					parent.addChild(fileInfo);
@@ -419,20 +417,17 @@ public class FatBuilder {
 		storeSectorInt16(directoryData, offset + 18, createDate);
 
 		int[] clusters = fileInfo.getClusters();
-		if (clusters != null) {
-			storeSectorInt16(directoryData, offset + 20, clusters[0] >>> 16);
-		} else {
-			storeSectorInt16(directoryData, offset + 20, 0); // Empty file
+		int entryClusterNumber = 0; // Empty file
+		if (clusters != null && clusters.length > 0) {
+			entryClusterNumber = clusters[0];
 		}
+
+		storeSectorInt16(directoryData, offset + 20, entryClusterNumber >>> 16);
 
 		storeSectorInt16(directoryData, offset + 22, createTime);
 		storeSectorInt16(directoryData, offset + 24, createDate);
 
-		if (clusters != null) {
-			storeSectorInt16(directoryData, offset + 26, clusters[0] & 0xFFFF);
-		} else {
-			storeSectorInt16(directoryData, offset + 26, 0); // Empty file
-		}
+		storeSectorInt16(directoryData, offset + 26, entryClusterNumber & 0xFFFF);
 
 		int fileSize = (int) fileInfo.getFileSize();
 		if (fileInfo.isDirectory()) {
@@ -473,20 +468,17 @@ public class FatBuilder {
 		storeSectorInt16(directoryData, offset + 18, createDate);
 
 		int[] clusters = fileInfo.getClusters();
-		if (clusters != null) {
-			storeSectorInt16(directoryData, offset + 20, clusters[0] >>> 16);
-		} else {
-			storeSectorInt16(directoryData, offset + 20, 0); // Empty file
+		int entryClusterNumber = 0; // Empty file
+		if (clusters != null && clusters.length > 0) {
+			entryClusterNumber = clusters[0];
 		}
+
+		storeSectorInt16(directoryData, offset + 20, entryClusterNumber >>> 16);
 
 		storeSectorInt16(directoryData, offset + 22, createTime);
 		storeSectorInt16(directoryData, offset + 24, createDate);
 
-		if (clusters != null) {
-			storeSectorInt16(directoryData, offset + 26, clusters[0] & 0xFFFF);
-		} else {
-			storeSectorInt16(directoryData, offset + 26, 0); // Empty file
-		}
+		storeSectorInt16(directoryData, offset + 26, entryClusterNumber & 0xFFFF);
 
 		// File size
 		storeSectorInt32(directoryData, offset + 28, 0);

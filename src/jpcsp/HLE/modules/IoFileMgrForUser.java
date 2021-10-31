@@ -3680,7 +3680,7 @@ public class IoFileMgrForUser extends HLEModule {
      * @return
      */
     @HLEFunction(nid = 0xACE946E8, version = 150, checkInsideInterrupt = true)
-    public int sceIoGetstat(PspString filename, TPointer statAddr) {
+    public int sceIoGetstat(PspString filename, @BufferInfo(lengthInfo = LengthInfo.fixedLength, length = SceIoStat.SIZEOF, usage = Usage.out) TPointer statAddr) {
     	return hleIoGetstat(filename.getAddress(), filename.getString(), statAddr);
     }
 
@@ -3694,7 +3694,7 @@ public class IoFileMgrForUser extends HLEModule {
      * @return
      */
     @HLEFunction(nid = 0xB8A740F4, version = 150, checkInsideInterrupt = true)
-    public int sceIoChstat(PspString filename, TPointer statAddr, int bits) {
+    public int sceIoChstat(PspString filename, @BufferInfo(lengthInfo = LengthInfo.fixedLength, length = SceIoStat.SIZEOF, usage = Usage.in) TPointer statAddr, int bits) {
         String pcfilename = getDeviceFilePath(filename.getString());
         int result;
 

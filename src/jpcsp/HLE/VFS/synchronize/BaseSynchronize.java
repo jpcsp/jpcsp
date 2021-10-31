@@ -42,19 +42,32 @@ public abstract class BaseSynchronize implements ISynchronize {
 
     private class SynchronizeThread extends Thread {
     	private volatile boolean exit;
+    	private volatile boolean done;
 
     	@Override
 		public void run() {
-			RuntimeContext.setLog4jMDC();
+    		done = false;
+
+    		RuntimeContext.setLog4jMDC();
 
 			while (!exit) {
 				Utilities.sleep(deltaSyncIntervalMillis, 0);
-				checkDeltaSynchronize(deltaSyncDelayMillis);;
+				checkDeltaSynchronize(deltaSyncDelayMillis);
 			}
+
+			// Perform an immediate check before exiting
+			checkDeltaSynchronize(0);
+
+			done = true;
 		}
 
     	public void exit() {
     		exit = true;
+
+    		// Wait for completion
+    		while (!done) {
+    			Utilities.sleep(100);
+    		}
     	}
     }
 
@@ -101,9 +114,9 @@ public abstract class BaseSynchronize implements ISynchronize {
 	    	long now = now();
 	    	long millisSinceLastWrite = now - lastWrite;
 
-	    	if (log.isTraceEnabled()) {
-	    		log.trace(String.format("checkDeltaSynchronize syncDelayMillis=0x%X, millisSinceLastWrite=0x%X, lastSync=0x%X, lastWrite=0x%X, now=0x%X", syncDelayMillis, millisSinceLastWrite, lastSync, lastWrite, now));
-	    	}
+//	    	if (log.isTraceEnabled()) {
+//	    		log.trace(String.format("checkDeltaSynchronize syncDelayMillis=0x%X, millisSinceLastWrite=0x%X, lastSync=0x%X, lastWrite=0x%X, now=0x%X", syncDelayMillis, millisSinceLastWrite, lastSync, lastWrite, now));
+//	    	}
 
 	    	if (lastSync < lastWrite && millisSinceLastWrite >= syncDelayMillis) {
 		    	if (log.isTraceEnabled()) {

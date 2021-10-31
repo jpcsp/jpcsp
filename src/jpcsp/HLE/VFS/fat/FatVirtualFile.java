@@ -23,13 +23,12 @@ import static jpcsp.HLE.VFS.fat.FatBuilder.numberOfFats;
 import static jpcsp.HLE.VFS.fat.FatBuilder.reservedSectors;
 import static jpcsp.HLE.VFS.fat.FatUtils.getSectorNumber;
 import static jpcsp.HLE.VFS.fat.FatUtils.getSectorOffset;
-import static jpcsp.HLE.VFS.fat.FatUtils.readSectorInt16;
-import static jpcsp.HLE.VFS.fat.FatUtils.readSectorInt32;
 import static jpcsp.HLE.VFS.fat.FatUtils.readSectorString;
 import static jpcsp.HLE.VFS.fat.FatUtils.storeSectorInt32;
 import static jpcsp.HLE.VFS.fat.FatUtils.storeSectorInt8;
 import static jpcsp.HLE.VFS.fat.FatUtils.storeSectorString;
 import static jpcsp.HLE.kernel.types.pspAbstractMemoryMappedStructure.charset16;
+import static jpcsp.util.Utilities.hasFlag;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -44,7 +43,10 @@ import jpcsp.HLE.TPointer;
 import jpcsp.HLE.VFS.IVirtualCache;
 import jpcsp.HLE.VFS.IVirtualFile;
 import jpcsp.HLE.VFS.IVirtualFileSystem;
-import jpcsp.HLE.kernel.types.ScePspDateTime;
+import jpcsp.HLE.VFS.InvalidVirtualFile;
+import jpcsp.HLE.VFS.ReadCacheVirtualFile;
+import jpcsp.HLE.kernel.types.SceIoDirent;
+import jpcsp.HLE.kernel.types.SceIoStat;
 import jpcsp.HLE.modules.IoFileMgrForUser;
 import jpcsp.HLE.modules.IoFileMgrForUser.IoOperation;
 import jpcsp.HLE.modules.IoFileMgrForUser.IoOperationTiming;
@@ -56,6 +58,7 @@ import jpcsp.util.Utilities;
 // See format description: https://en.wikipedia.org/wiki/Design_of_the_FAT_file_system
 public abstract class FatVirtualFile implements IVirtualFile, IVirtualCache, IState {
 	public static Logger log = Logger.getLogger("fat");
+	private static final boolean useSynchronizeVFS = true;
 	private static final int STATE_VERSION = 0;
     public final static int sectorSize = 512;
 	protected final static int firstClusterNumber = 2;
@@ -68,9 +71,6 @@ public abstract class FatVirtualFile implements IVirtualFile, IVirtualCache, ISt
     protected int fatSectors;
     protected int[] fatClusterMap;
     private FatFileInfo[] fatFileInfoMap;
-    private byte[] pendingCreateDirectoryEntryLFN;
-    private final Map<Integer, byte[]> pendingWriteSectors = new HashMap<Integer, byte[]>();
-    private final Map<Integer, FatFileInfo> pendingDeleteFiles = new HashMap<Integer, FatFileInfo>();
     private FatBuilder builder;
     private int fatSectorNumber = bootSectorNumber + reservedSectors;
     private int fsInfoSectorNumber = bootSectorNumber + 1;
@@ -78,10 +78,12 @@ public abstract class FatVirtualFile implements IVirtualFile, IVirtualCache, ISt
     protected int rootDirectoryStartSectorNumber = -1;
     protected int rootDirectoryEndSectorNumber = -1;
     private final byte[] secondFat;
+    private IVirtualFile baseVirtualFile;
 
 	protected FatVirtualFile(String deviceName, IVirtualFileSystem vfs, int totalSectors) {
 		this.deviceName = deviceName;
 		this.vfs = vfs;
+		baseVirtualFile = this;
 
 		this.totalSectors = totalSectors;
 		fatSectors = getFatSectors(totalSectors, getSectorsPerCluster());
@@ -102,6 +104,10 @@ public abstract class FatVirtualFile implements IVirtualFile, IVirtualCache, ISt
 	protected abstract void readBIOSParameterBlock();
 	protected abstract int getFirstDataClusterOffset();
 	protected abstract void setRootDirectory(FatFileInfo rootDirectory);
+
+	public void setBaseVirtualFile(IVirtualFile baseVirtualFile) {
+		this.baseVirtualFile = baseVirtualFile;
+	}
 
 	protected int getFirstFreeCluster() {
 		return firstClusterNumber + getFirstDataClusterOffset() / getSectorsPerCluster();
@@ -162,6 +168,19 @@ public abstract class FatVirtualFile implements IVirtualFile, IVirtualCache, ISt
 		}
 	}
 
+	public void setFatFileInfoMap(FatFileInfo fileInfo) {
+		if (log.isTraceEnabled()) {
+			log.trace(String.format("setFatFileInfoMap %s", fileInfo));
+		}
+
+		int[] clusters = fileInfo.getClusters();
+		if (clusters != null) {
+			for (int i = 0; i < clusters.length; i++) {
+				setFatFileInfoMap(clusters[i], fileInfo);
+			}
+		}
+	}
+
 	public void setFatFileInfoMap(int clusterNumber, FatFileInfo fileInfo) {
 		if (clusterNumber >= fatFileInfoMap.length) {
 			extendClusterMap(clusterNumber);
@@ -183,29 +202,11 @@ public abstract class FatVirtualFile implements IVirtualFile, IVirtualCache, ISt
 		return firstClusterNumber + (sectorNumber / getSectorsPerCluster());
 	}
 
-	private int getSectorNumberFromCluster(int clusterNumber) {
-		int sectorNumber = (clusterNumber - firstClusterNumber) * getSectorsPerCluster();
-		sectorNumber += fatSectorNumber;
-		sectorNumber += numberOfFats * fatSectors;
-		sectorNumber += getFirstDataClusterOffset();
-		return sectorNumber;
-	}
-
 	private int getSectorOffsetInCluster(int sectorNumber) {
 		sectorNumber -= fatSectorNumber;
 		sectorNumber -= numberOfFats * fatSectors;
 		sectorNumber -= getFirstDataClusterOffset();
 		return sectorNumber % getSectorsPerCluster();
-	}
-
-	private boolean isFreeClusterNumber(int clusterNumber) {
-		clusterNumber &= getClusterMask();
-		return clusterNumber == 0;
-	}
-
-	private boolean isDataClusterNumber(int clusterNumber) {
-		clusterNumber &= getClusterMask();
-		return clusterNumber >= 2 && clusterNumber <= 0x0FFFFFEF;
 	}
 
 	protected String getOEMName() {
@@ -289,7 +290,7 @@ public abstract class FatVirtualFile implements IVirtualFile, IVirtualCache, ISt
 		} else {
 			IVirtualFile vFile = fileInfo.getVirtualFile(vfs);
 			if (vFile == null) {
-				log.warn(String.format("readDataSector cannot read file '%s'", fileInfo));
+				log.error(String.format("readDataSector cannot read file %s", fileInfo));
 				return;
 			}
 
@@ -357,15 +358,6 @@ public abstract class FatVirtualFile implements IVirtualFile, IVirtualCache, ISt
 	}
 
 	private void readSector(int sectorNumber) {
-		byte[] pendingWriteSector = pendingWriteSectors.get(sectorNumber);
-		if (pendingWriteSector != null) {
-			if (log.isDebugEnabled()) {
-				log.debug(String.format("readSector sectorNumber=0x%X reading from pending write sector", sectorNumber));
-			}
-			System.arraycopy(pendingWriteSector, 0, currentSector, 0, sectorSize);
-			return;
-		}
-
 		if (sectorNumber == bootSectorNumber) {
 			readBootSector();
 		} else if (sectorNumber == fsInfoSectorNumber) {
@@ -401,67 +393,9 @@ public abstract class FatVirtualFile implements IVirtualFile, IVirtualCache, ISt
 		}
 
 		fatClusterMap[clusterNumber] = value;
-
-		FatFileInfo fileInfo = fatFileInfoMap[clusterNumber];
-		if (fileInfo != null) {
-			// Freeing the cluster?
-			if (isFreeClusterNumber(value)) {
-				if (pendingDeleteFiles.get(clusterNumber) == fileInfo) {
-					if (log.isDebugEnabled()) {
-						log.debug(String.format("Deleting the file '%s'", fileInfo.getFullFileName()));
-					}
-
-					// Close the file before deleting it
-					closeTree(fileInfo);
-
-					int result = vfs.ioRemove(fileInfo.getFullFileName());
-					if (result < 0) {
-						log.warn(String.format("Cannot delete the file '%s'", fileInfo.getFullFileName()));
-					}
-					pendingDeleteFiles.remove(clusterNumber);
-				}
-			} else {
-				// Setting a new data cluster number?
-				if (isDataClusterNumber(value)) {
-					int newClusterNumber = value & getClusterMask();
-					if (!fileInfo.hasCluster(newClusterNumber)) {
-						fileInfo.addCluster(newClusterNumber);
-						fatFileInfoMap[newClusterNumber] = fileInfo;
-					}
-				}
-				checkPendingWriteSectors(fileInfo);
-			}
-		}
 	}
 
 	protected abstract void writeFatSector(int fatIndex);
-
-	private void deleteDirectoryEntry(FatFileInfo fileInfo, byte[] directoryData, int offset) {
-		if (log.isDebugEnabled()) {
-			log.debug(String.format("deleteDirectoryEntry on %s: %s", fileInfo, Utilities.getMemoryDump(directoryData, offset, directoryTableEntrySize)));
-		}
-
-		if (!isLongFileNameDirectoryEntry(directoryData, offset)) {
-			String fileName83 = Utilities.readStringNZ(directoryData, offset + 0, 8 + 3);
-
-			FatFileInfo childFileInfo = fileInfo.getChildByFileName83(fileName83);
-			if (childFileInfo == null) {
-				log.warn(String.format("deleteDirectoryEntry cannot find child entry '%s' in %s", fileName83, fileInfo));
-			} else {
-				pendingDeleteFiles.put(childFileInfo.getFirstCluster(), childFileInfo);
-			}
-		}
-	}
-
-	private void deleteDirectoryEntries(FatFileInfo fileInfo, byte[] directoryData, int offset, int length) {
-		if (directoryData == null || length <= 0 || offset >= directoryData.length) {
-			return;
-		}
-
-		for (int i = 0; i < length; i += directoryTableEntrySize) {
-			deleteDirectoryEntry(fileInfo, directoryData, offset + i);
-		}
-	}
 
 	private static String getFileNameLFN(byte[] lfn) {
 		boolean last = false;
@@ -511,223 +445,6 @@ public abstract class FatVirtualFile implements IVirtualFile, IVirtualCache, ISt
 		return fileName;
 	}
 
-	private void closeTree(FatFileInfo fileInfo) {
-		if (fileInfo != null) {
-			fileInfo.closeVirtualFile();
-
-			List<FatFileInfo> children = fileInfo.getChildren();
-			if (children != null) {
-				for (FatFileInfo child: children) {
-					closeTree(child);
-				}
-			}
-		}
-	}
-
-	private int getMode(boolean directory, boolean readOnly) {
-		// Always readable
-		int mode = 0444; // Readable
-
-		// Only directories are executable
-		if (directory) {
-			mode |= 0111; // Executable
-		}
-
-		// Writable when not read-only
-		if (!readOnly) {
-			mode |= 0222; // Writable
-		}
-
-		return mode;
-	}
-
-	private void createDirectoryEntry(FatFileInfo fileInfo, byte[] sector, int offset) {
-		if (offset >= sector.length) {
-			return;
-		}
-
-		if (log.isDebugEnabled()) {
-			log.debug(String.format("createDirectoryEntry on %s: %s", fileInfo, Utilities.getMemoryDump(sector, offset, directoryTableEntrySize)));
-		}
-
-		if (isLongFileNameDirectoryEntry(sector, offset)) {
-			pendingCreateDirectoryEntryLFN = Utilities.extendArray(pendingCreateDirectoryEntryLFN, sector, offset, directoryTableEntrySize);
-		} else {
-			String fileName = getFileName(sector, offset, pendingCreateDirectoryEntryLFN);
-			boolean readOnly = (sector[offset + 11] & 0x01) != 0;
-			boolean directory = (sector[offset + 11] & 0x10) != 0;
-			int clusterNumber = readSectorInt16(sector, offset + 20) << 16;
-			clusterNumber |= readSectorInt16(sector, offset + 26);
-			long fileSize = readSectorInt32(sector, offset + 28) & 0xFFFFFFFFL;
-			int time = readSectorInt16(sector, offset + 22);
-			time |= readSectorInt16(sector, offset + 24) << 16;
-			ScePspDateTime lastModified = ScePspDateTime.fromMSDOSTime(time);
-			if (log.isDebugEnabled()) {
-				log.debug(String.format("createDirectoryEntry fileName='%s', readOnly=%b, directory=%b, clusterNumber=0x%X, fileSize=0x%X", fileName, readOnly, directory, clusterNumber, fileSize));
-			}
-
-			FatFileInfo pendingDeleteFile = pendingDeleteFiles.remove(clusterNumber);
-			if (pendingDeleteFile != null) {
-				if (log.isDebugEnabled()) {
-					log.debug(String.format("Renaming directory entry %s into '%s'", pendingDeleteFile, fileName));
-				}
-				if (readOnly != pendingDeleteFile.isReadOnly()) {
-					log.warn(String.format("Cannot change read-only attribute of %s", pendingDeleteFile));
-				}
-				if (directory != pendingDeleteFile.isDirectory()) {
-					log.warn(String.format("Cannot change directory attribute of %s", pendingDeleteFile));
-				}
-				if (fileSize != pendingDeleteFile.getFileSize()) {
-					log.warn(String.format("Cannot change file size of %s", pendingDeleteFile));
-				}
-				String oldFullFileName = pendingDeleteFile.getFullFileName();
-				pendingDeleteFile.setFileName(fileName);
-				String newFullFileName = pendingDeleteFile.getFullFileName();
-
-				// Close all the files in the directory before renaming it
-				closeTree(pendingDeleteFile);
-
-				int result = vfs.ioRename(oldFullFileName, newFullFileName);
-				if (result < 0) {
-					log.warn(String.format("Cannot rename file '%s' into '%s'", oldFullFileName, newFullFileName));
-				}
-				pendingDeleteFile.setDirectory(directory);
-				pendingDeleteFile.setReadOnly(readOnly);
-				pendingDeleteFile.setFileSize(fileSize);
-				pendingDeleteFile.setLastModified(lastModified);
-			} else {
-				FatFileInfo newFileInfo = new FatFileInfo(deviceName, fileInfo.getFullFileName(), fileName, directory, readOnly, lastModified, fileSize);
-				newFileInfo.setFileName83(Utilities.readStringNZ(sector, offset + 0, 8 + 3));
-				if (clusterNumber != 0) {
-					int[] clusters = getClusters(clusterNumber);
-					builder.setClusters(newFileInfo, clusters);
-				}
-
-				fileInfo.addChild(newFileInfo);
-
-				if (directory) {
-					vfs.ioMkdir(newFileInfo.getFullFileName(), getMode(directory, readOnly));
-				}
-			}
-
-			pendingCreateDirectoryEntryLFN = null;
-		}
-	}
-
-	private void checkPendingWriteSectors(FatFileInfo fileInfo) {
-		if (log.isDebugEnabled()) {
-			log.debug(String.format("checkPendingWriteSectors for %s", fileInfo));
-		}
-
-		if (pendingWriteSectors.isEmpty()) {
-			if (log.isDebugEnabled()) {
-				log.debug(String.format("checkPendingWriteSectors - no pending sectors"));
-			}
-			return;
-		}
-
-		int[] clusters = fileInfo.getClusters();
-		if (clusters == null) {
-			return;
-		}
-
-		if (log.isDebugEnabled()) {
-			for (int sectorNumber : pendingWriteSectors.keySet()) {
-				log.debug(String.format("checkPendingWriteSectors pending sectorNumber=0x%X", sectorNumber));
-			}
-		}
-
-		for (int i = 0; i < clusters.length; i++) {
-			int clusterNumber = clusters[i];
-			int sectorNumber = getSectorNumberFromCluster(clusterNumber);
-			if (log.isDebugEnabled()) {
-				log.debug(String.format("checkPendingWriteSectors checking for clusterNumber=0x%X, sectorNumber=0x%X-0x%X", clusterNumber, sectorNumber, sectorNumber + getSectorsPerCluster() - 1));
-			}
-			for (int j = 0; j < getSectorsPerCluster(); j++, sectorNumber++) {
-				byte[] pendingWriteSector = pendingWriteSectors.remove(sectorNumber);
-				if (pendingWriteSector != null) {
-					if (log.isDebugEnabled()) {
-						log.debug(String.format("checkPendingWriteSectors writing pending sectorNumber=0x%X for %s", sectorNumber, fileInfo));
-					}
-
-					if (!writeFileSector(fileInfo, getByteOffset(fileInfo, sectorNumber), pendingWriteSector)) {
-						pendingWriteSectors.put(sectorNumber, pendingWriteSector);
-					}
-				}
-			}
-		}
-	}
-
-	private int[] getClusters(int clusterNumber) {
-		int[] clusters = new int[] { clusterNumber };
-
-		while (clusterNumber < fatClusterMap.length) {
-			int nextCluster = fatClusterMap[clusterNumber];
-			if (!isDataClusterNumber(nextCluster)) {
-				break;
-			}
-
-			// Add the nextCluster to the clusters array
-			clusters = Utilities.extendArray(clusters, 1);
-			clusterNumber = nextCluster & getClusterMask();
-			clusters[clusters.length - 1] = clusterNumber;
-		}
-
-		return clusters;
-	}
-
-	private void updateDirectoryEntry(FatFileInfo fileInfo, byte[] directoryData, int directoryDataOffset, byte[] sector, int sectorOffset) {
-		if (log.isDebugEnabled()) {
-			log.debug(String.format("updateDirectoryEntry on %s: from %s, to %s", fileInfo, Utilities.getMemoryDump(directoryData, directoryDataOffset, directoryTableEntrySize), Utilities.getMemoryDump(sector, sectorOffset, directoryTableEntrySize)));
-		}
-
-		boolean oldLFN = isLongFileNameDirectoryEntry(directoryData, directoryDataOffset);
-		boolean newLFN = isLongFileNameDirectoryEntry(sector, sectorOffset);
-		if (oldLFN != newLFN) {
-			log.error(String.format("updateDirectoryEntry changing LongFileName entries not implemented: %s from %s, to %s", fileInfo, Utilities.getMemoryDump(directoryData, directoryDataOffset, directoryTableEntrySize), Utilities.getMemoryDump(sector, sectorOffset, directoryTableEntrySize)));
-		} else if (newLFN) {
-			log.error(String.format("updateDirectoryEntry updating LongFileName entries not implemented: %s from %s, to %s", fileInfo, Utilities.getMemoryDump(directoryData, directoryDataOffset, directoryTableEntrySize), Utilities.getMemoryDump(sector, sectorOffset, directoryTableEntrySize)));
-		} else {
-			int oldClusterNumber = readSectorInt16(directoryData, directoryDataOffset + 20) << 16;
-			oldClusterNumber |= readSectorInt16(directoryData, directoryDataOffset + 26);
-
-			int newClusterNumber = readSectorInt16(sector, sectorOffset + 20) << 16;
-			newClusterNumber |= readSectorInt16(sector, sectorOffset + 26);
-			long newFileSize = readSectorInt32(sector, sectorOffset + 28) & 0xFFFFFFFFL;
-			if (log.isDebugEnabled()) {
-				log.debug(String.format("updateDirectoryEntry oldClusterNumber=0x%X, newClusterNumber=0x%X, newFileSize=0x%X", oldClusterNumber, newClusterNumber, newFileSize));
-			}
-
-			String oldFileName83 = Utilities.readStringNZ(directoryData, directoryDataOffset + 0, 8 + 3);
-			String newFileName83 = Utilities.readStringNZ(sector, sectorOffset + 0, 8 + 3);
-
-			if (!oldFileName83.equals(newFileName83)) {
-				// TODO
-				log.warn(String.format("updateDirectoryEntry unimplemented change of 8.3. file name: from '%s' to '%s'", oldFileName83, newFileName83));
-			}
-
-			FatFileInfo childFileInfo = fileInfo.getChildByFileName83(oldFileName83);
-			if (childFileInfo == null) {
-				log.warn(String.format("updateDirectoryEntry child '%s' not found", oldFileName83));
-			} else {
-				// Update the file size.
-				// Rem.: this must be done before calling checkPendingWriteSectors
-				childFileInfo.setFileSize(newFileSize);
-
-				// Update the clusterNumber
-				if (oldClusterNumber != newClusterNumber) {
-					int[] clusters = getClusters(newClusterNumber);
-					builder.setClusters(childFileInfo, clusters);
-
-					// The clusters have been updated for this file,
-					// check if there were pending sector writes in the new
-					// clusters
-					checkPendingWriteSectors(childFileInfo);
-				}
-			}
-		}
-	}
-
 	public static boolean isLongFileNameDirectoryEntry(byte[] directoryData, int offset) {
 		// Attributes (always 0x0F for LFN)
 		return directoryData[offset + 11] == 0x0F;
@@ -774,9 +491,7 @@ public abstract class FatVirtualFile implements IVirtualFile, IVirtualCache, ISt
 
 		int length = (int) Math.min(fileInfo.getFileSize() - byteOffset, (long) sectorSize);
 		if (length < 0 || !isEmpty(sector, length)) {
-			if (log.isDebugEnabled()) {
-				log.debug(String.format("writeFileSector writing past end of file '%s'", fileInfo));
-			}
+			log.warn(String.format("writeFileSector writing past end of file '%s'", fileInfo));
 			return false;
 		}
 
@@ -797,34 +512,12 @@ public abstract class FatVirtualFile implements IVirtualFile, IVirtualCache, ISt
 		return true;
 	}
 
-	private boolean isCurrentSectorEmpty() {
-		for (int i = 0; i < sectorSize; i++) {
-			if (currentSector[i] != (byte) 0xFF) {
-				return false;
-			}
-		}
-
-		return true;
-	}
-
-	private void addPendingWriteSectors(int sectorNumber) {
-		pendingWriteSectors.put(sectorNumber, currentSector.clone());
-		if (log.isDebugEnabled()) {
-			log.debug(String.format("addPendingWriteSectors sectorNumber=0x%X", sectorNumber));
-		}
-	}
-
 	private void writeDataSector(int sectorNumber, int clusterNumber, int sectorOffsetInCluster, FatFileInfo fileInfo) {
 		if (log.isDebugEnabled()) {
 			log.debug(String.format("writeDataSector clusterNumber=0x%X(sector=0x%X), fileInfo=%s", clusterNumber, sectorOffsetInCluster, fileInfo));
 		}
 
 		if (fileInfo.isDirectory()) {
-			if (isCurrentSectorEmpty()) {
-				addPendingWriteSectors(sectorNumber);
-				return;
-			}
-
 			byte[] directoryData = fileInfo.getFileData();
 			if (directoryData == null) {
 				directoryData = builder.buildDirectoryData(fileInfo);
@@ -833,33 +526,10 @@ public abstract class FatVirtualFile implements IVirtualFile, IVirtualCache, ISt
 
 			int byteOffset = sectorOffsetInCluster * sectorSize;
 			int sectorLength = sectorSize;
-			for (int i = 0; i < sectorSize; i += directoryTableEntrySize) {
-				// End of directory table?
-				if (currentSector[i + 0] == (byte) 0) {
-					// Delete the remaining directory entries of the current directory
-					deleteDirectoryEntries(fileInfo, directoryData, byteOffset + i, directoryData.length - (byteOffset + i));
-					sectorLength = i;
-					break;
-				}
-
-				if (currentSector[i + 0] == (byte) 0xE5) {
-					// Deleted file
-					if (byteOffset + i < directoryData.length && directoryData[byteOffset + i + 0] != (byte) 0xE5) {
-						deleteDirectoryEntry(fileInfo, directoryData, byteOffset + i);
-					}
-				} else if (byteOffset + i >= directoryData.length) {
-					createDirectoryEntry(fileInfo, currentSector, i);
-				} else if (!Utilities.equals(directoryData, byteOffset + i, currentSector, i, directoryTableEntrySize)) {
-					updateDirectoryEntry(fileInfo, directoryData, byteOffset + i, currentSector, i);
-				}
-			}
-
 			directoryData = Utilities.copyToArrayAndExtend(directoryData, byteOffset, currentSector, 0, sectorLength);
 			fileInfo.setFileData(directoryData);
 		} else {
-			if (!writeFileSector(fileInfo, getByteOffset(fileInfo, sectorNumber), currentSector)) {
-				addPendingWriteSectors(sectorNumber);
-			}
+			writeFileSector(fileInfo, getByteOffset(fileInfo, sectorNumber), currentSector);
 		}
 	}
 
@@ -871,10 +541,6 @@ public abstract class FatVirtualFile implements IVirtualFile, IVirtualCache, ISt
 		int clusterNumber = getClusterNumber(sectorNumber);
 		int sectorOffsetInCluster = getSectorOffsetInCluster(sectorNumber);
 		FatFileInfo fileInfo = fatFileInfoMap[clusterNumber];
-		if (fileInfo == null) {
-			addPendingWriteSectors(sectorNumber);
-			return;
-		}
 
 		writeDataSector(sectorNumber, clusterNumber, sectorOffsetInCluster, fileInfo);
 	}
@@ -895,9 +561,6 @@ public abstract class FatVirtualFile implements IVirtualFile, IVirtualCache, ISt
 			log.debug(String.format("writeSector 0x%X", sectorNumber));
 		}
 
-		// Forget any previous pending write on that sector
-		pendingWriteSectors.remove(sectorNumber);
-
 		if (sectorNumber == bootSectorNumber) {
 			writeBootSector();
 		} else if (sectorNumber == fsInfoSectorNumber) {
@@ -905,31 +568,19 @@ public abstract class FatVirtualFile implements IVirtualFile, IVirtualCache, ISt
 		} else if (sectorNumber < fatSectorNumber) {
 			writeEmptySector();
 		} else if (sectorNumber >= fatSectorNumber && sectorNumber < fatSectorNumber + fatSectors) {
-			if (isCurrentSectorEmpty()) {
-				addPendingWriteSectors(sectorNumber);
-			} else {
-				writeFatSector(sectorNumber - fatSectorNumber);
-			}
+			writeFatSector(sectorNumber - fatSectorNumber);
 		} else if (sectorNumber >= fatSectorNumber + fatSectors && sectorNumber < fatSectorNumber + numberOfFats * fatSectors) {
-			if (isCurrentSectorEmpty()) {
-				addPendingWriteSectors(sectorNumber);
-			} else {
-				// Writing to the second FAT table
-				writeSecondFatSector(sectorNumber - fatSectorNumber - fatSectors);
-			}
+			// Writing to the second FAT table
+			writeSecondFatSector(sectorNumber - fatSectorNumber - fatSectors);
 		} else if (sectorNumber >= rootDirectoryStartSectorNumber && sectorNumber <= rootDirectoryEndSectorNumber) {
-			if (isCurrentSectorEmpty()) {
-				addPendingWriteSectors(sectorNumber);
-			} else {
-				writeRootDirectory(sectorNumber - rootDirectoryStartSectorNumber);
-			}
+			writeRootDirectory(sectorNumber - rootDirectoryStartSectorNumber);
 		} else {
 			writeDataSector(sectorNumber);
 		} 
 	}
 
 	@Override
-	public int ioRead(TPointer outputPointer, int outputLength) {
+	public synchronized int ioRead(TPointer outputPointer, int outputLength) {
 		int readLength = 0;
 		int outputOffset = 0;
 		while (outputLength > 0) {
@@ -951,7 +602,7 @@ public abstract class FatVirtualFile implements IVirtualFile, IVirtualCache, ISt
 	}
 
 	@Override
-	public int ioRead(byte[] outputBuffer, int outputOffset, int outputLength) {
+	public synchronized int ioRead(byte[] outputBuffer, int outputOffset, int outputLength) {
 		int readLength = 0;
 		while (outputLength > 0) {
 			int sectorNumber = getSectorNumber(position);
@@ -972,7 +623,11 @@ public abstract class FatVirtualFile implements IVirtualFile, IVirtualCache, ISt
 	}
 
 	@Override
-	public int ioWrite(TPointer inputPointer, int inputLength) {
+	public synchronized int ioWrite(TPointer inputPointer, int inputLength) {
+		if (useSynchronizeVFS) {
+			return inputLength;
+		}
+
 		int writeLength = 0;
 		int inputOffset = 0;
 		while (inputLength > 0) {
@@ -1001,7 +656,11 @@ public abstract class FatVirtualFile implements IVirtualFile, IVirtualCache, ISt
 	}
 
 	@Override
-	public int ioWrite(byte[] inputBuffer, int inputOffset, int inputLength) {
+	public synchronized int ioWrite(byte[] inputBuffer, int inputOffset, int inputLength) {
+		if (useSynchronizeVFS) {
+			return inputLength;
+		}
+
 		int writeLength = 0;
 		while (inputLength > 0) {
 			int sectorOffset = getSectorOffset(position);
@@ -1029,7 +688,7 @@ public abstract class FatVirtualFile implements IVirtualFile, IVirtualCache, ISt
 	}
 
 	@Override
-	public long ioLseek(long offset) {
+	public synchronized long ioLseek(long offset) {
 		position = offset;
 
 		return position;
@@ -1066,7 +725,7 @@ public abstract class FatVirtualFile implements IVirtualFile, IVirtualCache, ISt
 	}
 
 	@Override
-	public int ioClose() {
+	public synchronized int ioClose() {
 		closeCachedFiles();
 		vfs.ioExit();
 		vfs = null;
@@ -1075,7 +734,7 @@ public abstract class FatVirtualFile implements IVirtualFile, IVirtualCache, ISt
 	}
 
 	@Override
-    public void read(StateInputStream stream) throws IOException {
+    public synchronized void read(StateInputStream stream) throws IOException {
     	stream.readVersion(STATE_VERSION);
     	deviceName = stream.readString();
     	position = stream.readLong();
@@ -1109,35 +768,10 @@ public abstract class FatVirtualFile implements IVirtualFile, IVirtualCache, ISt
     	for (FatFileInfo fatFileInfo : fatFileInfoList) {
 			fatFileInfo.read(stream, this);
     	}
-
-    	// Read the pendingWriteSectors
-    	pendingWriteSectors.clear();
-    	while (true) {
-    		int sectorNumber = stream.readInt();
-    		if (sectorNumber < 0) {
-    			// End of the pendingWriteSectors
-    			break;
-    		}
-    		byte[] bytes = stream.readBytesWithLength();
-    		pendingWriteSectors.put(sectorNumber, bytes);
-    	}
-
-    	// Read the pendingDeleteFiles
-    	pendingDeleteFiles.clear();
-    	while (true) {
-    		int clusterNumber = stream.readInt();
-    		if (clusterNumber < 0) {
-    			// End of the pendingDeleteFiles
-    			break;
-    		}
-
-    		FatFileInfo info = readFatFileInfo(stream);
-			pendingDeleteFiles.put(clusterNumber, info);
-    	}
     }
 
 	@Override
-    public void write(StateOutputStream stream) throws IOException {
+    public synchronized void write(StateOutputStream stream) throws IOException {
     	stream.writeVersion(STATE_VERSION);
     	stream.writeString(deviceName);
     	stream.writeLong(position);
@@ -1171,20 +805,6 @@ public abstract class FatVirtualFile implements IVirtualFile, IVirtualCache, ISt
     	for (FatFileInfo fatFileInfo : fatFileInfoList) {
 			fatFileInfo.write(stream, this);
     	}
-
-    	// Write the pendingWriteSectors, followed by -1 to mark the end
-    	for (int sectorNumber : pendingWriteSectors.keySet()) {
-    		stream.writeInt(sectorNumber);
-    		stream.writeBytesWithLength(pendingWriteSectors.get(sectorNumber));
-    	}
-    	stream.writeInt(-1);
-
-    	// Write the pendingDeleteFiles, followed by -1 to mark the end
-    	for (int clusterNumber : pendingDeleteFiles.keySet()) {
-    		stream.writeInt(clusterNumber);
-    		writeFatFileInfo(stream, pendingDeleteFiles.get(clusterNumber));
-    	}
-    	stream.writeInt(-1);
     }
 
     private int getFatFileInfoMapIndex(FatFileInfo info) {
@@ -1221,17 +841,87 @@ public abstract class FatVirtualFile implements IVirtualFile, IVirtualCache, ISt
     	// Nothing to do
 	}
 
+    private void readAllDirectories(String dirName, IVirtualFileSystem vfs) {
+		String[] names = vfs.ioDopen(dirName);
+		if (names == null || names.length == 0) {
+			return;
+		}
+
+		SceIoStat stat = new SceIoStat();
+		SceIoDirent dir = new SceIoDirent(stat, null);
+		for (int i = 0; i < names.length; i++) {
+			if (!".".equals(names[i]) && !"..".equals(names[i])) {
+				dir.filename = names[i];
+				if (vfs.ioDread(dirName, dir) >= 0) {
+					boolean directory = hasFlag(dir.stat.attr, 0x10);
+
+					if (directory) {
+						if (dirName == null) {
+							readAllDirectories(dir.filename, vfs);
+						} else {
+							readAllDirectories(dirName + "/" + dir.filename, vfs);
+						}
+					}
+				}
+			}
+		}
+    }
+
+    private void setFatFileInfoMapRecursive(FatVirtualFileSystem fatVirtualFileSystem, int clusterNumber, FatFileInfo parentDirectory) {
+    	FatFileInfo[] fatFileInfos = fatVirtualFileSystem.getDirectoryEntries(clusterNumber);
+    	if (fatFileInfos != null) {
+    		String dirName = null;
+    		if (parentDirectory != null) {
+    			dirName = parentDirectory.getFullFileName();
+    		}
+	    	for (FatFileInfo fatFileInfo : fatFileInfos) {
+	    		fatFileInfo.setParentDirectory(parentDirectory);
+    			fatFileInfo.setDirName(dirName);
+				parentDirectory.addChild(fatFileInfo);
+	    		setFatFileInfoMap(fatFileInfo);
+
+	    		if (fatFileInfo.isDirectory()) {
+	    			int directoryClusterNumber = fatFileInfo.getFirstCluster();
+	    			if (directoryClusterNumber != 0) {
+	    				setFatFileInfoMapRecursive(fatVirtualFileSystem, directoryClusterNumber, fatFileInfo);
+	    			}
+	    		}
+	    	}
+    	}
+    }
+
     @Override
-	public void flushCachedData() {
+	public synchronized void flushCachedData() {
     	if (log.isDebugEnabled()) {
     		log.debug(String.format("flushCachedData: rebuilding the FAT"));
     	}
+
+    	// Read the whole directory structure into a cache before we reset().
+    	ReadCacheVirtualFile directoriesVirtualFile = new ReadCacheVirtualFile(log, baseVirtualFile);
+    	FatVirtualFileSystem fatVirtualFileSystem = new FatVirtualFileSystem(deviceName, directoriesVirtualFile);
+    	readAllDirectories(null, fatVirtualFileSystem);
+
+    	// For debugging purpose, make sure we are going to only read from the cache
+    	directoriesVirtualFile.setProxyVirtualFile(new InvalidVirtualFile());
+
+    	// Close all the files before we reset
+    	closeCachedFiles();
+
     	reset();
-    	scan();
+
+    	// Copy the fatClusterMap from the VFS
+    	System.arraycopy(fatVirtualFileSystem.getFatClusterMap(), 0, fatClusterMap, 0, fatClusterMap.length);
+    	int rootDirectoryClusterNumber = fatVirtualFileSystem.getRootDirectoryClusterNumber();
+
+    	// Rebuild all the FatFileInfo's
+		FatFileInfo rootDirectory = new FatFileInfo(getDeviceName(), null, null, true, false, null, 0);
+		rootDirectory.addCluster(rootDirectoryClusterNumber);
+    	setFatFileInfoMapRecursive(fatVirtualFileSystem, rootDirectoryClusterNumber, rootDirectory);
+    	setFatFileInfoMap(rootDirectory);
 	}
 
 	@Override
-	public void closeCachedFiles() {
+	public synchronized void closeCachedFiles() {
 		for (FatFileInfo fatFileInfo : fatFileInfoMap) {
 			if (fatFileInfo != null) {
 				fatFileInfo.closeVirtualFile();

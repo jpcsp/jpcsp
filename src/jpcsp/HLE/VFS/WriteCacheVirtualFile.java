@@ -16,11 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.VFS;
 
-import static jpcsp.HLE.VFS.AbstractVirtualFile.IO_ERROR;
-
 import java.io.IOException;
-import java.util.SortedSet;
-import java.util.TreeSet;
 
 import org.apache.log4j.Logger;
 
@@ -30,146 +26,26 @@ import jpcsp.state.StateInputStream;
 import jpcsp.state.StateOutputStream;
 import jpcsp.util.Utilities;
 
-public class WriteCacheVirtualFile extends AbstractProxyVirtualFile implements IState {
+public class WriteCacheVirtualFile extends BaseCacheVirtualFile implements IState {
 	private static final int STATE_VERSION = 0;
-	private final Logger log;
-	private final SortedSet<Block> blocks = new TreeSet<Block>();
 	private boolean compareAtWrite;
 
-	private static class Block implements Comparable<Block>, IState {
-		private static final int STATE_VERSION = 0;
-		private long start;
-		private long end;
-		private byte[] data;
-
-		public Block() {
-		}
-
-		public Block(long start, long end, byte[] data) {
-			this.start = start;
-			this.end = end;
-			this.data = data;
-		}
-
-		public boolean isContaining(long position) {
-			return start <= position && position < end;
-		}
-
-		public boolean isBefore(long position) {
-			return end <= position;
-		}
-
-		public boolean isAfter(long position) {
-			return position < start;
-		}
-
-		public boolean isBefore(Block block) {
-			return isBefore(block.start);
-		}
-
-		public boolean isAfter(Block block) {
-			return isAfter(block.end);
-		}
-
-		public boolean isOverlapping(Block block)  {
-			return !isBefore(block) && !isAfter(block);
-		}
-
-		public boolean isFollowing(Block block) {
-			return start == block.end;
-		}
-
-		public int getLength() {
-			return (int) (end - start);
-		}
-
-		public int ioWrite(IVirtualFile vFile) {
-			synchronized (vFile) {
-				vFile.ioLseek(start);
-				return vFile.ioWrite(data, 0, getLength());
-			}
-		}
-
-		@Override
-		public int compareTo(Block block) {
-			return Long.compare(start, block.start);
-		}
-
-		@Override
-		public void read(StateInputStream stream) throws IOException {
-	    	stream.readVersion(STATE_VERSION);
-			start = stream.readLong();
-			end = stream.readLong();
-			data = stream.readBytesWithLength();
-		}
-
-		@Override
-		public void write(StateOutputStream stream) throws IOException {
-	    	stream.writeVersion(STATE_VERSION);
-			stream.writeLong(start);
-			stream.writeLong(end);
-			stream.writeBytesWithLength(data);
-		}
-
-		@Override
-		public String toString() {
-			return String.format("Block 0x%X-0x%X(length=0x%X)", start, end, getLength());
-		}
-	}
-
 	public WriteCacheVirtualFile(Logger log, IVirtualFile vFile) {
-		super(vFile);
-		this.log = log;
+		super(log, vFile);
+
+		if (log.isTraceEnabled()) {
+			log.trace(String.format("Creating WriteCacheVirtualFile 0x%X, vFile=%s", hashCode(), vFile));
+		}
 	}
 
 	public WriteCacheVirtualFile(Logger log, IVirtualFile vFile, boolean compareAtWrite) {
-		super(vFile);
-		this.log = log;
+		super(log, vFile);
 
 		this.compareAtWrite = compareAtWrite;
 	}
 
-	private void mergeBlocks(Block block1, Block block2) {
-		long mergedStart = Math.min(block1.start, block2.start);
-		long mergedEnd = Math.max(block1.end, block2.end);
-
-		byte[] mergedData = new byte[(int) (mergedEnd - mergedStart)];
-		System.arraycopy(block1.data, 0, mergedData, (int) (block1.start - mergedStart), block1.getLength());
-		System.arraycopy(block2.data, 0, mergedData, (int) (block2.start - mergedStart), block2.getLength());
-
-		Block mergedBlock = new Block(mergedStart, mergedEnd, mergedData);
-
-		blocks.remove(block1);
-		blocks.remove(block2);
-		blocks.add(mergedBlock);
-	}
-
-	private void addBlock(Block blockToBeAdded) {
-		if (blockToBeAdded.getLength() <= 0) {
-			return;
-		}
-
-		for (Block block : blocks) {
-			if (block.isFollowing(blockToBeAdded) || blockToBeAdded.isFollowing(block)) {
-				mergeBlocks(block, blockToBeAdded);
-				return;
-			}
-
-			if (block.isAfter(blockToBeAdded)) {
-				break;
-			}
-
-			if (block.isOverlapping(blockToBeAdded)) {
-				mergeBlocks(block, blockToBeAdded);
-				return;
-			}
-		}
-
-		blocks.add(blockToBeAdded);
-	}
-
 	@Override
-	public int ioRead(TPointer outputPointer, int outputLength) {
+	public synchronized int ioRead(TPointer outputPointer, int outputLength) {
 		if (log.isTraceEnabled()) {
 			log.trace(String.format("ioRead position=0x%X, length=0x%X", vFile.getPosition(), outputLength));
 		}
@@ -206,6 +82,10 @@ public class WriteCacheVirtualFile extends AbstractProxyVirtualFile implements I
 			} else if (block.isAfter(position)) {
 				break;
 			}
+
+			if (outputLength == 0) {
+				break;
+			}
 		}
 
 		if (outputLength > 0) {
@@ -220,7 +100,7 @@ public class WriteCacheVirtualFile extends AbstractProxyVirtualFile implements I
 	}
 
 	@Override
-	public int ioRead(byte[] outputBuffer, int outputOffset, int outputLength) {
+	public synchronized int ioRead(byte[] outputBuffer, int outputOffset, int outputLength) {
 		if (log.isTraceEnabled()) {
 			log.trace(String.format("ioRead position=0x%X, length=0x%X", vFile.getPosition(), outputLength));
 		}
@@ -237,7 +117,7 @@ public class WriteCacheVirtualFile extends AbstractProxyVirtualFile implements I
 				int length = Math.min(outputLength, (int) (block.start - position));
 				int readLength = vFile.ioRead(outputBuffer, outputOffset, length);
 				if (readLength < 0) {
-					return IO_ERROR;
+					return readLength;
 				}
 				outputOffset += readLength;
 				outputLength -= readLength;
@@ -256,6 +136,10 @@ public class WriteCacheVirtualFile extends AbstractProxyVirtualFile implements I
 			} else if (block.isAfter(position)) {
 				break;
 			}
+
+			if (outputLength == 0) {
+				break;
+			}
 		}
 
 		if (outputLength > 0) {
@@ -270,7 +154,7 @@ public class WriteCacheVirtualFile extends AbstractProxyVirtualFile implements I
 	}
 
 	@Override
-	public int ioWrite(TPointer inputPointer, int inputLength) {
+	public synchronized int ioWrite(TPointer inputPointer, int inputLength) {
 		long position = vFile.getPosition();
 		byte[] data = inputPointer.getArray8(inputLength);
 
@@ -300,7 +184,7 @@ public class WriteCacheVirtualFile extends AbstractProxyVirtualFile implements I
 	}
 
 	@Override
-	public int ioWrite(byte[] inputBuffer, int inputOffset, int inputLength) {
+	public synchronized int ioWrite(byte[] inputBuffer, int inputOffset, int inputLength) {
 		long position = vFile.getPosition();
 
 		if (log.isTraceEnabled()) {
@@ -330,36 +214,33 @@ public class WriteCacheVirtualFile extends AbstractProxyVirtualFile implements I
 		return inputLength;
 	}
 
-	@Override
-	public void flushCachedData() {
-		while (!blocks.isEmpty()) {
-			Block block = blocks.first();
-			blocks.remove(block);
-
+	private void writeBlocks() {
+		for (Block block : blocks) {
 			if (log.isTraceEnabled()) {
 				log.trace(String.format("WriteCacheVirtualFile.flushCachedData %s", block));
 			}
 
-			int length = block.ioWrite(vFile);
-			if (length < 0) {
-				log.error(String.format("WriteCacheVirtualFile.flushCachedData failed 0x%08X for %s", length, block));
+			int result = block.ioWrite(vFile);
+			if (result < 0) {
+				log.error(String.format("WriteCacheVirtualFile.flushCachedData failed 0x%08X for %s", result, block));
 			}
 		}
+	}
 
+	@Override
+	public synchronized void flushCachedData() {
 		super.flushCachedData();
+
+		// Write the pending blocks after rebuilding the fat,
+		// so that any blocks related to file contents are written
+		// to the correct files.
+		writeBlocks();
 	}
 
 	@Override
 	public void read(StateInputStream stream) throws IOException {
     	stream.readVersion(STATE_VERSION);
     	compareAtWrite = stream.readBoolean();
-    	int numberBlocks = stream.readInt();
-    	blocks.clear();
-    	for (int i = 0; i < numberBlocks; i++) {
-    		Block block = new Block();
-    		block.read(stream);
-    		blocks.add(block);
-    	}
 
     	super.read(stream);
 	}
@@ -368,11 +249,6 @@ public class WriteCacheVirtualFile extends AbstractProxyVirtualFile implements I
 	public void write(StateOutputStream stream) throws IOException {
     	stream.writeVersion(STATE_VERSION);
     	stream.writeBoolean(compareAtWrite);
-    	int numberBlocks = blocks.size();
-    	stream.writeInt(numberBlocks);
-    	for (Block block : blocks) {
-    		block.write(stream);
-    	}
 
     	super.write(stream);
 	}

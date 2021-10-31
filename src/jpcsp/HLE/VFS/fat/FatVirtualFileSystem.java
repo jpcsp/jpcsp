@@ -328,7 +328,7 @@ public class FatVirtualFileSystem extends AbstractVirtualFileSystem implements I
 		return clusters;
 	}
 
-	private FatFileInfo[] getDirectoryEntries(int clusterNumber) {
+	public FatFileInfo[] getDirectoryEntries(int clusterNumber) {
 		FatFileInfo[] entries = null;
 		byte[] lfn = null;
 		boolean end = false;
@@ -366,6 +366,7 @@ public class FatVirtualFileSystem extends AbstractVirtualFileSystem implements I
 
 						// Ignore "." and ".." entries
 						if (!".".equals(entryName) && !"..".equals(entryName)) {
+							String fileName83 = new String(currentSector, offset + 0, 8 + 3);
 							int fileAttributes = readSectorInt8(currentSector, offset + 11);
 							int entryClusterNumber = readSectorInt16(currentSector, offset + 20) << 16;
 							entryClusterNumber |= readSectorInt16(currentSector, offset + 26);
@@ -380,6 +381,7 @@ public class FatVirtualFileSystem extends AbstractVirtualFileSystem implements I
 							fatFileInfo.setDirectory((fileAttributes & 0x10) != 0);
 							fatFileInfo.setFileSize(fileSize);
 							fatFileInfo.setLastModified(lastModified);
+							fatFileInfo.setFileName83(fileName83);
 							if (entryClusterNumber != 0) {
 								fatFileInfo.setClusters(getClusters(entryClusterNumber));
 							}
@@ -559,7 +561,9 @@ public class FatVirtualFileSystem extends AbstractVirtualFileSystem implements I
 
     @Override
 	public void flushCachedData() {
-    	// Nothing to do
+		if (vFile instanceof IVirtualCache) {
+			((IVirtualCache) vFile).flushCachedData();
+		}
 	}
 
     @Override
@@ -568,6 +572,14 @@ public class FatVirtualFileSystem extends AbstractVirtualFileSystem implements I
 			((IVirtualCache) vFile).closeCachedFiles();
 		}
 	}
+
+    public int[] getFatClusterMap() {
+    	return fatClusterMap;
+    }
+
+    public int getRootDirectoryClusterNumber() {
+    	return rootDirectoryClusterNumber;
+    }
 
     @Override
 	public String toString() {

@@ -96,6 +96,6 @@ public class SceIoStat extends pspAbstractMemoryMappedStructure {
 
 	@Override
 	public String toString() {
-		return String.format("SceIoStat[mode=0x%X, attr=0x%X, size=%d, ctime=%s, atime=%s, mtime=%s]", mode, attr, size, ctime, atime, mtime);
+		return String.format("SceIoStat[mode=0x%X, attr=0x%X, size=0x%X, ctime=%s, atime=%s, mtime=%s]", mode, attr, size, ctime, atime, mtime);
 	}
 }
