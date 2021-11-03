@@ -21,6 +21,7 @@ import static jpcsp.util.Utilities.readUnaligned32;
 import org.apache.log4j.Logger;
 
 import jpcsp.HLE.BufferInfo;
+import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.BufferInfo.LengthInfo;
 import jpcsp.HLE.BufferInfo.Usage;
 import jpcsp.HLE.HLEFunction;
@@ -100,6 +101,18 @@ public class sceMesgd extends HLEModule {
     @HLEUnimplemented
     @HLEFunction(nid = 0x7A0E484C, version = 150)
     public int sceWmd_driver_7A0E484C(@BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.inout) TPointer buffer, int bufferSize, @BufferInfo(usage=Usage.out) TPointer32 resultSizeAddr) {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x7A0E484C, version = 150)
+    public int sceMesgIns_driver_D062B635(@BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.inout) TPointer data, int dataLength, @CanBeNull @BufferInfo(lengthInfo = LengthInfo.fixedLength, length = 16, usage=Usage.in) TPointer key) {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x7A0E484C, version = 150)
+    public int sceMesgIns_driver_4A03F940(@BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.inout) TPointer data, int dataLength, @CanBeNull @BufferInfo(lengthInfo = LengthInfo.fixedLength, length = 16, usage=Usage.in) TPointer key) {
     	return 0;
     }
 }
