@@ -51,6 +51,7 @@ public class MMIOHandlerUmd extends MMIOHandlerBase {
 	protected final int transferSizes[] = new int[10];
 	private static final int QTGP2[] = { 0x12, 0x34, 0x56, 0x78, 0x9A, 0xBC, 0xDE, 0xF0 };
 	private static final int QTGP3[] = { 0x0F, 0xED, 0xCB, 0xA9, 0x87, 0x65, 0x43, 0x21, 0x12, 0x34, 0x56, 0x78, 0x9A, 0xBC, 0xDE, 0xF0 };
+	private String umdFileName;
 	private UmdIsoReaderVirtualFile vFile;
     public static final int regionCodes[] = {
     		0xFFFFFFFF, 0x80000001,
@@ -94,7 +95,10 @@ public class MMIOHandlerUmd extends MMIOHandlerBase {
 		totalTransferLength = stream.readInt();
 		stream.readInts(transferAddresses);
 		stream.readInts(transferSizes);
+		umdFileName = stream.readString();
 		super.read(stream);
+
+		switchUmd(umdFileName);
 	}
 
 	@Override
@@ -107,6 +111,7 @@ public class MMIOHandlerUmd extends MMIOHandlerBase {
 		stream.writeInt(totalTransferLength);
 		stream.writeInts(transferAddresses);
 		stream.writeInts(transferSizes);
+		stream.writeString(umdFileName);
 		super.write(stream);
 	}
 
@@ -132,6 +137,7 @@ public class MMIOHandlerUmd extends MMIOHandlerBase {
 	}
 
 	private void closeFile() {
+		umdFileName = null;
 		if (vFile != null) {
 			vFile.ioClose();
 			vFile = null;
@@ -146,9 +152,13 @@ public class MMIOHandlerUmd extends MMIOHandlerBase {
 	public void switchUmd(String fileName) throws IOException {
 		closeFile();
 
-		log.info(String.format("Using UMD '%s'", fileName));
+		if (fileName != null) {
+			log.info(String.format("Using UMD '%s'", fileName));
 
-		vFile = new UmdIsoReaderVirtualFile(fileName);
+			umdFileName = fileName;
+			vFile = new UmdIsoReaderVirtualFile(fileName);
+		}
+
 		updateUmd();
 	}
 
