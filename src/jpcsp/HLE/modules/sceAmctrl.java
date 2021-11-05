@@ -95,7 +95,7 @@ public class sceAmctrl extends HLEModule {
 
     	byte[] keyBytes = null;
     	if (key.isNotNull()) {
-    		keyBytes = data.getArray8(16);
+    		keyBytes = key.getArray8(16);
     	}
 
     	int result = crypto.getAMCTRLEngine().hleDrmBBCipherInit(ctx, encMode, genMode, dataBytes, keyBytes);
