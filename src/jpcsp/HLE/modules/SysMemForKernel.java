@@ -73,6 +73,7 @@ public class SysMemForKernel extends HLEModule {
     private String npEnv;
     private int dnas;
     private SysMemInfo gameInfoMem;
+    private TPointer gameInfoPtr;
     private SceKernelGameInfo gameInfo;
     private SysMemInfo dummyControlBlock;
     private int uidHeap;
@@ -427,7 +428,7 @@ public class SysMemForKernel extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x807179E7, version = 150)
-    public int sceKernelSetParamSfo(PspString discId, int unknown1, int unknown2, PspString unknown3, int unknown4, int unknown5, PspString pspVersion) {
+    public int sceKernelSetParamSfo(@CanBeNull PspString discId, int unknown1, @CanBeNull PspString unknown2, @CanBeNull PspString unknown3, int unknown4, int unknown5, @CanBeNull PspString pspVersion) {
     	return 0;
     }
 
@@ -451,11 +452,16 @@ public class SysMemForKernel extends HLEModule {
     	// Has no parameters
     	if (gameInfoMem == null) {
     		gameInfoMem = Modules.SysMemUserForUserModule.malloc(SysMemUserForUser.KERNEL_PARTITION_ID, "SceKernelGameInfo", SysMemUserForUser.PSP_SMEM_Low, SceKernelGameInfo.SIZEOF, 0);
+    		gameInfoPtr = new TPointer(Memory.getInstance(), gameInfoMem.addr);
+    		gameInfoPtr.setValue32(0, SceKernelGameInfo.SIZEOF);
     	}
     	gameInfo.gameId = State.discId;
     	gameInfo.sdkVersion = Modules.SysMemUserForUserModule.hleKernelGetCompiledSdkVersion();
     	gameInfo.compilerVersion = Modules.SysMemUserForUserModule.hleKernelGetCompilerVersion();
-    	gameInfo.write(Memory.getInstance(), gameInfoMem.addr);
+    	gameInfo.str88 = "6.61";
+    	gameInfo.str180 = "";
+    	gameInfo.str196 = "00.00";
+    	gameInfo.write(gameInfoPtr);
 
     	return gameInfoMem.addr;
     }
@@ -476,6 +482,15 @@ public class SysMemForKernel extends HLEModule {
 
         return 0;
     }
+
+	@HLEFunction(nid = 0x181065AB, version = 660)
+    public int sceKernelMemcpy(@BufferInfo(lengthInfo=LengthInfo.nextNextParameter, usage=Usage.out) TPointer dst, @BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.in) TPointer src, int length) {
+    	if (dst.getAddress() != src.getAddress()) {
+    		dst.getMemory().memcpyWithVideoCheck(dst.getAddress(), src.getAddress(), length);
+    	}
+
+		return dst.getAddress();
+	}
 
 	@HLEUnimplemented
 	@HLEFunction(nid = 0xE860BE8F, version = 150)
