@@ -431,10 +431,6 @@ public class AMCTRL {
         return 0;
     }
 
-    public int hleDrmBBCipherInit(BBCipher_Ctx ctx, int encMode, int genMode, byte[] data, byte[] key) {
-    	return hleDrmBBCipherInit(ctx, encMode, genMode, data, key, 0);
-    }
-
     public int hleDrmBBCipherInit(BBCipher_Ctx ctx, int encMode, int genMode, byte[] data, byte[] key, int seed) {
         // If the key is not a 16-byte key, return an error.
         if (key.length < 0x10) {
@@ -443,10 +439,11 @@ public class AMCTRL {
 
         // Set the mode and the unknown parameters.
         ctx.mode = encMode;
-        ctx.seed = seed + 0x1;
 
         // Key generator mode 0x1 (encryption): use an encrypted pseudo random number before XORing the data with the given key.
         if (genMode == 0x1) {
+            ctx.seed = 0x1;
+
             byte[] header = new byte[0x24];
             byte[] rseed = new byte[0x14];
 
@@ -484,6 +481,7 @@ public class AMCTRL {
                 }
             }
         } else if (genMode == 0x2) { // Key generator mode 0x02 (decryption): directly XOR the data with the given key.
+            ctx.seed = seed + 0x1;
             // Grab the data hash (first 16-bytes).
             System.arraycopy(data, 0, ctx.buf, 0, 0x10);
             // If the key is not null, XOR the hash with it.

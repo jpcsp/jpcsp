@@ -84,7 +84,7 @@ public class sceAmctrl extends HLEModule {
     }
 
     @HLEFunction(nid = 0x1CCB66D2, version = 150)
-    public int sceDrmBBCipherInit(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=24, usage=Usage.inout) TPointer ctxAddr, int encMode, int genMode, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=16, usage=Usage.inout) TPointer data, @CanBeNull @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=16, usage=Usage.in) TPointer key) {
+    public int sceDrmBBCipherInit(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=24, usage=Usage.inout) TPointer ctxAddr, int encMode, int genMode, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=16, usage=Usage.inout) TPointer data, @CanBeNull @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=16, usage=Usage.in) TPointer key, int seed) {
     	AMCTRL.BBCipher_Ctx ctx = new AMCTRL.BBCipher_Ctx();
     	ctx.read(ctxAddr);
 
@@ -98,7 +98,7 @@ public class sceAmctrl extends HLEModule {
     		keyBytes = key.getArray8(16);
     	}
 
-    	int result = crypto.getAMCTRLEngine().hleDrmBBCipherInit(ctx, encMode, genMode, dataBytes, keyBytes);
+    	int result = crypto.getAMCTRLEngine().hleDrmBBCipherInit(ctx, encMode, genMode, dataBytes, keyBytes, seed);
 
     	data.setArray(dataBytes);
 

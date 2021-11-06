@@ -109,7 +109,7 @@ public class PBPFileSectorDevice extends AbstractFileSectorDevice implements IBr
 		        byte[] cipherData = new byte[0x60];
 		        System.arraycopy(header, 0x40, cipherData, 0, cipherData.length);
 		        System.arraycopy(header, 0xA0, hkey, 0, hkey.length);
-		        amctrl.hleDrmBBCipherInit(cipherContext, 1, 2, hkey, vkey);
+		        amctrl.hleDrmBBCipherInit(cipherContext, 1, 2, hkey, vkey, 0);
 		        amctrl.hleDrmBBCipherUpdate(cipherContext, cipherData, cipherData.length);
 		        amctrl.hleDrmBBCipherFinal(cipherContext);
 
