@@ -964,6 +964,7 @@ public class sceDisplay extends HLEModule {
         reDisplay = null;
         startModules = false;
         isStarted = false;
+        VideoEngineUtilities.stop();
 
         super.stop();
     }

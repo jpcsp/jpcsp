@@ -90,6 +90,11 @@ public class VideoEngineUtilities {
         }
     }
 
+    public static void stop() {
+    	drawBuffer = 0;
+    	geTextureId = 0;
+    }
+
     public static int getPixelFormatBytes(int pixelformat) {
         return IRenderingEngine.sizeOfTextureType[pixelformat];
     }
