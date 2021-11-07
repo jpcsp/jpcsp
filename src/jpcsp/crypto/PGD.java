@@ -27,9 +27,9 @@ public class PGD {
     }
 
     // Plain PGD handling functions.
-    public byte[] DecryptPGD(byte[] inbuf, int size, byte[] key, int seed) {
+    public byte[] DecryptPGD(byte[] inbuf, int size, byte[] key, int seed, int headerMode) {
         // Setup the crypto and keygen modes and initialize both context structs.
-        int sdEncMode = 1;
+        int sdEncMode = headerMode == 1 ? 1 : 2;
         int sdGenMode = 2;
         pgdMacContext = new AMCTRL.BBMac_Ctx();
         pgdCipherContext = new AMCTRL.BBCipher_Ctx();

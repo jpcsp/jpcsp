@@ -17,6 +17,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE.VFS.crypto;
 
 import static jpcsp.crypto.PGD.PGD_MAGIC;
+import static jpcsp.util.Utilities.readUnaligned32;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -41,6 +42,7 @@ public class PGDBlockVirtualFile extends AbstractProxyVirtualFile {
 	private byte[] header;
 	private PGD pgd;
 	private boolean sequentialRead;
+	private int headerMode;
 
 	public PGDBlockVirtualFile(IVirtualFile pgdFile, byte[] key, int dataOffset) {
 		super(pgdFile);
@@ -66,7 +68,7 @@ public class PGDBlockVirtualFile extends AbstractProxyVirtualFile {
 		super.ioRead(inBuf, 0, pgdHeaderSize);
 
 		// Check if the "PGD" header is present
-		int magic = Utilities.readUnaligned32(inBuf, 0);
+		int magic = readUnaligned32(inBuf, 0);
         if (magic != PGD_MAGIC) {
             // No "PGD" found in the header,
             log.warn(String.format("No PGD header detected 0x%08X ('%c%c%c%c') detected in file '%s'", magic, (char) inBuf[0], (char) inBuf[1], (char) inBuf[2], (char) inBuf[3], vFile));
@@ -81,7 +83,12 @@ public class PGDBlockVirtualFile extends AbstractProxyVirtualFile {
         if (key == null) {
         	key = pgd.GetEDATPGDKey(inBuf, pgdHeaderSize);
         }
-        header = pgd.DecryptPGD(headerBuf, headerBuf.length, key, 0);
+        int unknown = readUnaligned32(inBuf, 4);
+        if (unknown != 1) {
+        	log.error(String.format("Unimplemented PGD unknown=0x%X", unknown));
+        }
+        headerMode = readUnaligned32(inBuf, 8);
+        header = pgd.DecryptPGD(headerBuf, headerBuf.length, key, 0, headerMode);
 
         // Extract the decryption parameters.
         IntBuffer decryptedHeader = ByteBuffer.wrap(header).order(ByteOrder.LITTLE_ENDIAN).asIntBuffer();
@@ -138,7 +145,7 @@ public class PGDBlockVirtualFile extends AbstractProxyVirtualFile {
         	decryptedBytes = pgd.UpdatePGDCipher(buffer, readLength + 0x10);
         } else {
         	pgd.FinishPGDCipher();
-        	decryptedBytes = pgd.DecryptPGD(buffer, readLength + 0x10, key, seed);
+        	decryptedBytes = pgd.DecryptPGD(buffer, readLength + 0x10, key, seed, headerMode);
         	sequentialRead = true;
         }
         int length = Math.min(outputLength, decryptedBytes.length);
