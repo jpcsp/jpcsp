@@ -29,6 +29,7 @@ import static jpcsp.crypto.KIRK.PSP_KIRK_CMD_ECDSA_SIGN;
 import static jpcsp.crypto.KIRK.PSP_KIRK_CMD_ECDSA_VERIFY;
 import static jpcsp.crypto.KIRK.PSP_KIRK_CMD_ENCRYPT;
 import static jpcsp.crypto.KIRK.PSP_KIRK_CMD_ENCRYPT_FUSE;
+import static jpcsp.crypto.KIRK.PSP_KIRK_CMD_ENCRYPT_SIGN;
 import static jpcsp.crypto.KIRK.PSP_KIRK_CMD_INIT;
 import static jpcsp.crypto.KIRK.PSP_KIRK_CMD_PRIV_SIG_CHECK;
 import static jpcsp.crypto.KIRK.PSP_KIRK_CMD_PRNG;
@@ -51,12 +52,14 @@ import jpcsp.HLE.TPointer;
 import jpcsp.HLE.kernel.types.IAction;
 import jpcsp.HLE.modules.sceSysreg;
 import jpcsp.HLE.modules.semaphore;
+import jpcsp.crypto.KIRK;
 import jpcsp.hardware.Model;
 import jpcsp.scheduler.Scheduler;
 import jpcsp.settings.Settings;
 import jpcsp.state.StateInputStream;
 import jpcsp.state.StateOutputStream;
 import jpcsp.util.Utilities;
+import libkirk.KirkEngine;
 
 public class MMIOHandlerKirk extends MMIOHandlerBase {
 	private static Logger log = semaphore.log;
@@ -408,14 +411,14 @@ public class MMIOHandlerKirk extends MMIOHandlerBase {
 				// AES128_CMAC_Header
 				dataSize = inAddr.getValue32(112);
 				dataOffset = inAddr.getValue32(116);
-				inSize = 144 + alignUp(dataSize, 15) + dataOffset;
-				outSize = Utilities.alignUp(dataSize, 15);
+				inSize = KirkEngine.KIRK_CMD1_HEADER.SIZEOF + alignUp(dataSize, 15) + dataOffset;
+				outSize = alignUp(dataSize, 15);
 				break;
 			case PSP_KIRK_CMD_PRIV_SIG_CHECK:
 				// AES128_CMAC_Header
 				dataSize = inAddr.getValue32(112);
 				dataOffset = inAddr.getValue32(116);
-				inSize = 144 + alignUp(dataSize, 15) + dataOffset;
+				inSize = KirkEngine.KIRK_CMD1_HEADER.SIZEOF + alignUp(dataSize, 15) + dataOffset;
 				outSize = 0;
 				break;
 			case PSP_KIRK_CMD_SHA1_HASH:
@@ -453,9 +456,19 @@ public class MMIOHandlerKirk extends MMIOHandlerBase {
             	inSize = 0xB8;
             	outSize = 0;
             	break;
+            case PSP_KIRK_CMD_ENCRYPT_SIGN:
+				// AES128_CMAC_Header
+				dataSize = inAddr.getValue32(112);
+				dataOffset = inAddr.getValue32(116);
+				inSize = KirkEngine.KIRK_CMD1_HEADER.SIZEOF + alignUp(dataSize, 15) + dataOffset;
+				outSize = inSize;
+            	break;
             case PSP_KIRK_CMD_DECRYPT_SIGN:
-            	inSize = 0x200;
-            	outSize = 0x200;
+				// AES128_CMAC_Header
+				dataSize = inAddr.getValue32(112);
+				dataOffset = inAddr.getValue32(116);
+				inSize = KirkEngine.KIRK_CMD1_HEADER.SIZEOF + alignUp(dataSize, 15) + dataOffset;
+				outSize = alignUp(dataSize, 15);
             	break;
 			default:
 				log.error(String.format("MMIOHandlerKirk.hleUtilsBufferCopyWithRange unimplemented KIRK command 0x%X", command));

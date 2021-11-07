@@ -42,6 +42,7 @@
 package libkirk;
 
 import static jpcsp.util.Utilities.endianSwap64;
+import static jpcsp.util.Utilities.getMemoryDump;
 import static libkirk.AES.AES_CMAC;
 import static libkirk.AES.AES_cbc_decrypt;
 import static libkirk.AES.AES_cbc_encrypt;
@@ -104,8 +105,8 @@ public class KirkEngine {
 	//mode passed to sceUtilsBufferCopyWithRange
 	public static final int KIRK_CMD_ENCRYPT_PRIVATE      = 0;
 	public static final int KIRK_CMD_DECRYPT_PRIVATE      = 1;
-	public static final int KIRK_CMD_2                    = 2;
-	public static final int KIRK_CMD_3                    = 3;
+	public static final int KIRK_CMD_ENCRYPT_SIGN         = 2;
+	public static final int KIRK_CMD_DECRYPT_SIGN         = 3;
 	public static final int KIRK_CMD_ENCRYPT_IV_0         = 4;
 	public static final int KIRK_CMD_ENCRYPT_IV_FUSE      = 5;
 	public static final int KIRK_CMD_ENCRYPT_IV_USER      = 6;
@@ -758,6 +759,76 @@ public class KirkEngine {
 		return KIRK_OPERATION_SUCCESS;
 	}
 
+	public static int kirk_CMD2(byte[] outbuff, byte[] inbuff, int size) {
+		return kirk_CMD2(outbuff, 0, inbuff, 0, size);
+	}
+
+	public static int kirk_CMD2(byte[] outbuff, int outoffset, byte[] inbuff, int inoffset, int size) {
+		KIRK_CMD1_HEADER header = new KIRK_CMD1_HEADER(inbuff, inoffset);
+
+		if (!is_kirk_initialized) {
+			return KIRK_NOT_INITIALIZED;
+		}
+		if (!(header.mode == KIRK_MODE_CMD1 || header.mode == KIRK_MODE_CMD2 || header.mode == KIRK_MODE_CMD3)) {
+			return KIRK_INVALID_MODE;
+		}
+		if (header.data_size == 0) {
+			return KIRK_DATA_SIZE_ZERO;
+		}
+
+		log.warn(String.format("Kirk unimplemented cmd=0x%X(KIRK_CMD_ENCRYPT_SIGN) %s: %s", KIRK_CMD_ENCRYPT_SIGN, header, getMemoryDump(inbuff, inoffset + KIRK_CMD1_HEADER.SIZEOF + header.data_offset, header.data_size)));
+
+		int ret = kirk_CMD10(inbuff, inoffset, size);
+		if (ret != KIRK_OPERATION_SUCCESS) {
+			if (log.isDebugEnabled()) {
+				log.debug(String.format("Kirk KIRK_CMD_ENCRYPT_SIGN ignoring that CMAC hashes were not matching (ret=0x%X)", ret));
+			}
+		}
+
+        // The header is kept in the output and the header.mode is updated from
+        // KIRK_MODE_CMD2 to KIRK_MODE_CMD3.
+		header.mode = KIRK_MODE_CMD3;
+		header.write(outbuff, outoffset);
+
+		// Not implemented, return the input data unchanged.
+		memcpy(outbuff, outoffset + KIRK_CMD1_HEADER.SIZEOF + header.data_offset, inbuff, inoffset + KIRK_CMD1_HEADER.SIZEOF + header.data_offset, header.data_size);
+
+		return KIRK_OPERATION_SUCCESS;
+	}
+
+	public static int kirk_CMD3(byte[] outbuff, byte[] inbuff, int size) {
+		return kirk_CMD3(outbuff, 0, inbuff, 0, size);
+	}
+
+	public static int kirk_CMD3(byte[] outbuff, int outoffset, byte[] inbuff, int inoffset, int size) {
+		KIRK_CMD1_HEADER header = new KIRK_CMD1_HEADER(inbuff, inoffset);
+
+		if (!is_kirk_initialized) {
+			return KIRK_NOT_INITIALIZED;
+		}
+		if (!(header.mode == KIRK_MODE_CMD1 || header.mode == KIRK_MODE_CMD2 || header.mode == KIRK_MODE_CMD3)) {
+			return KIRK_INVALID_MODE;
+		}
+		if (header.data_size == 0) {
+			return KIRK_DATA_SIZE_ZERO;
+		}
+
+		log.warn(String.format("Kirk unimplemented cmd=0x%X(KIRK_CMD_DECRYPT_SIGN) %s: %s", KIRK_CMD_DECRYPT_SIGN, header, getMemoryDump(inbuff, inoffset + KIRK_CMD1_HEADER.SIZEOF + header.data_offset, header.data_size)));
+
+		int ret = kirk_CMD10(inbuff, inoffset, size);
+		if (ret != KIRK_OPERATION_SUCCESS) {
+			if (log.isDebugEnabled()) {
+				log.debug(String.format("Kirk KIRK_CMD_DECRYPT_SIGN ignoring that CMAC hashes were not matching (ret=0x%X)", ret));
+			}
+		}
+
+		// The output is only containing the decrypted data, there is no header.
+		// Not implemented, return the input data unchanged.
+		memcpy(outbuff, outoffset, inbuff, inoffset + KIRK_CMD1_HEADER.SIZEOF + header.data_offset, header.data_size);
+
+		return KIRK_OPERATION_SUCCESS;
+	}
+
 	public static int kirk_CMD4(byte[] outbuff, byte[] inbuff, int size) {
 		return kirk_CMD4(outbuff, 0, inbuff, 0, size);
 	}
@@ -935,7 +1006,7 @@ public class KirkEngine {
 		    AES_set_key(cmac_key, keys.CMAC, 128);
 		    AES_CMAC(cmac_key, inbuff, inoffset + 0x60, 0x30, cmac_header_hash);
 
-		    //Make sure data is 16 aligned
+		    // Make sure data is 16 aligned
 		    int chk_size = alignUp(header.data_size, 15);
 		    AES_CMAC(cmac_key, inbuff, inoffset + 0x60, 0x30 + chk_size + header.data_offset, cmac_data_hash);
 
@@ -947,6 +1018,8 @@ public class KirkEngine {
 		    }
 
 		    return KIRK_OPERATION_SUCCESS;
+	  	} else {
+	  		log.warn(String.format("KIRK_MODE_CMD%d not implemented: %s", header.mode, header));
 	  	}
 		return KIRK_SIG_CHECK_INVALID; //Checks for cmd 2 & 3 not included right now
 	}
@@ -1321,6 +1394,8 @@ public class KirkEngine {
 		switch (cmd) {
 			case KIRK_CMD_ENCRYPT_PRIVATE:      return kirk_CMD0 (outbuff, outoffset, inbuff, inoffset, insize, true);
 			case KIRK_CMD_DECRYPT_PRIVATE:      return kirk_CMD1 (outbuff, outoffset, inbuff, inoffset, insize);
+			case KIRK_CMD_ENCRYPT_SIGN:         return kirk_CMD2 (outbuff, outoffset, inbuff, inoffset, insize);
+			case KIRK_CMD_DECRYPT_SIGN:         return kirk_CMD3 (outbuff, outoffset, inbuff, inoffset, insize);
 			case KIRK_CMD_ENCRYPT_IV_0:         return kirk_CMD4 (outbuff, outoffset, inbuff, inoffset, insize);
 			case KIRK_CMD_ENCRYPT_IV_FUSE:      return kirk_CMD5 (outbuff, outoffset, inbuff, inoffset, insize);
 			case KIRK_CMD_DECRYPT_IV_0:         return kirk_CMD7 (outbuff, outoffset, inbuff, inoffset, insize);

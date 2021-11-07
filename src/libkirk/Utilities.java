@@ -176,7 +176,7 @@ public class Utilities {
 
     	StringBuilder s = new StringBuilder();
     	s.append('{');
-    	if (isZero(a, offset, length)) {
+    	if (length > 0 && isZero(a, offset, length)) {
     		// If the array is containing only 0's, return a more compact display: "N x 0x00"
     		s.append(String.format("%d x 0x%02X", length, u8(a, offset)));
     	} else {
