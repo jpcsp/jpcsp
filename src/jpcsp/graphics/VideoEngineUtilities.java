@@ -598,7 +598,7 @@ public class VideoEngineUtilities {
 				XVisualInfo visualInfo = GLX.glXChooseVisual(displayWindow, screen, new int[] { 0 });
 				currentContext = GLX.glXGetCurrentContext();
 				if (log.isDebugEnabled()) {
-					log.debug(String.format("glxCurrentContext=0x%X", currentContext));
+					log.debug(String.format("glxCurrentContext=0x%X, XVisualInfo=%s", currentContext, visualInfo));
 				}
 				newContext = GLX.glXCreateContext(displayWindow, visualInfo, currentContext, true);
 				if (log.isDebugEnabled()) {
