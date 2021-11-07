@@ -20,6 +20,7 @@ import static jpcsp.Allegrex.Common._a0;
 import static jpcsp.Allegrex.Common._a1;
 import static jpcsp.Allegrex.Common._ra;
 import static jpcsp.Allegrex.Common._sp;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_ERRNO_DEVICE_NOT_FOUND;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_ERRNO_FILE_NOT_FOUND;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_UNKNOWN_MODULE;
 import static jpcsp.HLE.modules.SysMemUserForUser.KERNEL_PARTITION_ID;
@@ -52,6 +53,7 @@ import jpcsp.MemoryMap;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.VFS.IVirtualFile;
 import jpcsp.HLE.VFS.IVirtualFileSystem;
+import jpcsp.HLE.VFS.crypto.PGDVirtualFile;
 import jpcsp.HLE.kernel.Managers;
 import jpcsp.HLE.kernel.types.IAction;
 import jpcsp.HLE.kernel.types.SceIoStat;
@@ -92,6 +94,7 @@ public class ModuleMgrForUser extends HLEModule {
         public int basePartition;
         public SceKernelThreadInfo thread;
         public ByteBuffer moduleBuffer;
+        public IVirtualFile vFile;
         public int moduleVersion;
         public int moduleElfVersion;
         public boolean isSignChecked;
@@ -491,7 +494,15 @@ public class ModuleMgrForUser extends HLEModule {
         // Load module as ELF
         try {
         	loadModuleContext.moduleBuffer = null;
-        	if (loadModuleContext.buffer != 0) {
+        	if (loadModuleContext.vFile != null) {
+        		IVirtualFile vFile = loadModuleContext.vFile;
+        		int size = (int) (vFile.length() - vFile.getPosition());
+        		byte[] bytes = new byte[size];
+        		result = vFile.ioRead(bytes, 0, size);
+        		if (result >= 0) {
+            		loadModuleContext.moduleBuffer = ByteBuffer.wrap(bytes, 0, result);
+        		}
+        	} else if (loadModuleContext.buffer != 0) {
         		byte[] bytes = new byte[loadModuleContext.bufferSize];
         		IMemoryReader memoryReader = MemoryReader.getMemoryReader(loadModuleContext.buffer, loadModuleContext.bufferSize, 1);
         		for (int i = 0; i < loadModuleContext.bufferSize; i++) {
@@ -1088,7 +1099,7 @@ public class ModuleMgrForUser extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0xFEF27DC1, version = 271, checkInsideInterrupt = true, canModifyCode = true)
-    public int sceKernelLoadModuleDNAS(PspString path, TPointer key, int unknown, @CanBeNull TPointer32 optionAddr) {
+    public int sceKernelLoadModuleDNAS(PspString path, @BufferInfo(lengthInfo = LengthInfo.fixedLength, length = 16, usage = Usage.in) TPointer key, int flags, @CanBeNull @BufferInfo(lengthInfo = LengthInfo.variableLength, usage = Usage.in) TPointer optionAddr) {
         SceKernelLMOption lmOption = null;
         if (optionAddr.isNotNull()) {
             lmOption = new SceKernelLMOption();
@@ -1100,16 +1111,25 @@ public class ModuleMgrForUser extends HLEModule {
 
         StringBuilder localFileName = new StringBuilder();
         IVirtualFileSystem vfs = Modules.IoFileMgrForUserModule.getVirtualFileSystem(path.getString(), localFileName);
-        if (vfs != null) {
-        	IVirtualFile vFile = vfs.ioOpen(localFileName.toString(), IoFileMgrForUser.PSP_O_RDONLY, 0);
-        	if (vFile == null) {
-        		return ERROR_ERRNO_FILE_NOT_FOUND;
-        	}
-        } else {
-        	return SceKernelErrors.ERROR_ERRNO_DEVICE_NOT_FOUND;
+        if (vfs == null) {
+        	return ERROR_ERRNO_DEVICE_NOT_FOUND;
         }
 
-        return 0;
+        IVirtualFile vFile = vfs.ioOpen(localFileName.toString(), IoFileMgrForUser.PSP_O_RDONLY, 0);
+    	if (vFile == null) {
+    		return ERROR_ERRNO_FILE_NOT_FOUND;
+    	}
+    	PGDVirtualFile pgdFile = new PGDVirtualFile(key.getArray8(16), vFile);
+
+        LoadModuleContext loadModuleContext = new LoadModuleContext();
+        loadModuleContext.fileName = path.getString();
+        loadModuleContext.vFile = pgdFile;
+        loadModuleContext.flags = flags;
+        loadModuleContext.lmOption = lmOption;
+        loadModuleContext.needModuleInfo = true;
+        loadModuleContext.allocMem = true;
+
+        return hleKernelLoadModule(loadModuleContext);
     }
 
     @HLEFunction(nid = 0xF2D8D1B4, version = 271, canModifyCode = true)
