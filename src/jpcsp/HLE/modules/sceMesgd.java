@@ -105,14 +105,45 @@ public class sceMesgd extends HLEModule {
     }
 
     @HLEUnimplemented
-    @HLEFunction(nid = 0x7A0E484C, version = 150)
+    @HLEFunction(nid = 0xD062B635, version = 150)
     public int sceMesgIns_driver_D062B635(@BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.inout) TPointer data, int dataLength, @CanBeNull @BufferInfo(lengthInfo = LengthInfo.fixedLength, length = 16, usage=Usage.in) TPointer key) {
     	return 0;
     }
 
     @HLEUnimplemented
-    @HLEFunction(nid = 0x7A0E484C, version = 150)
+    @HLEFunction(nid = 0x4A03F940, version = 150)
     public int sceMesgIns_driver_4A03F940(@BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.inout) TPointer data, int dataLength, @CanBeNull @BufferInfo(lengthInfo = LengthInfo.fixedLength, length = 16, usage=Usage.in) TPointer key) {
     	return 0;
+    }
+
+    @HLEFunction(nid = 0xCED2C075, version = 150)
+    public int sceMesgLed_driver_CED2C075(@BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.inout) TPointer buffer, int bufferSize, @BufferInfo(usage=Usage.out) TPointer32 resultSizeAddr, @CanBeNull @BufferInfo(lengthInfo = LengthInfo.fixedLength, length = 16, usage = Usage.in) TPointer key) {
+    	if (log.isTraceEnabled()) {
+    		log.trace(String.format("sceMesgLed_driver_CED2C075 input(size=0x%X): %s", bufferSize, Utilities.getMemoryDump(buffer, bufferSize)));
+    	}
+
+        byte[] byteBuffer = buffer.getArray8(bufferSize);
+        byte[] keyBuffer = null;
+        if (key.isNotNull()) {
+        	keyBuffer = key.getArray8(16);
+        }
+
+        int type = 3;
+        int result = prxEngine.DecryptPRX(byteBuffer, bufferSize, type, null, keyBuffer);
+
+    	int resultSize = 0;
+    	if (result > 0) {
+    		resultSize = result;
+    		result = 0;
+
+    		buffer.setArray(byteBuffer, resultSize);
+    	}
+    	resultSizeAddr.setValue(resultSize);
+
+    	if (log.isTraceEnabled()) {
+    		log.trace(String.format("sceMesgLed_driver_CED2C075 result=0x%X, output(size=0x%X): %s", result, resultSize, Utilities.getMemoryDump(buffer, resultSize)));
+    	}
+
+    	return result;
     }
 }

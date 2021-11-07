@@ -61,6 +61,7 @@ public class PRX {
     public static final int DECRYPT_MODE_MS_UPDATER        = 12;
     public static final int DECRYPT_MODE_DEMO_EXEC         = 13;
     public static final int DECRYPT_MODE_APP_MODULE        = 14;
+    public static final int DECRYPT_MODE_INSTALL_EXEC      = 18;
     public static final int DECRYPT_MODE_POPS_EXEC         = 20;
 
     public PRX() {
@@ -256,6 +257,8 @@ public class PRX {
         new TAG_INFO(0x0B2B91F0, KeyVault.key_9DC14891_2, 0x5C),
         new TAG_INFO(0x0B2B92F0, KeyVault.key_9DC14891_3, 0x5C),
         new TAG_INFO(0x0DAA06F0, KeyVault.key_0DAA06F0, KeyVault.xor_0DAA06F0, 0x65),
+        new TAG_INFO(0x89742B04, KeyVault.key_89742B04, KeyVault.xor_89742B04, 0x65),
+        new TAG_INFO(0xE92408F0, KeyVault.key_E92408F0, KeyVault.xor_E92408F0, 0x65),
     	// 144-bytes keys
         new TAG_INFO(0x00000000, KeyVault.g_key00, 0x42, 0x00),
         new TAG_INFO(0x02000000, KeyVault.key_5C3A61FE, 0x45, 0x00),
@@ -444,8 +447,12 @@ public class PRX {
 
         		type = 2;
         		break;
+        	case DECRYPT_MODE_INSTALL_EXEC:
+        		type = 3;
+        		break;
     		default:
-    			log.error(String.format("DecryptAndUncompressPRX unknown decryptMode=%d", decryptMode));
+    			log.error(String.format("DecryptAndUncompressPRX unknown decryptMode=0x%X", decryptMode));
+        		log.error(String.format("%s", Utilities.getMemoryDump(buf, 0, size)));
     			type = 2;
     			break;
         }
