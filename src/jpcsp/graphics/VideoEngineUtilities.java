@@ -595,7 +595,7 @@ public class VideoEngineUtilities {
 				if (log.isDebugEnabled()) {
 					log.debug(String.format("XDefaultScreen displayWindow=0x%X, screen=%d", displayWindow, screen));
 				}
-				XVisualInfo visualInfo = GLX.glXChooseVisual(displayWindow, screen, new int[] { 0 });
+				XVisualInfo visualInfo = GLX.glXChooseVisual(displayWindow, screen, new int[] { GLX.GLX_RGBA, GLX.GLX_DOUBLEBUFFER, GLX.GLX_RED_SIZE, 8, GLX.GLX_GREEN_SIZE, 8, GLX.GLX_BLUE_SIZE, 8, GLX.GLX_ALPHA_SIZE, 8, GLX.GLX_STENCIL_SIZE, 8, 0 });
 				currentContext = GLX.glXGetCurrentContext();
 				if (log.isDebugEnabled()) {
 					log.debug(String.format("glxCurrentContext=0x%X, XVisualInfo=%s", currentContext, visualInfo));
