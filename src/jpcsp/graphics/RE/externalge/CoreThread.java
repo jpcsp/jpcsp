@@ -76,8 +76,8 @@ public class CoreThread extends Thread {
 			PspGeList list = ExternalGE.getCurrentList();
 
 			if (list == null) {
-				if (!Emulator.pause && log.isDebugEnabled()) {
-					log.debug(String.format("CoreThread no current list available... waiting"));
+				if (!Emulator.pause && log.isTraceEnabled()) {
+					log.trace(String.format("CoreThread no current list available... waiting"));
 				}
 
 				waitForSync(100);

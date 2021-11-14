@@ -52,7 +52,6 @@ import jpcsp.HLE.TPointer;
 import jpcsp.HLE.kernel.types.IAction;
 import jpcsp.HLE.modules.sceSysreg;
 import jpcsp.HLE.modules.semaphore;
-import jpcsp.crypto.KIRK;
 import jpcsp.hardware.Model;
 import jpcsp.scheduler.Scheduler;
 import jpcsp.settings.Settings;
