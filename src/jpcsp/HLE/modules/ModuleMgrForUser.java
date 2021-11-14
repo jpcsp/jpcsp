@@ -98,6 +98,7 @@ public class ModuleMgrForUser extends HLEModule {
         public int moduleVersion;
         public int moduleElfVersion;
         public boolean isSignChecked;
+        public byte[] key;
         public Memory mem;
 
         public LoadModuleContext() {
@@ -360,10 +361,10 @@ public class ModuleMgrForUser extends HLEModule {
         return null;
     }
 
-    public SceModule getModuleInfo(String name, ByteBuffer moduleBuffer, int mpidText, int mpidData, boolean isSignChecked) {
+    public SceModule getModuleInfo(String name, ByteBuffer moduleBuffer, int mpidText, int mpidData, boolean isSignChecked, byte[] key) {
         SceModule module = null;
 		try {
-			module = Loader.getInstance().LoadModule(name, moduleBuffer, new TPointer(getMemory(), MemoryMap.START_USERSPACE), mpidText, mpidData, true, false, true, isSignChecked);
+			module = Loader.getInstance().LoadModule(name, moduleBuffer, new TPointer(getMemory(), MemoryMap.START_USERSPACE), mpidText, mpidData, true, false, true, isSignChecked, key);
 	        moduleBuffer.rewind();
 		} catch (IOException e) {
 			log.error("getModuleRequiredMemorySize", e);
@@ -378,7 +379,7 @@ public class ModuleMgrForUser extends HLEModule {
 
     	ByteBuffer moduleBuffer = getModuleByteBuffer(loadModuleContext);
 
-    	return getModuleInfo(loadModuleContext.fileName, moduleBuffer, mpidText, mpidData, loadModuleContext.isSignChecked);
+    	return getModuleInfo(loadModuleContext.fileName, moduleBuffer, mpidText, mpidData, loadModuleContext.isSignChecked, loadModuleContext.key);
     }
 
     public int getModuleRequiredMemorySize(SceModule module) {
@@ -404,7 +405,7 @@ public class ModuleMgrForUser extends HLEModule {
 	        final int moduleHeaderSize = 256;
 
 	        // Load the module in analyze mode to find out its required memory size
-	        SceModule testModule = getModuleInfo(loadModuleContext.fileName, loadModuleContext.moduleBuffer, mpidText, mpidData, loadModuleContext.isSignChecked);
+	        SceModule testModule = getModuleInfo(loadModuleContext.fileName, loadModuleContext.moduleBuffer, mpidText, mpidData, loadModuleContext.isSignChecked, loadModuleContext.key);
 	        int totalAllocSize = moduleHeaderSize + getModuleRequiredMemorySize(testModule);
 	        if (log.isDebugEnabled()) {
 	        	log.debug(String.format("Module '%s' requires 0x%X bytes memory in partition=%d", loadModuleContext.fileName, totalAllocSize, mpidText));
@@ -457,7 +458,7 @@ public class ModuleMgrForUser extends HLEModule {
     	}
 
         // Load the module
-    	SceModule module = Loader.getInstance().LoadModule(loadModuleContext.fileName, loadModuleContext.moduleBuffer, new TPointer(loadModuleContext.mem, moduleBase), mpidText, mpidData, false, loadModuleContext.allocMem, true, loadModuleContext.isSignChecked);
+    	SceModule module = Loader.getInstance().LoadModule(loadModuleContext.fileName, loadModuleContext.moduleBuffer, new TPointer(loadModuleContext.mem, moduleBase), mpidText, mpidData, false, loadModuleContext.allocMem, true, loadModuleContext.isSignChecked, loadModuleContext.key);
         module.load();
 
     	if ((module.fileFormat & Loader.FORMAT_ELF) != 0) {
@@ -1099,7 +1100,7 @@ public class ModuleMgrForUser extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0xFEF27DC1, version = 271, checkInsideInterrupt = true, canModifyCode = true)
-    public int sceKernelLoadModuleDNAS(PspString path, @BufferInfo(lengthInfo = LengthInfo.fixedLength, length = 16, usage = Usage.in) TPointer key, int flags, @CanBeNull @BufferInfo(lengthInfo = LengthInfo.variableLength, usage = Usage.in) TPointer optionAddr) {
+    public int sceKernelLoadModuleDNAS(PspString path, @CanBeNull @BufferInfo(lengthInfo = LengthInfo.fixedLength, length = 16, usage = Usage.in) TPointer keyAddr, int flags, @CanBeNull @BufferInfo(lengthInfo = LengthInfo.variableLength, usage = Usage.in) TPointer optionAddr) {
         SceKernelLMOption lmOption = null;
         if (optionAddr.isNotNull()) {
             lmOption = new SceKernelLMOption();
@@ -1119,7 +1120,14 @@ public class ModuleMgrForUser extends HLEModule {
     	if (vFile == null) {
     		return ERROR_ERRNO_FILE_NOT_FOUND;
     	}
-    	PGDVirtualFile pgdFile = new PGDVirtualFile(key.getArray8(16), vFile);
+
+    	byte[] key = null;
+    	if (keyAddr.isNotNull()) {
+    		key = keyAddr.getArray8(16);
+    	}
+
+    	// The key is used for the PGD decryption
+    	PGDVirtualFile pgdFile = new PGDVirtualFile(key, vFile);
 
         LoadModuleContext loadModuleContext = new LoadModuleContext();
         loadModuleContext.fileName = path.getString();
@@ -1128,6 +1136,8 @@ public class ModuleMgrForUser extends HLEModule {
         loadModuleContext.lmOption = lmOption;
         loadModuleContext.needModuleInfo = true;
         loadModuleContext.allocMem = true;
+        // The key is also used for the executable decryption
+        loadModuleContext.key = key;
 
         return hleKernelLoadModule(loadModuleContext);
     }

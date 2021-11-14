@@ -159,7 +159,7 @@ public class Emulator implements Runnable {
     }
 
     public SceModule load(String pspfilename, ByteBuffer f) throws IOException, GeneralJpcspException {
-        return load(pspfilename, f, false, false);
+        return load(pspfilename, f, false, false, null);
     }
 
     private TPointer getLoadAddress() {
@@ -175,13 +175,13 @@ public class Emulator implements Runnable {
         return new TPointer(mem, lowestAddress);
     }
 
-    public SceModule load(String pspfilename, ByteBuffer f, boolean fromSyscall, boolean isSignChecked) throws IOException, GeneralJpcspException {
+    public SceModule load(String pspfilename, ByteBuffer f, boolean fromSyscall, boolean isSignChecked, byte[] key) throws IOException, GeneralJpcspException {
         initNewPsp(fromSyscall);
 
         HLEModuleManager.getInstance().loadAvailableFlash0Modules(fromSyscall);
 
         TPointer loadAddress = getLoadAddress();
-    	module = Loader.getInstance().LoadModule(pspfilename, f, loadAddress, USER_PARTITION_ID, USER_PARTITION_ID, false, true, fromSyscall, isSignChecked);
+    	module = Loader.getInstance().LoadModule(pspfilename, f, loadAddress, USER_PARTITION_ID, USER_PARTITION_ID, false, true, fromSyscall, isSignChecked, key);
 
         if ((module.fileFormat & Loader.FORMAT_ELF) != Loader.FORMAT_ELF) {
             throw new GeneralJpcspException("File format not supported!");

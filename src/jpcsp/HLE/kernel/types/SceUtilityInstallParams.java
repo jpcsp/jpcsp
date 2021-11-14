@@ -19,7 +19,7 @@ package jpcsp.HLE.kernel.types;
 public class SceUtilityInstallParams extends pspUtilityBaseDialog {
 	public int unknown1;
 	public String gameName; // DISCID
-	byte[] key = new byte[0x10];
+	public byte[] key = new byte[0x10];
 
 	@Override
 	protected void read() {

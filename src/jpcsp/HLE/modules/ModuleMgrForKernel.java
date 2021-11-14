@@ -166,7 +166,7 @@ public class ModuleMgrForKernel extends HLEModule {
 	        	int length = vFile.ioRead(bytes, 0, bytes.length);
 	        	ByteBuffer moduleBuffer = ByteBuffer.wrap(bytes, 0, length);
 
-	        	SceModule module = Modules.ModuleMgrForUserModule.getModuleInfo(path.getString(), moduleBuffer, sysMemInfo.partitionid, sysMemInfo.partitionid, Modules.ModuleMgrForUserModule.isSignChecked(path.getString()));
+	        	SceModule module = Modules.ModuleMgrForUserModule.getModuleInfo(path.getString(), moduleBuffer, sysMemInfo.partitionid, sysMemInfo.partitionid, Modules.ModuleMgrForUserModule.isSignChecked(path.getString()), null);
 	        	if (module != null) {
 	        		int size = Modules.ModuleMgrForUserModule.getModuleRequiredMemorySize(module);
 

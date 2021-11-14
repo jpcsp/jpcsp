@@ -374,7 +374,7 @@ public class sceUtility extends HLEModule {
 
 	    			// TODO How is this module being loaded?
 	                // Does it unload the current module? i.e. re-init the PSP
-	                SceModule module = Emulator.getInstance().load(name, moduleBuffer, true, false);
+	                SceModule module = Emulator.getInstance().load(name, moduleBuffer, true, false, installParams.key);
 	                Emulator.getClock().resume();
 
 	                if ((module.fileFormat & Loader.FORMAT_ELF) == Loader.FORMAT_ELF) {

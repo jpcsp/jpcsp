@@ -271,14 +271,19 @@ public class scePspNpDrm_user extends HLEModule {
         // Flush system memory to mimic a real PSP reset.
         Modules.SysMemUserForUserModule.reset();
 
+        byte[] key = null;
         if (optionAddr.isNotNull()) {
             int optSize = optionAddr.getValue32(0);  // Size of the option struct.
             int argSize = optionAddr.getValue32(4);  // Number of args (strings).
             int argAddr = optionAddr.getValue32(8);  // Pointer to a list of strings.
-            int keyAddr = optionAddr.getValue32(12); // Pointer to an encryption key (may not be used).
+            TPointer keyAddr = optionAddr.getPointer(12); // Pointer to an encryption key.
+
+            if (keyAddr.isNotNull()) {
+            	key = keyAddr.getArray8(16);
+            }
 
             if (log.isDebugEnabled()) {
-                log.debug(String.format("sceKernelLoadExecNpDrm (params: optSize=%d, argSize=%d, argAddr=0x%08X, keyAddr=0x%08X)", optSize, argSize, argAddr, keyAddr));
+                log.debug(String.format("sceKernelLoadExecNpDrm (params: optSize=%d, argSize=%d, argAddr=0x%08X, keyAddr=%s)", optSize, argSize, argAddr, keyAddr));
             }
         }
 
@@ -297,7 +302,7 @@ public class scePspNpDrm_user extends HLEModule {
                 moduleInput.close();
                 ByteBuffer moduleBuffer = ByteBuffer.wrap(moduleBytes);
 
-                SceModule module = Emulator.getInstance().load(fileName.getString(), moduleBuffer, true, Modules.ModuleMgrForUserModule.isSignChecked(fileName.getString()));
+                SceModule module = Emulator.getInstance().load(fileName.getString(), moduleBuffer, true, Modules.ModuleMgrForUserModule.isSignChecked(fileName.getString()), key);
                 Emulator.getClock().resume();
 
                 if ((module.fileFormat & Loader.FORMAT_ELF) == Loader.FORMAT_ELF) {

@@ -205,7 +205,7 @@ public class reboot extends HLEModule {
 
     	SceModule module;
     	try {
-			module = Loader.getInstance().LoadModule(fileName, ByteBuffer.wrap(buffer), baseAddress, KERNEL_PARTITION_ID, KERNEL_PARTITION_ID, false, false, true, true);
+			module = Loader.getInstance().LoadModule(fileName, ByteBuffer.wrap(buffer), baseAddress, KERNEL_PARTITION_ID, KERNEL_PARTITION_ID, false, false, true, true, null);
 		} catch (IOException e) {
 			return null;
 		}
@@ -289,7 +289,7 @@ public class reboot extends HLEModule {
 
     	SceModule module;
     	try {
-			module = Loader.getInstance().LoadModule(fileName, ByteBuffer.wrap(buffer), baseAddress, KERNEL_PARTITION_ID, KERNEL_PARTITION_ID, false, false, true, true);
+			module = Loader.getInstance().LoadModule(fileName, ByteBuffer.wrap(buffer), baseAddress, KERNEL_PARTITION_ID, KERNEL_PARTITION_ID, false, false, true, true, null);
 		} catch (IOException e) {
 			return null;
 		}
