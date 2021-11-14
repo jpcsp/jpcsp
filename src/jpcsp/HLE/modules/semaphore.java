@@ -18,6 +18,7 @@ package jpcsp.HLE.modules;
 
 import static jpcsp.crypto.KIRK.PSP_KIRK_CMD_DECRYPT;
 import static jpcsp.crypto.PreDecrypt.preDecrypt;
+import static jpcsp.util.Utilities.alignUp;
 import static jpcsp.util.Utilities.readUnaligned32;
 
 import java.io.FileOutputStream;
@@ -38,11 +39,13 @@ import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.TPointer;
 import jpcsp.crypto.CryptoEngine;
+import jpcsp.crypto.KIRK;
 import jpcsp.memory.IMemoryReader;
 import jpcsp.memory.IMemoryWriter;
 import jpcsp.memory.MemoryReader;
 import jpcsp.memory.MemoryWriter;
 import jpcsp.util.Utilities;
+import libkirk.KirkEngine;
 
 public class semaphore extends HLEModule {
 	public static Logger log = Modules.getLogger("semaphore");
@@ -62,13 +65,26 @@ public class semaphore extends HLEModule {
     	}
 
     	int correctOutSize = outSize;
+    	int correctInSize = inSize;
     	if (cmd == PSP_KIRK_CMD_DECRYPT) {
     		// For cmd==7(PSP_KIRK_CMD_DECRYPT), the outSize is provided in the input data.
     		correctOutSize = readUnaligned32(in, inOffset + 16);
+    	} else if (cmd == KIRK.PSP_KIRK_CMD_ENCRYPT_SIGN) {
+    		// For cmd==2(PSP_KIRK_CMD_ENCRYPT_SIGN), the inSize and outSize are provided in the input data
+			int dataSize = readUnaligned32(in, inOffset + 112);
+			int dataOffset = readUnaligned32(in, inOffset + 116);
+			correctInSize = KirkEngine.KIRK_CMD1_HEADER.SIZEOF + alignUp(dataSize, 15) + dataOffset;
+    		correctOutSize = correctInSize;
+    	} else if (cmd == KIRK.PSP_KIRK_CMD_DECRYPT_SIGN) {
+    		// For cmd==3(PSP_KIRK_CMD_DECRYPT_SIGN), the inSize and outSize are provided in the input data
+			int dataSize = readUnaligned32(in, inOffset + 112);
+			int dataOffset = readUnaligned32(in, inOffset + 116);
+			correctInSize = KirkEngine.KIRK_CMD1_HEADER.SIZEOF + alignUp(dataSize, 15) + dataOffset;
+    		correctOutSize = alignUp(dataSize, 15);
     	}
 
     	int result = 0;
-    	if (preDecrypt(out, outOffset, correctOutSize, in, inOffset, inSize, cmd)) {
+    	if (preDecrypt(out, outOffset, correctOutSize, in, inOffset, correctInSize, cmd)) {
     		if (log.isDebugEnabled()) {
     			log.debug(String.format("hleUtilsBufferCopyWithRange using pre-decrypted data"));
     		}
