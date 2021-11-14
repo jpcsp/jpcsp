@@ -1661,9 +1661,9 @@ public class RuntimeContext {
     public static void checkSyncWithSleep() {
     	long delay = Emulator.getScheduler().getNextActionDelay(idleSleepMicros);
 
-    	if (log.isTraceEnabled()) {
-    		log.debug(String.format("checkSyncWithSleep delay=0x%X", delay));
-    	}
+//    	if (log.isTraceEnabled()) {
+//    		log.debug(String.format("checkSyncWithSleep delay=0x%X", delay));
+//    	}
 
     	if (delay > 0) {
     		if (ExternalGE.isActive() || Modules.sceDisplayModule.isUsingSoftwareRenderer()) {
