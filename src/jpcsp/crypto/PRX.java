@@ -379,7 +379,7 @@ public class PRX {
     	System.arraycopy(buf, 0, resultBuffer, 0, Math.min(size, resultBuffer.length));
 
     	if (log.isDebugEnabled()) {
-    		log.debug(String.format("DecryptAndUncompressPRX size=0x%X, compAttribute=0x%X, pspSize=0x%X, elfSize=0x%X, decryptMode=0x%X, tag=0x%08X", size, compAttribute, pspSize, elfSize, decryptMode, tag));
+    		log.debug(String.format("DecryptAndUncompressPRX size=0x%X, compAttribute=0x%X, pspSize=0x%X, elfSize=0x%X, decryptMode=0x%X, tag=0x%08X, key=%s", size, compAttribute, pspSize, elfSize, decryptMode, tag, Utilities.getMemoryDump(key)));
     	}
 
     	int type;
@@ -872,8 +872,8 @@ public class PRX {
                 buf2[0x70] = 0x50;
 
                 System.arraycopy(buf1, 0x80, buf2, 0x90, 0x30);
-                System.arraycopy(buf1, 0xC0, buf2, 0x90 + 0x30, 0x10);
-                System.arraycopy(buf1, 0x12C, buf2, 0x90 + 0x30 + 0x10, 0x10);
+                System.arraycopy(buf1, 0xC0, buf2, 0xC0, 0x10);
+                System.arraycopy(buf1, 0x12C, buf2, 0xD0, 0x10);
 
                 // Round XOR with xor1 and xor2.
                 RoundXOR(buf2, 0x90, 0x50, xor1, xor2);
@@ -1104,5 +1104,59 @@ public class PRX {
         }
 
         return retsize;
+    }
+
+    public int encryptPRX(byte[] buffer, int bufferLength, byte[] key) {
+    	if (bufferLength < 0x160) {
+    		return -202;
+    	}
+
+    	for (int i = 0; i < 0x18; i++) {
+    		if (buffer[0xD4 + i] != 0) {
+    			return -302;
+    		}
+    	}
+
+    	// Fetch the PRX tag.
+        int tag = readUnaligned32(buffer, 0xD0);
+
+        // Get the tag info.
+        PRX.TAG_INFO pti = GetTagInfo(tag);
+        if (pti == null) {
+        	log.error(String.format("encryptPRX unknown tag 0x%08X", tag));
+            return -301;
+        }
+
+    	byte[] xor2 = key;
+    	byte[] xor1 = null;
+        if (pti.xor1 != null) {
+        	xor1 = intArrayToByteArray(pti.xor1);
+        }
+
+    	final byte[] encryptBuffer = new byte[0x150];
+
+    	System.arraycopy(buffer, 0xEC, encryptBuffer, 0, 0x40);
+    	encryptBuffer[0x60] = (byte) 0x02;
+    	encryptBuffer[0x70] = (byte) 0x50;
+    	System.arraycopy(buffer, 0x80, encryptBuffer, 0x90, 0x30);
+    	System.arraycopy(buffer, 0xC0, encryptBuffer, 0xC0, 0x10);
+    	System.arraycopy(buffer, 0x12C, encryptBuffer, 0xD0, 0x10);
+
+        RoundXOR(encryptBuffer, 0x90, 0x50, xor1, xor2);
+
+        // Encrypt signature (type 2).
+        int result = semaphoreModule.hleUtilsBufferCopyWithRange(encryptBuffer, 0, 0x150, encryptBuffer, 0, 0x150, KIRK.PSP_KIRK_CMD_ENCRYPT_SIGN);
+        if (result != 0) {
+        	log.error(String.format("encryptPRX: KIRK command PSP_KIRK_CMD_ENCRYPT_SIGN returned error %d", result));
+        }
+
+        RoundXOR(encryptBuffer, 0x90, 0x50, xor1, xor2);
+
+        System.arraycopy(encryptBuffer, 0x0, buffer, 0xEC, 0x40);
+        System.arraycopy(encryptBuffer, 0x90, buffer, 0x80, 0x30);
+        System.arraycopy(encryptBuffer, 0xC0, buffer, 0xC0, 0x10);
+        System.arraycopy(encryptBuffer, 0xD0, buffer, 0x12C, 0x10);
+
+        return 0;
     }
 }
