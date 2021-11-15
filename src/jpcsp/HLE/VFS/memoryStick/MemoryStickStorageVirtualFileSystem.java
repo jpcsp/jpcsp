@@ -16,7 +16,8 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.VFS.memoryStick;
 
-import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_INVALID_ARGUMENT;
+import jpcsp.HLE.Modules;
+import jpcsp.HLE.PspString;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.VFS.AbstractVirtualFileSystem;
 import jpcsp.HLE.VFS.IVirtualFile;
@@ -28,33 +29,26 @@ import jpcsp.HLE.VFS.IVirtualFile;
  *
  */
 public class MemoryStickStorageVirtualFileSystem extends AbstractVirtualFileSystem {
+	private boolean init;
+
+	private void init() {
+		if (!init) {
+			Modules.sceMSstorModule.hleInit();
+			init = true;
+		}
+	}
+
 	@Override
 	public IVirtualFile ioOpen(String fileName, int flags, int mode) {
+		init();
+
 		return new MemoryStickStorageVirtualFile();
 	}
 
 	@Override
 	public int ioDevctl(String deviceName, int command, TPointer inputPointer, int inputLength, TPointer outputPointer, int outputLength) {
-		int result;
+		init();
 
-		switch (command) {
-			case 0x02125802:
-				if (outputPointer.isNotNull() && outputLength >= 4) {
-                    if (log.isDebugEnabled()) {
-                    	log.debug(String.format("ioIoctl msstor cmd 0x%08X", command));
-                    }
-					// Output value 0x11 or 0x41: the Memory Stick is locked
-					outputPointer.setValue32(0);
-					result = 0;
-				} else {
-	                result = ERROR_INVALID_ARGUMENT;
-				}
-				break;
-			default:
-				result = super.ioDevctl(deviceName, command, inputPointer, inputLength, outputPointer, outputLength);
-				break;
-		}
-
-		return result;
+		return Modules.sceMSstorModule.hleMSstorStorageIoDevctl(null, new PspString(deviceName), command, inputPointer, inputLength, outputPointer, outputLength);
 	}
 }

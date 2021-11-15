@@ -55,6 +55,7 @@ import jpcsp.HLE.kernel.types.pspIoDrvArg;
 import jpcsp.HLE.kernel.types.pspIoDrvFileArg;
 import jpcsp.HLE.kernel.types.pspIoDrvFuncs;
 import jpcsp.HLE.modules.SysMemUserForUser.SysMemInfo;
+import jpcsp.hardware.MemoryStick;
 import jpcsp.settings.Settings;
 import jpcsp.state.IState;
 import jpcsp.state.StateInputStream;
@@ -278,10 +279,12 @@ public class sceMSstor extends HLEModule {
     public int hleMSstorStorageIoIoctl(pspIoDrvFileArg drvFileArg, int cmd, @CanBeNull @BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.in) TPointer indata, int inlen, @CanBeNull @BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.out) TPointer outdata, int outlen) {
     	switch (cmd) {
 			case 0x02125008:
-				outdata.setValue32(1); // 0 or != 0
+				// Is the memory stick inserted?
+				outdata.setValue32(MemoryStick.isInserted());
 				break;
     		case 0x02125009:
-    			outdata.setValue32(0); // 0 or != 0
+				// Is the memory stick locked?
+    			outdata.setValue32(MemoryStick.isLocked());
     			break;
 			default:
                 log.warn(String.format("hleMSstorStorageIoIoctl 0x%08X unknown command", cmd));
@@ -307,6 +310,7 @@ public class sceMSstor extends HLEModule {
     public int hleMSstorPartitionIoDevctl(pspIoDrvFileArg drvFileArg, PspString devicename, int cmd, @CanBeNull @BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.in) TPointer indata, int inlen, @CanBeNull @BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.out) TPointer outdata, int outlen) {
     	switch (cmd) {
     		case 0x02125802:
+				// Output value 0x11 or 0x41: the Memory Stick is locked
     			outdata.setValue32(0); // ???
     			break;
 			default:
@@ -329,13 +333,16 @@ public class sceMSstor extends HLEModule {
     				Utilities.writeBytes(outdata.getAddress(), outlen, dumpIoIoctl_0x02125803, 0);
     			} else {
     				outdata.setValue8(0, (byte) 0x02);
+                    outdata.setStringNZ(12, 16, ""); // This value will be set in registry as /CONFIG/CAMERA/msid
     			}
     			break;
     		case 0x02125008:
-    			outdata.setValue32(1); // 0 or != 0
+				// Is the memory stick inserted?
+    			outdata.setValue32(MemoryStick.isInserted());
     			break;
     		case 0x02125009:
-    			outdata.setValue32(0); // 0 or != 0
+				// Is the memory stick locked?
+    			outdata.setValue32(MemoryStick.isLocked());
     			break;
 			default:
                 log.warn(String.format("hleMSstorPartitionIoIoctl 0x%08X unknown command", cmd));
@@ -438,6 +445,22 @@ public class sceMSstor extends HLEModule {
     			synchronized (vFile) {
         			position = vFile.ioLseek(offset);
             		len = vFile.ioWrite(data, len);
+				}
+    			sync.notifyWrite();
+			}
+    	}
+
+    	return len;
+    }
+
+    public int hleMSstorPartitionIoWrite(long offset, byte[] buffer, int bufferOffset, int len) {
+    	if (vFile != null) {
+    		scanThread.waitForCompletion();
+    		synchronized (writeLock) {
+    			// synchronize the vFile to make sure that the ioLseek/ioWrite combination is atomic
+    			synchronized (vFile) {
+        			position = vFile.ioLseek(offset);
+            		len = vFile.ioWrite(buffer, bufferOffset, len);
 				}
     			sync.notifyWrite();
 			}

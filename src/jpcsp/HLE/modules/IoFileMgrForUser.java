@@ -658,9 +658,6 @@ public class IoFileMgrForUser extends HLEModule {
         vfsManager.register("flash0", new LocalVirtualFileSystem(Settings.getInstance().getDirectoryMapping("flash0"), false));
         vfsManager.register("flash1", new LocalVirtualFileSystem(Settings.getInstance().getDirectoryMapping("flash1"), false));
         vfsManager.register("exdata0", new LocalVirtualFileSystem(Settings.getInstance().getDirectoryMapping("exdata0"), false));
-        vfsManager.register("mscmhc0", new MemoryStickVirtualFileSystem());
-        vfsManager.register("msstor0p1", new MemoryStickStorageVirtualFileSystem());
-        vfsManager.register("msstor0", new MemoryStickStorageVirtualFileSystem());
     }
 
     @Override
@@ -697,6 +694,10 @@ public class IoFileMgrForUser extends HLEModule {
         	registerVfsMs0();
 	        registerUmdIso();
         }
+        vfsManager.register("mscmhc0", new MemoryStickVirtualFileSystem());
+        vfsManager.register("msstor0p1", new MemoryStickStorageVirtualFileSystem());
+        vfsManager.register("msstor0", new MemoryStickStorageVirtualFileSystem());
+        vfsManager.register("msstor", new MemoryStickStorageVirtualFileSystem());
 
         assignedDevices = new HashMap<String, String>();
 
@@ -1572,9 +1573,6 @@ public class IoFileMgrForUser extends HLEModule {
 	        vfsManager.unregister("flash0");
 	        vfsManager.unregister("flash1");
 	        vfsManager.unregister("exdata0");
-	        vfsManager.unregister("mscmhc0");
-	        vfsManager.unregister("msstor0");
-	        vfsManager.unregister("msstor0");
         }
 
         return vfs;
