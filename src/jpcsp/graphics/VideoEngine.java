@@ -8179,7 +8179,12 @@ public class VideoEngine {
     	// Force an execute of the given command
     	currentListCMDValues[cmd] = -1;
 
-        executeCommand(instruction(cmd, value));
+    	int instruction = instruction(cmd, value);
+    	if (videoEngineThread != null) {
+    		videoEngineThread.interpretInstruction(instruction);
+    	} else {
+    		executeCommand(instruction);
+    	}
     }
 
     public void lleReset() {

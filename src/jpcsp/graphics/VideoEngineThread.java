@@ -48,6 +48,8 @@ public class VideoEngineThread extends Thread {
     private final Semaphore update = new Semaphore(1);
     private final long context;
     private volatile boolean run = true;
+    private volatile boolean doInterpretInstruction;
+    private volatile int interpretInstruction;
 
     public static boolean isActive() {
     	return canShareContext();
@@ -79,12 +81,18 @@ public class VideoEngineThread extends Thread {
 		while (run) {
 			waitForUpdate();
 
-			displayModule.lockDisplay();
-			renderTexture.bind(re, false);
+			if (doInterpretInstruction) {
+				videoEngine.executeCommand(interpretInstruction);
+				interpretInstruction = 0;
+				doInterpretInstruction = false;
+			} else {
+				displayModule.lockDisplay();
+				renderTexture.bind(re, false);
 
-            videoEngine.update();
+				videoEngine.update();
 
-            displayModule.unlockDisplay();
+				displayModule.unlockDisplay();
+			}
 		}
 	}
 
@@ -111,5 +119,17 @@ public class VideoEngineThread extends Thread {
     public void exit() {
         run = false;
         update();
+    }
+
+    public void interpretInstruction(int instruction) {
+    	interpretInstruction = instruction;
+    	doInterpretInstruction = true;
+
+    	update();
+
+    	// Active polling as this should complete very quickly
+    	while (doInterpretInstruction) {
+    		// Nothing to do
+    	}
     }
 }
