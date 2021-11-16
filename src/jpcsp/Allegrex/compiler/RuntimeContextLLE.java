@@ -114,6 +114,9 @@ public class RuntimeContextLLE {
 			mmio.reset();
 			mmio.Initialise();
 		}
+
+		// Force a reload of the cached firmware version
+		firmwareVersion = -1;
 	}
 
 	public static void createMMIO() {
@@ -386,6 +389,9 @@ public class RuntimeContextLLE {
 		stream.readVersion(STATE_VERSION);
 		pendingInterruptIPbitsMain = stream.readInt();
 		pendingInterruptIPbitsME = stream.readInt();
+
+		// Force a reload of the cached firmware version
+		firmwareVersion = -1;
 	}
 
 	/*
