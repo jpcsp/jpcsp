@@ -316,6 +316,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         frameSkipGroup = new javax.swing.ButtonGroup();
         clockSpeedGroup = new javax.swing.ButtonGroup();
         mainToolBar = new javax.swing.JToolBar();
+        RebootButton = new javax.swing.JButton();
         RunButton = new javax.swing.JToggleButton();
         PauseButton = new javax.swing.JToggleButton();
         ResetButton = new javax.swing.JButton();
@@ -436,6 +437,19 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
             }
         });
         mainToolBar.add(RunButton);
+
+        RebootButton.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/PlayIcon.png"))); // NOI18N
+        RebootButton.setText(bundle.getString("MainGUI.RebootButton.text")); // NOI18N
+        RebootButton.setFocusable(false);
+        RebootButton.setHorizontalTextPosition(javax.swing.SwingConstants.RIGHT);
+        RebootButton.setIconTextGap(2);
+        RebootButton.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
+        RebootButton.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                RebootButtonActionPerformed(evt);
+            }
+        });
+        mainToolBar.add(RebootButton);
 
         PauseButton.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/PauseIcon.png"))); // NOI18N
         PauseButton.setText(bundle.getString("MainGUI.PauseButton.text")); // NOI18N
@@ -1195,6 +1209,15 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
     private void makeFullScreenMenu() {
         fullScreenMenu = new JPopupMenu();
 
+        JMenuItem popupMenuItemReboot = new JMenuItem(java.util.ResourceBundle.getBundle("jpcsp/languages/jpcsp").getString("MainGUI.RebootButton.text"));
+        popupMenuItemReboot.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/PlayIcon.png")));
+        popupMenuItemReboot.addActionListener(new java.awt.event.ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                RebootButtonActionPerformed(e);
+            }
+        });
+
         JMenuItem popupMenuItemRun = new JMenuItem(java.util.ResourceBundle.getBundle("jpcsp/languages/jpcsp").getString("MainGUI.RunButton.text"));
         popupMenuItemRun.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/PlayIcon.png")));
         popupMenuItemRun.addActionListener(new java.awt.event.ActionListener() {
@@ -1465,6 +1488,13 @@ private void EnterDebuggerActionPerformed(java.awt.event.ActionEvent evt) {//GEN
         }
         startWindowDialog(State.debugger);
 }//GEN-LAST:event_EnterDebuggerActionPerformed
+
+private void RebootButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_RebootButtonActionPerformed
+	if (!isRunningReboot()) {
+		doReboot();
+	}
+	run();
+}//GEN-LAST:event_RebootButtonActionPerformed
 
 private void RunButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_RunButtonActionPerformed
 		run();
@@ -2875,6 +2905,7 @@ private void threeTimesResizeActionPerformed(java.awt.event.ActionEvent evt) {//
 
     @Override
     public void RefreshButtons() {
+    	RebootButton.setVisible(Modules.rebootModule.isAvailable());
         RunButton.setSelected(Emulator.run && !Emulator.pause);
         PauseButton.setSelected(Emulator.run && Emulator.pause);
     }
@@ -3195,6 +3226,7 @@ private void threeTimesResizeActionPerformed(java.awt.event.ActionEvent evt) {//
                 }
 
                 maingui.processArgs(fargs);
+                maingui.RefreshButtons();
                 initAfterArgs();
             }
         });
@@ -3279,6 +3311,7 @@ private void threeTimesResizeActionPerformed(java.awt.event.ActionEvent evt) {//
     private javax.swing.JMenuItem ResetProfiler;
     private javax.swing.JMenu ResizeMenu;
     private javax.swing.JMenuItem RotateItem;
+    private javax.swing.JButton RebootButton;
     private javax.swing.JToggleButton RunButton;
     private javax.swing.JMenuItem Russian;
     private javax.swing.JMenuItem SaveSnap;
@@ -3484,6 +3517,14 @@ private void threeTimesResizeActionPerformed(java.awt.event.ActionEvent evt) {//
         setTitle(MetaInformation.FULL_NAME + " - reboot");
         Modules.sceDisplayModule.setCalledFromCommandLine();
         HTTPServer.processProxyRequestLocally = true;
+
+        if (loadedFile != null) {
+			try {
+				MMIOHandlerUmd.getInstance().switchUmd(loadedFile.getPath());
+			} catch (IOException e) {
+				log.error(String.format("doReboot loadedFile=%s", loadedFile), e);
+			}
+        }
 
         if (!Modules.rebootModule.loadAndRun()) {
         	log.error(String.format("Cannot reboot - missing files"));

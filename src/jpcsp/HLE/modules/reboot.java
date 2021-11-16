@@ -122,6 +122,43 @@ public class reboot extends HLEModule {
 		}
     }
 
+    private boolean isFilePresent(String fileName) {
+    	StringBuilder localFileName = new StringBuilder();
+    	IVirtualFileSystem vfs = Modules.IoFileMgrForUserModule.getVirtualFileSystem(fileName, localFileName);
+    	if (vfs == null) {
+    		return false;
+    	}
+
+    	IVirtualFile vFile = vfs.ioOpen(localFileName.toString(), IoFileMgrForUser.PSP_O_RDONLY, 0);
+    	if (vFile == null) {
+    		return false;
+    	}
+
+    	int length = (int) vFile.length();
+    	vFile.ioClose();
+
+    	return length > 0;
+    }
+
+    public boolean isAvailable() {
+    	final String[] fileNames = {
+    			"flash0:/kd/loadexec_%02dg.prx",
+    			"flash0:/kd/sysmem.prx"
+    	};
+
+    	for (String fileName : fileNames) {
+    		String completeFileName = String.format(fileName, Model.getGeneration());
+    		if (!isFilePresent(completeFileName)) {
+    			if (log.isDebugEnabled()) {
+    				log.debug(String.format("reboot is not available because the file '%s' is missing", completeFileName));
+    			}
+    			return false;
+    		}
+    	}
+
+    	return true;
+    }
+
     public boolean loadAndRun() {
     	if (!enableReboot) {
     		return false;
