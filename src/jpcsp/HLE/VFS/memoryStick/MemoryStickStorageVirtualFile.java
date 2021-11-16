@@ -41,22 +41,22 @@ public class MemoryStickStorageVirtualFile extends AbstractVirtualFile {
 
 	@Override
 	public int ioRead(TPointer outputPointer, int outputLength) {
-		return sceMSstorModule.hleMSstorPartitionIoRead(position, outputPointer, outputLength);
+		return sceMSstorModule.hleMSstorRawIoRead(position, outputPointer, outputLength);
 	}
 
 	@Override
 	public int ioRead(byte[] outputBuffer, int outputOffset, int outputLength) {
-		return sceMSstorModule.hleMSstorPartitionIoRead(position, outputBuffer, outputOffset, outputLength);
+		return sceMSstorModule.hleMSstorRawIoRead(position, outputBuffer, outputOffset, outputLength);
 	}
 
 	@Override
 	public int ioWrite(TPointer inputPointer, int inputLength) {
-		return sceMSstorModule.hleMSstorPartitionIoWrite(position, inputPointer, inputLength);
+		return sceMSstorModule.hleMSstorRawIoWrite(position, inputPointer, inputLength);
 	}
 
 	@Override
 	public int ioWrite(byte[] inputBuffer, int inputOffset, int inputLength) {
-		return sceMSstorModule.hleMSstorPartitionIoWrite(position, inputBuffer, inputOffset, inputLength);
+		return sceMSstorModule.hleMSstorRawIoWrite(position, inputBuffer, inputOffset, inputLength);
 	}
 
 	@Override

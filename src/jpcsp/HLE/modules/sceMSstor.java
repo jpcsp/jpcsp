@@ -19,6 +19,7 @@ package jpcsp.HLE.modules;
 import static jpcsp.Allegrex.compiler.RuntimeContext.setLog4jMDC;
 import static jpcsp.HLE.HLEModuleManager.HLESyscallNid;
 import static jpcsp.HLE.modules.IoFileMgrForUser.PSP_SEEK_SET;
+import static jpcsp.memory.mmio.MMIOHandlerBaseMemoryStick.PAGE_SIZE;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -43,6 +44,7 @@ import jpcsp.HLE.VFS.IVirtualFileSystem;
 import jpcsp.HLE.VFS.WriteCacheVirtualFile;
 import jpcsp.HLE.VFS.fat.Fat32VirtualFile;
 import jpcsp.HLE.VFS.fat.FatVirtualFileSystem;
+import jpcsp.HLE.VFS.local.LocalVirtualFile;
 import jpcsp.HLE.VFS.local.LocalVirtualFileSystem;
 import jpcsp.HLE.VFS.synchronize.SynchronizeVirtualFileSystems;
 import jpcsp.HLE.BufferInfo.LengthInfo;
@@ -55,7 +57,9 @@ import jpcsp.HLE.kernel.types.pspIoDrvArg;
 import jpcsp.HLE.kernel.types.pspIoDrvFileArg;
 import jpcsp.HLE.kernel.types.pspIoDrvFuncs;
 import jpcsp.HLE.modules.SysMemUserForUser.SysMemInfo;
+import jpcsp.filesystems.SeekableRandomFile;
 import jpcsp.hardware.MemoryStick;
+import jpcsp.memory.ByteArrayMemory;
 import jpcsp.settings.Settings;
 import jpcsp.state.IState;
 import jpcsp.state.StateInputStream;
@@ -69,9 +73,12 @@ public class sceMSstor extends HLEModule {
     private byte[] dumpIoIoctl_0x02125803;
     private long position;
     private IVirtualFile vFile;
+	private IVirtualFile vFileIpl;
     private Fat32ScanThread scanThread;
     private final Object writeLock = new Object();
     private SynchronizeVirtualFileSystems sync;
+    private int FIRST_PAGE_LBA;
+    private int NUMBER_OF_PAGES;
 
     private static class AfterAddDrvController implements IAction {
     	private SceKernelThreadInfo thread;
@@ -141,11 +148,17 @@ public class sceMSstor extends HLEModule {
     	stream.readVersion(STATE_VERSION);
     	dumpIoIoctl_0x02125803 = stream.readBytesWithLength();
     	position = stream.readLong();
+		FIRST_PAGE_LBA = stream.readInt();
+		NUMBER_OF_PAGES = stream.readInt();
     	boolean vFilePresent = stream.readBoolean();
     	if (vFilePresent) {
     		openFile();
     		((IState) vFile).read(stream);
     		sync.read(stream);
+    	}
+    	boolean vFileIplPresent = stream.readBoolean();
+    	if (vFileIplPresent) {
+    		((IState) vFileIpl).read(stream);
     	}
 
     	super.read(stream);
@@ -156,6 +169,8 @@ public class sceMSstor extends HLEModule {
     	stream.writeVersion(STATE_VERSION);
     	stream.writeBytesWithLength(dumpIoIoctl_0x02125803);
     	stream.writeLong(position);
+		stream.writeInt(FIRST_PAGE_LBA);
+		stream.writeInt(NUMBER_OF_PAGES);
 
     	if (vFile != null) {
     		flush();
@@ -163,6 +178,13 @@ public class sceMSstor extends HLEModule {
     		stream.writeBoolean(true);
     		((IState) vFile).write(stream);
     		sync.write(stream);
+    	} else {
+    		stream.writeBoolean(false);
+    	}
+
+    	if (vFileIpl != null) {
+    		stream.writeBoolean(true);
+    		((IState) vFileIpl).write(stream);;
     	} else {
     		stream.writeBoolean(false);
     	}
@@ -190,12 +212,47 @@ public class sceMSstor extends HLEModule {
     		vFile = null;
     	}
 
+    	if (vFileIpl != null) {
+    		vFileIpl.ioClose();
+    		vFileIpl = null;
+    	}
+
     	scanThread = null;
 
     	hleInit();
     }
 
-    @HLEUnimplemented
+	private void getMasterBootRecord(byte[] buffer, int offset) {
+		TPointer pageBufferPointer = new ByteArrayMemory(buffer, offset).getPointer();
+
+		// See description of MBR at
+		// https://en.wikipedia.org/wiki/Master_boot_record
+
+		// First partition entry
+		TPointer partitionPointer = new TPointer(pageBufferPointer, 446);
+		// Active partition
+		partitionPointer.setValue8(0, (byte) 0x80);
+    	// CHS address of first absolute sector in partition (not used by the PSP)
+		partitionPointer.setValue8(1, (byte) 0x00);
+		partitionPointer.setValue8(2, (byte) 0x00);
+		partitionPointer.setValue8(3, (byte) 0x00);
+		// Partition type: FAT32 with LBA
+		partitionPointer.setValue8(4, (byte) 0x0C);
+    	// CHS address of last absolute sector in partition (not used by the PSP)
+		partitionPointer.setValue8(5, (byte) 0x00);
+		partitionPointer.setValue8(6, (byte) 0x00);
+		partitionPointer.setValue8(7, (byte) 0x00);
+		// LBA of first absolute sector in the partition
+		partitionPointer.setUnalignedValue32(8, FIRST_PAGE_LBA);
+		// Number of sectors in partition
+		partitionPointer.setUnalignedValue32(12, NUMBER_OF_PAGES);
+
+		// Signature
+		pageBufferPointer.setValue8(510, (byte) 0x55);
+		pageBufferPointer.setValue8(511, (byte) 0xAA);
+	}
+
+	@HLEUnimplemented
     @HLEFunction(nid = HLESyscallNid, version = 150)
     public int hleMSstorControllerIoInit(pspIoDrvArg drvArg) {
     	return 0;
@@ -397,6 +454,64 @@ public class sceMSstor extends HLEModule {
     	return len;
     }
 
+    public int hleMSstorRawIoRead(long offset, TPointer data, int len) {
+    	int result;
+
+    	if (offset < FIRST_PAGE_LBA * PAGE_SIZE) {
+			vFileIpl.ioLseek(offset);
+			result = vFileIpl.ioRead(data, len);
+		} else {
+			result = hleMSstorPartitionIoRead(offset - FIRST_PAGE_LBA * PAGE_SIZE, data, len);
+		}
+
+		return result;
+    }
+
+    public int hleMSstorRawIoRead(long offset, byte[] buffer, int bufferOffset, int len) {
+    	int result;
+
+    	if (offset < FIRST_PAGE_LBA * PAGE_SIZE) {
+			vFileIpl.ioLseek(offset);
+			result = vFileIpl.ioRead(buffer, bufferOffset, len);
+		} else {
+			result = hleMSstorPartitionIoRead(offset - FIRST_PAGE_LBA * PAGE_SIZE, buffer, bufferOffset, len);
+		}
+
+		return result;
+    }
+
+    public int hleMSstorRawIoWrite(long offset, TPointer data, int len) {
+    	int result;
+
+    	if (offset < FIRST_PAGE_LBA * PAGE_SIZE) {
+    		if (log.isDebugEnabled()) {
+    			log.debug(String.format("hleMSstorRawIoWrite IPL offset=0x%X, len=0x%X", offset, len));
+    		}
+			vFileIpl.ioLseek(offset);
+			result = vFileIpl.ioWrite(data, len);
+		} else {
+			result = hleMSstorPartitionIoWrite(offset - FIRST_PAGE_LBA * PAGE_SIZE, data, len);
+		}
+
+		return result;
+    }
+
+    public int hleMSstorRawIoWrite(long offset, byte[] buffer, int bufferOffset, int len) {
+    	int result;
+
+    	if (offset < FIRST_PAGE_LBA * PAGE_SIZE) {
+    		if (log.isDebugEnabled()) {
+    			log.debug(String.format("hleMSstorRawIoWrite IPL offset=0x%X, len=0x%X", offset, len));
+    		}
+			vFileIpl.ioLseek(offset);
+			result = vFileIpl.ioWrite(buffer, bufferOffset, len);
+		} else {
+			result = hleMSstorPartitionIoWrite(offset - FIRST_PAGE_LBA * PAGE_SIZE, buffer, bufferOffset, len);
+		}
+
+		return result;
+    }
+
     public int hleMSstorPartitionIoRead(long offset, TPointer data, int len) {
     	if (vFile != null) {
     		scanThread.waitForCompletion();
@@ -545,6 +660,26 @@ public class sceMSstor extends HLEModule {
     		sync = null;
     	}
 
+		long totalSize = MemoryStick.getTotalSize();
+		long totalNumberOfPages = totalSize / PAGE_SIZE;
+		int PAGES_PER_BLOCK = 16;
+		int NUMBER_OF_PHYSICAL_BLOCKS = (int) (totalNumberOfPages / PAGES_PER_BLOCK);
+		if (totalNumberOfPages > 8192L) {
+			for (PAGES_PER_BLOCK = 32; PAGES_PER_BLOCK < 0x8000; PAGES_PER_BLOCK <<= 1) {
+				NUMBER_OF_PHYSICAL_BLOCKS = (int) (totalNumberOfPages / PAGES_PER_BLOCK);
+				if (NUMBER_OF_PHYSICAL_BLOCKS < 0x10000) {
+					break;
+				}
+			}
+		}
+		int BLOCK_SIZE = PAGES_PER_BLOCK * PAGE_SIZE / 1024; // Number of KB per block
+		FIRST_PAGE_LBA = 2 * PAGES_PER_BLOCK;
+		NUMBER_OF_PAGES = (NUMBER_OF_PHYSICAL_BLOCKS / 512 * 496 - 2) * BLOCK_SIZE * 2;
+		NUMBER_OF_PAGES -= FIRST_PAGE_LBA;
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("openFile totalSize=0x%X(%s), pagesPerBlock=0x%X, numberOfPhysicalBlocks=0x%X", totalSize, MemoryStick.getSizeKbString((int) (totalSize / 1024)), PAGES_PER_BLOCK, NUMBER_OF_PHYSICAL_BLOCKS));
+		}
+
     	IVirtualFileSystem vfs = new LocalVirtualFileSystem(Settings.getInstance().getDirectoryMapping("ms0"), true);
 		Fat32VirtualFile fat32VirtualFile = new Fat32VirtualFile("ms0:", vfs);
 		vFile = new WriteCacheVirtualFile(log, fat32VirtualFile);
@@ -555,7 +690,21 @@ public class sceMSstor extends HLEModule {
 			log.debug(String.format("openFile vFile=%s", vFile));
 		}
 
-		return fat32VirtualFile;
+    	try {
+			vFileIpl = new LocalVirtualFile(new SeekableRandomFile("ms.ipl.bin", "rw"));
+
+			// Update the vFileIpl with the new master boot record
+			final int iplFileSize = FIRST_PAGE_LBA * PAGE_SIZE;
+			final byte[] iplBuffer = new byte[iplFileSize];
+			getMasterBootRecord(iplBuffer, 0);
+			vFileIpl.ioLseek(0L);
+			vFileIpl.ioWrite(iplBuffer, 0, iplFileSize);
+			vFileIpl.ioLseek(0L);
+		} catch (FileNotFoundException e) {
+			log.error("Error while opening the ms.ipl.bin file", e);
+		}
+
+    	return fat32VirtualFile;
     }
 
     public void hleInit() {

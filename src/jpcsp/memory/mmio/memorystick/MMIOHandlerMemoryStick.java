@@ -21,16 +21,12 @@ import static jpcsp.HLE.kernel.managers.IntrManager.PSP_MSCM0_INTR;
 import static jpcsp.HLE.modules.IoFileMgrForUser.PSP_SEEK_SET;
 import static jpcsp.util.Utilities.endianSwap16;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
 
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.TPointer;
-import jpcsp.HLE.VFS.IVirtualFile;
-import jpcsp.HLE.VFS.local.LocalVirtualFile;
 import jpcsp.HLE.kernel.types.pspAbstractMemoryMappedStructure;
 import jpcsp.HLE.modules.sceMSstor;
-import jpcsp.filesystems.SeekableRandomFile;
 import jpcsp.hardware.MemoryStick;
 
 import static jpcsp.memory.mmio.memorystick.MemoryStickBootAttributesInfo.MS_SYSINF_CARDTYPE_RDWR;
@@ -83,7 +79,6 @@ public class MMIOHandlerMemoryStick extends MMIOHandlerBaseMemoryStick {
 	private int NUMBER_OF_LOGICAL_BLOCKS;
 	private int FIRST_PAGE_LBA;
 	private int NUMBER_OF_PAGES;
-	private IVirtualFile vFileIpl;
 
 	public static MMIOHandlerMemoryStick getInstance() {
 		if (instance == null) {
@@ -97,12 +92,6 @@ public class MMIOHandlerMemoryStick extends MMIOHandlerBaseMemoryStick {
 		super(baseAddress);
 
 		log = sceMSstor.log;
-
-    	try {
-			vFileIpl = new LocalVirtualFile(new SeekableRandomFile("ms.ipl.bin", "rw"));
-		} catch (FileNotFoundException e) {
-			log.error("MMIOHandlerMemoryStick error while opening the ms.ipl.bin file", e);
-		}
 
 		reset();
 	}
@@ -227,18 +216,6 @@ public class MMIOHandlerMemoryStick extends MMIOHandlerBaseMemoryStick {
 		disabledBlocksPageMemory.write16(0, (short) endianSwap16(0x0000));
 		disabledBlocksPageMemory.write16(2, (short) endianSwap16(0x0001));
 		disabledBlocksPageMemory.write16(4, (short) endianSwap16(NUMBER_OF_PHYSICAL_BLOCKS - 1));
-
-		// Update the vFileIpl with the new master boot record
-		readMasterBootRecord();
-		vFileIpl.ioLseek(0L);
-		vFileIpl.ioWrite(pageBufferPointer, PAGE_SIZE);
-		pageBufferPointer.clear(PAGE_SIZE);
-		int iplFileSize = FIRST_PAGE_LBA * PAGE_SIZE;
-		while (vFileIpl.length() < iplFileSize) {
-			vFileIpl.ioLseek(vFileIpl.length());
-			vFileIpl.ioWrite(pageBufferPointer, Math.min(iplFileSize - (int) vFileIpl.length(), PAGE_SIZE));
-		}
-		vFileIpl.ioLseek(0L);
 	}
 
 	@Override
@@ -319,45 +296,9 @@ public class MMIOHandlerMemoryStick extends MMIOHandlerBaseMemoryStick {
 		return value;
 	}
 
-	private void readMasterBootRecord() {
-		// See description of MBR at
-		// https://en.wikipedia.org/wiki/Master_boot_record
-		pageBufferPointer.clear(PAGE_SIZE);
-
-		// First partition entry
-		TPointer partitionPointer = new TPointer(pageBufferPointer, 446);
-		// Active partition
-		partitionPointer.setValue8(0, (byte) 0x80);
-    	// CHS address of first absolute sector in partition (not used by the PSP)
-		partitionPointer.setValue8(1, (byte) 0x00);
-		partitionPointer.setValue8(2, (byte) 0x00);
-		partitionPointer.setValue8(3, (byte) 0x00);
-		// Partition type: FAT32 with LBA
-		partitionPointer.setValue8(4, (byte) 0x0C);
-    	// CHS address of last absolute sector in partition (not used by the PSP)
-		partitionPointer.setValue8(5, (byte) 0x00);
-		partitionPointer.setValue8(6, (byte) 0x00);
-		partitionPointer.setValue8(7, (byte) 0x00);
-		// LBA of first absolute sector in the partition
-		partitionPointer.setUnalignedValue32(8, FIRST_PAGE_LBA);
-		// Number of sectors in partition
-		partitionPointer.setUnalignedValue32(12, NUMBER_OF_PAGES);
-
-		// Signature
-		pageBufferPointer.setValue8(510, (byte) 0x55);
-		pageBufferPointer.setValue8(511, (byte) 0xAA);
-	}
-
 	public void readSector(int lba, TPointer address) {
-		long offset = 0L;
-		if (lba < FIRST_PAGE_LBA) {
-			vFileIpl.ioLseek(lba * PAGE_SIZE);
-			vFileIpl.ioRead(address, PAGE_SIZE);
-		} else {
-			offset = (lba - FIRST_PAGE_LBA) * (long) PAGE_SIZE;
-
-			sceMSstorModule.hleMSstorPartitionIoRead(offset, address, PAGE_SIZE);
-		}
+		long offset = lba * (long) PAGE_SIZE;
+		sceMSstorModule.hleMSstorRawIoRead(offset, address, PAGE_SIZE);
 
 		if (log.isDebugEnabled()) {
 			byte[] buffer = new byte[PAGE_SIZE];
@@ -392,11 +333,11 @@ public class MMIOHandlerMemoryStick extends MMIOHandlerBaseMemoryStick {
 	@Override
 	protected void writePageBuffer() {
 		if (cmd == MSPRO_CMD_WRITE_DATA) {
-			long offset = 0L;
 			int lba = pageLba;
 			if (startBlock != 0xFFFF) {
 				lba += startBlock * PAGES_PER_BLOCK;
 			}
+			long offset = lba * (long) PAGE_SIZE;
 
 			if (log.isDebugEnabled()) {
 				byte[] buffer = new byte[PAGE_SIZE];
@@ -406,14 +347,7 @@ public class MMIOHandlerMemoryStick extends MMIOHandlerBaseMemoryStick {
 				log.debug(String.format("MMIOHandlerMemoryStick.writePageBuffer startBlock=0x%X, lba=0x%X, offset=0x%X: %s", startBlock, lba, offset, Utilities.getMemoryDump(buffer)));
 			}
 
-			if (lba < FIRST_PAGE_LBA) {
-				vFileIpl.ioLseek(lba * PAGE_SIZE);
-				vFileIpl.ioWrite(pageBufferPointer, PAGE_SIZE);
-			} else {
-				offset = (lba - FIRST_PAGE_LBA) * (long) PAGE_SIZE;
-
-				sceMSstorModule.hleMSstorPartitionIoWrite(offset, pageBufferPointer, PAGE_SIZE);
-			}
+			sceMSstorModule.hleMSstorRawIoWrite(offset, pageBufferPointer, PAGE_SIZE);
 
 			pageLba++;
 		} else {
