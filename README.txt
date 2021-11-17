@@ -293,7 +293,11 @@ legal option is to own a PSP and use it to decrypt your own games' boot file.
 The "File" menu allows you to load UMD images (Load UMD), homebrew applications
 (Load MemStick), and any other file such as demos (Load File). It also allows 
 to capture and load the current RAM memory and GPR registers' state to a file,
-so it can be used as an additional save option (Save/Load Snapshot).
+so it can be used as an additional save option (Save/Load Snapshot). If you load
+the 6.61 software update bundle from the "Load UMD" menu (place the updater in
+ms0/GAME/UPDATE/EBOOT.PBP), the update will be installed and LLE emulation will
+be possible. Once the update is installed, pressing "Reboot" in the UI will
+cause JPCSP to boot in LLE mode.
 
 The "Options" menu contains dedicated settings for "Video" (Rotate and 
 Screenshot), "Audio" (Mute) and "Controls" features, as well as the 
