@@ -25,6 +25,7 @@ March 25, 2010 - Merged all JPCSP's (v0.5) details into this README file.
 - Introduction;
 - What's new (changelog);
 - JPCSP FAQ;
+- Building;
 - The Team;
 - Copyright;
 - Contacts.
@@ -901,6 +902,22 @@ Each statistic is giving the total number of calls and the average
 number of calls per GE list (total number of calls divided by the number of GE lists).
 The average per GE list is probably the most relevant information.
 
+...............................................................................
+
+
+
+
+			   	[Building]
+...............................................................................
+...............................................................................
+JCPSP can be build from the commandline using the ant tool.
+
+To build jcpsp.jar:
+  ant -f build-auto.xml jar
+
+To build release distribution artifacts for all supported operating systems:
+  ant -f build-auto.xml dist
+  
 ...............................................................................
 
 
