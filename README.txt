@@ -11,16 +11,6 @@
            &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
 
 *******************************************************************************
-[VERSION HISTORY]:
-v.07:
-June 28, 2013 - Updated for v0.7
-v0.6:
-September 18, 2010 - Added new emulation changes and improved the FAQ.
-v0.5:
-March 25, 2010 - Merged all JPCSP's (v0.5) details into this README file.
-*******************************************************************************
-
-*******************************************************************************
 [TABLE OF CONTENTS]:
 - Introduction;
 - What's new (changelog);
@@ -28,7 +18,7 @@ March 25, 2010 - Merged all JPCSP's (v0.5) details into this README file.
 - Building;
 - The Team;
 - Copyright;
-- Contacts.
+- Links.
 *******************************************************************************
 
 
@@ -104,7 +94,7 @@ JPCSP v1.0 (???):
 
 -> Added support to run the PSP original VSH interface
 
--> Experimental support to run the original PSP complete boot process
+-> Added support to run the original PSP complete boot process
    using Low Level Emulation (LLE). This method is able to run the official
    PSP 6.61 EBOOT.PBP and from there, the CFW PROC-C for 6.61.
 
@@ -902,6 +892,74 @@ Each statistic is giving the total number of calls and the average
 number of calls per GE list (total number of calls divided by the number of GE lists).
 The average per GE list is probably the most relevant information.
 
+
+11. Low-level emulation (LLE) to run the complete PSP firmware
+
+For those who want to emulate a real PSP or are interested in modifying the
+PSP firmware, Jpcsp has the capability to run the official PSP firmware (OFW) and from
+there to also install any custom firmware (CFW).
+
+Jpcsp is able to emulate the different PSP generations, whereas the 1st generation (PSP-1000 fat)
+is the most tested emulation configuration.
+
+The complete PSP boot process, including the pre-IPL, is supported as well, so that Jpcsp
+can be used to support the development of custom IPL code.
+
+The last PSP firmware version 6.61 is the firmware which is the most tested with Jpcsp,
+but older firmware can theoretically be installed as well. Not all firmware versions have been
+tested though and not all might work yet.
+
+The first step for running the low-level emulation (LLE) is running the PSP official updater,
+e.g. for 6.61, install it under
+	ms0/PSP/GAME/UPDATE661/EBOOT.PBP
+Then run Jpcsp and select the menu "File / Load UMD...".
+In the list, select the entry "PSP Update ver 6.61" and press "Load".
+Click the "Run" button. After a few seconds, follow the instructions from the official PSP updater
+and complete the update process.
+Once this installation is complete, you will not need to run it again, this step needs to be completed
+only one time. After the installation, you can close Jpcsp.
+
+Now, when you run again Jpcsp, a new icon "Reboot" is being displayed close to the "Run" button.
+Simply press "Reboot" to run the complete PSP reboot process and access the PSP XMB interface.
+If you want to simulate the insertion of an UMD, select the menu "File / Load UMD...", select
+the ISO/CSO file that you want to insert and press "Load". The PSP XMB will show it like
+on a real PSP when inserting an UMD into the drive.
+
+If you want to run Homebrews, you will need to install a custom firware (CFW) like on a real PSP.
+The PRO-C 6.61 CFW has been successfully tested. Other CFWs have not yet been tested.
+
+If you want to test the complete reboot process, including the pre-IPL, you will need to get
+a dump of a pre-IPL rom from a real PSP. Such a dump has a size of 4KB. Save the dump
+into the Jpcsp main directory with the following naming convention:
+	preIpl_01g.bin   when you emulate a PSP-1000 (Fat)
+	preIpl_02g.bin   when you emulate a PSP-2000 (Slim)
+	preIpl_03g.bin   when you emulate a PSP-3000 (Brite, 3rd generation)
+	preIpl_04g.bin   when you emulate a PSP-3000 (Brite, 4th generation)
+	preIpl_07g.bin   when you emulate a PSP-3000 (Brite, 7th generation)
+	preIpl_09g.bin   when you emulate a PSP-3000 (Brite, 9th generation)
+	preIpl_11g.bin   when you emulate a PSP-E1000 (Street)
+Note that all PSP-3000 generations have the same pre-IPL code, but it must be stored for Jpcsp
+using the above file name, depending on the emulated PSP generation.
+When such a file is present, Jpcsp is running the pre-IPL code when pressing the "Reboot" button,
+i.e. it runs the complete boot process like on a real PSP.
+When such a file is not present (which is the default situation as such files are not
+distributed with Jpcsp), Jpcsp is simulating the behaviour of the pre-IPL and is running directly
+the IPL code. On a PSP-1000 or PSP-2000, Jpcsp will load the IPL from the NAND or from
+the memory stick depending if the battery is identified as a Pandora battery (having
+a service serial number 0xFFFFFFFF). The battery serial number can be written using an
+homebrew (like you would do on a real PSP) or by adding the line
+	batterySerialNumber=0xFFFFFFFF
+to the Setting.properties file in the Jpcsp main directory.
+
+When pressing the "Reboot" button, a complete PSP reboot is always performed. It corresponds
+to a PSP cold boot reset. Jpcsp has also the possibility to save a complete PSP state using
+the menu "File / Save snapshot...". The state file will be saved as "State.bin" under the
+main directory. To reload such a state, select the menu "File / Load snapshot...", which
+will always load the state file named "State.bin". Then just press "Run" to re-run from
+the point where the snapshot had been taken. This is can be used to shorten the reboot
+process, if you need to test from a specific point. This feature is however not always
+running perfectly. Try it out with caution.
+
 ...............................................................................
 
 
@@ -917,6 +975,13 @@ To build jcpsp.jar:
 
 To build release distribution artifacts for all supported operating systems:
   ant -f build-auto.xml dist
+
+To build release distribution artifacts for a specific operating system:
+  ant -f build-auto.xml dist-windows-x86
+  ant -f build-auto.xml dist-windows-amd64
+  ant -f build-auto.xml dist-linux-x86
+  ant -f build-auto.xml dist-linux-amd64
+  ant -f build-auto.xml dist-macosx
   
 ...............................................................................
 
@@ -928,11 +993,11 @@ To build release distribution artifacts for all supported operating systems:
 ...............................................................................
 JPCSP Team (active):
 - gid15
-- hlide
-- Hykem
-- shadow
 
 Past members and contributors (inactive):
+- hlide
+- shadow
+- Hykem
 - Orphis
 - fiveofhearts
 - gigaherz
@@ -1028,15 +1093,10 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses>.
 JPCSP's Github Code repository:
 - https://github.com/jpcsp/jpcsp
 
-JPCSP's Official Website:
-- http://www.jpcsp.org
-
 JPCSP's Official Forum (hosted at EmuNewz.net):
 - http://www.emunewz.net/forum/forumdisplay.php?fid=51
 
-Official recent SVN builds can be found at:
-- http://buildbot.orphis.net/jpcsp/
-or at the EmuNewz.net Live Downloads:
+Official recent SVN builds can be found at the EmuNewz.net Live Downloads:
 - http://www.emunewz.net/forum/builds.php?filter=last
 
 JPCSP's external software renderer can be found at EmuNewz.net Live Downloads:
