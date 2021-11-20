@@ -54,7 +54,6 @@ import jpcsp.memory.MemorySections;
 import jpcsp.network.proonline.ProOnlineNetworkAdapter;
 import jpcsp.network.xlinkkai.XLinkKaiWlanAdapter;
 import jpcsp.scheduler.Scheduler;
-import jpcsp.settings.Settings;
 import jpcsp.sound.SoundChannel;
 import jpcsp.util.DurationStatistics;
 import jpcsp.util.HLEUtilities;
@@ -234,7 +233,7 @@ public class Emulator implements Runnable {
     public void initNewPsp(boolean fromSyscall) {
         moduleLoaded = false;
 
-        Model.setModel(Settings.getInstance().readInt("emu.model"));
+        Model.init();
         Nand.init();
         HLEModuleManager.getInstance().stopModules();
         NIDMapper.getInstance().unloadAll();

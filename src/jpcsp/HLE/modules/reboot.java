@@ -89,7 +89,6 @@ import jpcsp.memory.IntArrayMemory;
 import jpcsp.memory.mmio.MMIO;
 import jpcsp.memory.mmio.MMIOHandlerGpio;
 import jpcsp.memory.mmio.memorystick.MMIOHandlerMemoryStick;
-import jpcsp.settings.Settings;
 import jpcsp.util.HLEUtilities;
 import jpcsp.util.Utilities;
 import libkirk.KirkEngine;
@@ -146,6 +145,8 @@ public class reboot extends HLEModule {
     			"flash0:/kd/sysmem.prx"
     	};
 
+    	Model.init();
+
     	for (String fileName : fileNames) {
     		String completeFileName = String.format(fileName, Model.getGeneration());
     		if (!isFilePresent(completeFileName)) {
@@ -164,7 +165,7 @@ public class reboot extends HLEModule {
     		return false;
     	}
 
-        Model.setModel(Settings.getInstance().readInt("emu.model"));
+        Model.init();
     	Modules.SysMemUserForUserModule.setMemory64MB(Model.getGeneration() > 1);
     	RuntimeContextLLE.reset();
         RuntimeContextLLE.start();
