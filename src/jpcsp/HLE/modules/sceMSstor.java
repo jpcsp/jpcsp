@@ -156,10 +156,6 @@ public class sceMSstor extends HLEModule {
     		((IState) vFile).read(stream);
     		sync.read(stream);
     	}
-    	boolean vFileIplPresent = stream.readBoolean();
-    	if (vFileIplPresent) {
-    		((IState) vFileIpl).read(stream);
-    	}
 
     	super.read(stream);
     }
@@ -178,13 +174,6 @@ public class sceMSstor extends HLEModule {
     		stream.writeBoolean(true);
     		((IState) vFile).write(stream);
     		sync.write(stream);
-    	} else {
-    		stream.writeBoolean(false);
-    	}
-
-    	if (vFileIpl != null) {
-    		stream.writeBoolean(true);
-    		((IState) vFileIpl).write(stream);;
     	} else {
     		stream.writeBoolean(false);
     	}

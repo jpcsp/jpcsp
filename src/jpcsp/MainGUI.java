@@ -49,7 +49,6 @@ import javax.swing.*;
 
 import jpcsp.Allegrex.compiler.Profiler;
 import jpcsp.Allegrex.compiler.RuntimeContext;
-import jpcsp.Allegrex.compiler.RuntimeContextLLE;
 import jpcsp.autotests.AutoTestsRunner;
 import jpcsp.crypto.AES128;
 import jpcsp.crypto.PreDecrypt;
@@ -2630,17 +2629,14 @@ private void ExportAllElementsActionPerformed(java.awt.event.ActionEvent evt) {/
     		return stateFileName;
     	}
 
-    	if (RuntimeContextLLE.isLLEActive()) {
-    		return String.format("State.bin");
-    	}
-    	return String.format("State_%s.bin", State.discId);
+		return "State.bin";
     }
 
 private void SaveSnapActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_SaveSnapActionPerformed
 	try {
 		new jpcsp.state.State().write(getStateFileName());
 	} catch (IOException e) {
-		e.printStackTrace();
+		log.error("SaveSnapActionPerformed", e);
 	}
 }//GEN-LAST:event_SaveSnapActionPerformed
 
@@ -2648,7 +2644,7 @@ private void LoadSnapActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRS
 	try {
 		new jpcsp.state.State().read(getStateFileName());
 	} catch (IOException e) {
-		e.printStackTrace();
+		log.error("LoadSnapActionPerformed", e);
 	}
 }//GEN-LAST:event_LoadSnapActionPerformed
 

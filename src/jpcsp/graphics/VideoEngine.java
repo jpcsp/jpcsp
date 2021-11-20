@@ -8182,7 +8182,7 @@ public class VideoEngine {
     	int instruction = instruction(cmd, value);
     	if (videoEngineThread != null) {
     		videoEngineThread.interpretInstruction(instruction);
-    	} else {
+    	} else if (re != null) {
     		executeCommand(instruction);
     	}
     }

@@ -27,7 +27,7 @@ import jpcsp.HLE.kernel.types.IAction;
 
 public class Scheduler {
 	private static Scheduler instance = null;
-	private List<SchedulerAction> actions;
+	private final List<SchedulerAction> actions;
 	private SchedulerAction nextAction;
 
 	public static Scheduler getInstance() {
@@ -38,8 +38,12 @@ public class Scheduler {
 		return instance;
 	}
 
-	public synchronized void reset() {
+	private Scheduler() {
 		actions = new LinkedList<SchedulerAction>();
+	}
+
+	public synchronized void reset() {
+		actions.clear();
 		nextAction = null;
 	}
 

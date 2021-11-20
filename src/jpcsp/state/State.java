@@ -87,13 +87,18 @@ public class State implements IState {
 	@Override
 	public void read(StateInputStream stream) throws IOException {
 		stream.readVersion(STATE_VERSION);
-		Emulator.getClock().read(stream);
+		if (stream.readBoolean()) {
+			Emulator.getMainGUI().doReboot();
+		}
+    	Emulator.getClock().read(stream);
 		Wlan.read(stream);
 		Battery.read(stream);
 		Emulator.getProcessor().read(stream);
 		Emulator.getMemory().read(stream);
 		HLEModuleManager.getInstance().read(stream);
-		if (RuntimeContextLLE.isLLEActive()) {
+		boolean isLLEActive = stream.readBoolean();
+		if (isLLEActive) {
+			RuntimeContextLLE.enableLLE();
 			RuntimeContextLLE.read(stream);
 			RuntimeContextLLE.createMMIO();
 			RuntimeContextLLE.getMMIO().read(stream);
@@ -105,6 +110,7 @@ public class State implements IState {
 	@Override
 	public void write(StateOutputStream stream) throws IOException {
 		stream.writeVersion(STATE_VERSION);
+		stream.writeBoolean(Emulator.getMainGUI().isRunningReboot());
 		Emulator.getClock().write(stream);
 		Wlan.write(stream);
 		Battery.write(stream);
@@ -112,11 +118,14 @@ public class State implements IState {
 		Emulator.getMemory().write(stream);
 		HLEModuleManager.getInstance().write(stream);
 		if (RuntimeContextLLE.isLLEActive()) {
+			stream.writeBoolean(true);
 			RuntimeContextLLE.write(stream);
 			RuntimeContextLLE.createMMIO();
 			RuntimeContextLLE.getMMIO().write(stream);
 			RuntimeContextLLE.getMediaEngineProcessor().write(stream);
 			RuntimeContextLLE.getMediaEngineProcessor().getMEMemory().write(stream);
+		} else {
+			stream.writeBoolean(false);
 		}
 	}
 }
