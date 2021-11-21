@@ -52,6 +52,7 @@ public class LocalVirtualFileSystem extends AbstractVirtualFileSystem {
     // modeStrings indexed by [0, PSP_O_RDONLY, PSP_O_WRONLY, PSP_O_RDWR]
     // SeekableRandomFile doesn't support write only: take "rw",
     private final static String[] modeStrings = {"r", "r", "rw", "rw"};
+    private final static boolean fileNamesAreCaseSensitive = System.getProperty("os.name").equalsIgnoreCase("Linux");
 
     /**
      * Get the file name as returned from the memory stick.
@@ -75,7 +76,7 @@ public class LocalVirtualFileSystem extends AbstractVirtualFileSystem {
     	if (fileName == null) {
     		return fileName;
     	}
-    	if (fileName.matches("[^A-Z]{1,8}(\\.[^A-Z]{1,3})?")) {
+    	if (!fileNamesAreCaseSensitive && fileName.matches("[^A-Z]{1,8}(\\.[^A-Z]{1,3})?")) {
     		return fileName.toUpperCase();
     	}
     	return fileName;
