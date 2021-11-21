@@ -46,7 +46,9 @@ public class FBTexture extends GETexture {
 			re.bindFramebuffer(IRenderingEngine.RE_FRAMEBUFFER, 0);
 			super.bind(re, forDrawing);
 		} else {
-			if (fboId == -1) {
+			// Create the FBO if not yet created or
+			// re-create it if the viewport resize factor has been changed dynamically.
+			if (fboId == -1 || isResized()) {
 				createFBO(re, forDrawing);
 			} else {
 				// Bind the FBO
@@ -56,6 +58,15 @@ public class FBTexture extends GETexture {
 	}
 
 	protected void createFBO(IRenderingEngine re, boolean forDrawing) {
+		if (fboId != -1) {
+			re.deleteFramebuffer(fboId);
+			fboId = -1;
+		}
+		if (depthRenderBufferId != -1) {
+			re.deleteRenderbuffer(depthRenderBufferId);
+			depthRenderBufferId = -1;
+		}
+
 		// Create the FBO and associate it to the texture
 		fboId = re.genFramebuffer();
 		re.bindFramebuffer(IRenderingEngine.RE_FRAMEBUFFER, fboId);

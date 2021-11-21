@@ -93,11 +93,14 @@ public class GETexture {
 		return VideoEngineUtilities.getViewportResizeScaleFactor();
 	}
 
+	protected boolean isResized() {
+		return getViewportResizeScaleFactor() != resizeScale;
+	}
+
 	public void bind(IRenderingEngine re, boolean forDrawing) {
-		float viewportResizeScaleFactor = getViewportResizeScaleFactor();
 		// Create the texture if not yet created or
 		// re-create it if the viewport resize factor has been changed dynamically.
-		if (textureId == -1 || viewportResizeScaleFactor != resizeScale) {
+		if (textureId == -1 || isResized()) {
 			// The Jpcsp window has been resized. Recreate all the textures using the new size.
 			if (textureId != -1) {
 				re.deleteTexture(textureId);
@@ -112,7 +115,7 @@ public class GETexture {
 				stencilFboId = -1;
 			}
 
-			resizeScale = viewportResizeScaleFactor;
+			resizeScale = getViewportResizeScaleFactor();
 
 			if (useViewportResize) {
 				texS = VideoEngineUtilities.getResizedWidth(width) / (float) getTexImageWidth();
