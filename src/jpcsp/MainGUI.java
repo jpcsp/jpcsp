@@ -274,14 +274,14 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         Dimension dimension = new Dimension(
                 width + insets.left + insets.right,
                 height + insets.top + insets.bottom);
+        dimension.height += mainToolBar.getHeight();
+        dimension.height += MenuBar.getHeight();
         return dimension;
     }
 
     @Override
     public void setDisplayMinimumSize(int width, int height) {
         Dimension dim = getDimensionFromDisplay(width, height);
-        dim.height += mainToolBar.getHeight();
-        dim.height += MenuBar.getHeight();
     	Dimension currentMinimumSize = getMinimumSize();
     	if (currentMinimumSize == null || !dim.equals(currentMinimumSize)) {
     		setMinimumSize(dim);
