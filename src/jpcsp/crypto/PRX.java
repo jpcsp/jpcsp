@@ -286,7 +286,9 @@ public class PRX {
         new TAG_INFO(0xBB67C59F, KeyVault.g_key4C, 0x5F, 0x5F),
         new TAG_INFO(0xBB67C59F, KeyVault.g_key7F, 0x60, 0x60),
         new TAG_INFO(0xBB67C59F, KeyVault.g_key1B, 0x61, 0x61),
-    	new TAG_INFO(0x0E000000, KeyVault.key_102DC8AF_2, 0x51, 0x00)};
+    	new TAG_INFO(0x0E000000, KeyVault.key_102DC8AF_2, 0x51, 0x00),
+    	new TAG_INFO(0x06000000, KeyVault.key_06000000, 0x49, 0x00),
+    	new TAG_INFO(0xE42C2303, KeyVault.key_E42C2303, 0x49, 0x00)};
 
     private TAG_INFO GetTagInfo(int tag) {
     	List<TAG_INFO> tagInfos = new LinkedList<TAG_INFO>();

@@ -21,18 +21,44 @@ import org.apache.log4j.Logger;
 import jpcsp.HLE.BufferInfo;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLEModule;
-import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.TPointer;
+import jpcsp.HLE.TPointer32;
 import jpcsp.HLE.BufferInfo.LengthInfo;
 import jpcsp.HLE.BufferInfo.Usage;
+import jpcsp.crypto.CryptoEngine;
+import jpcsp.crypto.PRX;
 
 public class sceNwman extends HLEModule {
     public static Logger log = Modules.getLogger("sceNwman");
+    private PRX prxEngine = new CryptoEngine().getPRXEngine();
 
-    @HLEUnimplemented
     @HLEFunction(nid = 0x9555D68D, version = 100)
-    public int sceNwman_9555D68D(@BufferInfo(lengthInfo = LengthInfo.fixedLength, length = 16, usage = Usage.out) TPointer unknown1, int unknown2, TPointer unknown3) {
-        return 0;
+    public int sceNwman_9555D68D(@BufferInfo(lengthInfo = LengthInfo.nextParameter, usage = Usage.inout) TPointer bufferAddr, int bufferSize, @BufferInfo(usage = Usage.out) TPointer32 resultSizeAddr) {
+        int tag = bufferAddr.getValue32(0xD0);
+        int type;
+        switch (tag) {
+        	case 0x06000000:
+        		type = 0;
+        		break;
+        	case 0xE42C2303:
+        		type = 2;
+        		break;
+    		default:
+    			return -301;
+        }
+
+        byte[] buffer = bufferAddr.getArray8(bufferSize);
+    	int result = prxEngine.DecryptPRX(buffer, bufferSize, type, null, null);
+
+    	bufferAddr.setArray(buffer);
+    	int resultSize = 0;
+    	if (result > 0) {
+    		resultSize = result;
+    		result = 0;
+    	}
+    	resultSizeAddr.setValue(resultSize);
+
+    	return result;
     }
 }
