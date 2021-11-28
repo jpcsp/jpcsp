@@ -35,7 +35,6 @@ import jpcsp.Memory;
 import jpcsp.MemoryMap;
 import jpcsp.Processor;
 import jpcsp.Allegrex.Cp0State;
-import jpcsp.HLE.HLEModuleManager;
 import jpcsp.HLE.kernel.Managers;
 import jpcsp.HLE.kernel.managers.IntrManager;
 import jpcsp.HLE.kernel.types.IAction;
@@ -415,7 +414,8 @@ public class RuntimeContextLLE {
 	    			int index2 = contentString.indexOf(':', index1 + 1);
 	    			if (index2 >= 0) {
 	    				String versionString = contentString.substring(index1 + 1, index2);
-	    				firmwareVersion = HLEModuleManager.psfFirmwareVersionToInt(versionString);
+	    				versionString = versionString.replace(".", "");
+	    				firmwareVersion = Integer.parseInt(versionString);
 	    				if (log.isDebugEnabled()) {
 	    					log.debug(String.format("firmwareVersion=%d", firmwareVersion));
 	    				}
