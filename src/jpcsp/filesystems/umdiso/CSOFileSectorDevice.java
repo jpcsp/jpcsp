@@ -40,13 +40,21 @@ public class CSOFileSectorDevice extends AbstractFileSectorDevice {
 
         /*
 	        u32 'CISO'
-	        u64 image size in bytes (first u32 is highest 32-bit, second u32 is lowest 32-bit)
+	        u32 header size
+	        u64 image size in bytes (first u32 is lowest 32-bit, second u32 is highest 32-bit)
 	        u32 sector size? (00000800 = 2048 = sector size)
-	        u32 ? (1)
+	        u8  version (0 or 1, maxcso is using version 2)
+	        u8  offset shift
+	        u8  unused
+	        u8  unused
 	        u32[] sector offsets (as many as image size / sector size, I guess)
          */
-		long lengthInBytes = (((long) byteBuffer.getInt(4)) << 32) | (byteBuffer.getInt(8) & 0xFFFFFFFFL);
+		long lengthInBytes = byteBuffer.getLong(8);
 		int sectorSize = byteBuffer.getInt(16);
+		int version = byteBuffer.get(20) & 0xFF;
+		if (version > 1) {
+			log.warn(String.format("Unsupported CSO version number 0x%02X", version));
+		}
 		offsetShift = byteBuffer.get(21) & 0xFF;
 		numSectors = getNumSectors(lengthInBytes, sectorSize);
 		sectorOffsets = new long[numSectors + 1];
