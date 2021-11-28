@@ -193,7 +193,7 @@ public class PRX {
         new TAG_INFO(0x0F037303, KeyVault.keys260_2, 0x5A),
         new TAG_INFO(0x4C940FF0, KeyVault.key_2DA8, 0x43),
         new TAG_INFO(0x4467415D, KeyVault.key_22E0, 0x59),
-        new TAG_INFO(0x00000000, KeyVault.key_21C0, 0x42),
+//        new TAG_INFO(0x00000000, KeyVault.key_21C0, 0x42), // Duplicate tag 0x00000000
         new TAG_INFO(0x01000000, KeyVault.key_2250, 0x43),
         new TAG_INFO(0x2E5E10F0, KeyVault.key_2E5E10F0, 0x48),
         new TAG_INFO(0x2E5E12F0, KeyVault.key_2E5E12F0, 0x48),
