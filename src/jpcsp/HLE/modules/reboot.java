@@ -38,6 +38,8 @@ import static jpcsp.memory.mmio.MMIOHandlerGpio.GPIO_PORT_SERVICE_BATTERY;
 import static jpcsp.util.Utilities.clearBit;
 import static jpcsp.util.Utilities.readCompleteFile;
 import static jpcsp.util.Utilities.readUnaligned32;
+import static libkirk.KirkEngine.KIRK_CMD_DECRYPT_PRIVATE;
+import static libkirk.KirkEngine.KIRK_MODE_CMD1;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -79,7 +81,6 @@ import jpcsp.HLE.kernel.types.SceModule;
 import jpcsp.HLE.kernel.types.SceSysmemUidCB;
 import jpcsp.HLE.modules.SysMemUserForUser.SysMemInfo;
 import jpcsp.crypto.CryptoEngine;
-import jpcsp.crypto.KIRK;
 import jpcsp.crypto.PRX;
 import jpcsp.filesystems.SeekableRandomFile;
 import jpcsp.format.PSP;
@@ -140,15 +141,20 @@ public class reboot extends HLEModule {
     }
 
     public boolean isAvailable() {
+    	String generationSuffix = "";
+    	// Starting with Firmware 3.00, some file names include the PSP generation number
+    	if (RuntimeContextLLE.getFirmwareVersion() >= 300) {
+    		generationSuffix = String.format("_%02dg", Model.getGeneration());
+    	}
     	final String[] fileNames = {
-    			"flash0:/kd/loadexec_%02dg.prx",
+    			"flash0:/kd/loadexec%s.prx",
     			"flash0:/kd/sysmem.prx"
     	};
 
     	Model.init();
 
     	for (String fileName : fileNames) {
-    		String completeFileName = String.format(fileName, Model.getGeneration());
+    		String completeFileName = String.format(fileName, generationSuffix);
     		if (!isFilePresent(completeFileName)) {
     			if (log.isDebugEnabled()) {
     				log.debug(String.format("reboot is not available because the file '%s' is missing", completeFileName));
@@ -619,15 +625,18 @@ public class reboot extends HLEModule {
      * @return true if can be booted
      */
     private boolean bootIpl() {
-		// The Pre-IPL is testing the GPIO port 4 to decide if needs to boot
-		// from the Nand (normal battery) or from the MemoryStick (service/Pandora battery)
-    	boolean bootFromNand = !MMIOHandlerGpio.getInstance().readPort(GPIO_PORT_SERVICE_BATTERY);
-    	if (log.isInfoEnabled()) {
-    		log.info(String.format("Loading IPL from %s", bootFromNand ? "Nand" : "MemoryStick"));
-    	}
+    	if (loadKbooti()) {
+    	} else {
+			// The Pre-IPL is testing the GPIO port 4 to decide if needs to boot
+			// from the Nand (normal battery) or from the MemoryStick (service/Pandora battery)
+	    	boolean bootFromNand = !MMIOHandlerGpio.getInstance().readPort(GPIO_PORT_SERVICE_BATTERY);
+	    	if (log.isInfoEnabled()) {
+	    		log.info(String.format("Loading IPL from %s", bootFromNand ? "Nand" : "MemoryStick"));
+	    	}
 
-    	if (!loadIpl(bootFromNand)) {
-    		return false;
+	    	if (!loadIpl(bootFromNand)) {
+	    		return false;
+	    	}
     	}
 
     	addMMIORange(preIplCopy, 0x1000);
@@ -1031,6 +1040,90 @@ public class reboot extends HLEModule {
     	addMMIORange(startAddress.getAddress(), length);
     }
 
+    private boolean loadKbooti() {
+    	File kbootiFile = new File("kbooti.bin");
+    	if (!kbootiFile.canRead() || kbootiFile.length() <= 0x1000) {
+    		return false;
+    	}
+
+    	byte[] kbooti = new byte[(int) kbootiFile.length()];
+    	try {
+        	InputStream is = new FileInputStream(kbootiFile);
+			is.read(kbooti);
+	    	is.close();
+		} catch (IOException e) {
+			log.error("loadKbooti", e);
+			return false;
+		}
+
+    	if (log.isInfoEnabled()) {
+    		log.info(String.format("Loading IPL from %s", kbootiFile));
+    	}
+
+    	int offset = 0;
+    	if (readUnaligned32(kbooti, offset + 0x60) != KIRK_MODE_CMD1) {
+    		offset += 0x1000;
+    	}
+
+    	Memory mem = getMMIO();
+		final TPointer decryptBuffer = new TPointer(mem, 0xBFD00000);
+    	final int decryptBufferPages = 8;
+    	final int decryptBufferSize = decryptBufferPages * Nand.pageSize;
+		int nextAddr = 0;
+		iplBase = 0;
+		iplEntry = 0;
+		for (int i = 0; i < Nand.pageSize && iplEntry == 0; i += 2) {
+			for (int j = 0; j < Nand.pagesPerBlock && iplEntry == 0; j += decryptBufferPages) {
+				decryptBuffer.setArray(0, kbooti, offset, decryptBufferSize);
+				offset += decryptBufferSize;
+
+				int dataSize = decryptBuffer.getValue32(112);
+				int dataOffset = decryptBuffer.getValue32(116);
+				int inSize = KirkEngine.KIRK_CMD1_HEADER.SIZEOF + Utilities.alignUp(dataSize, 15) + dataOffset;
+				int result = Modules.semaphoreModule.hleUtilsBufferCopyWithRange(decryptBuffer, decryptBufferSize, decryptBuffer, inSize, KIRK_CMD_DECRYPT_PRIVATE);
+				if (result != 0) {
+					log.error(String.format("hleUtilsBufferCopyWithRange returned 0x%08X", result));
+				}
+
+				int addr = decryptBuffer.getValue32(0);
+				int length = decryptBuffer.getValue32(4);
+				iplEntry = decryptBuffer.getValue32(8);
+				int checksum = decryptBuffer.getValue32(12);
+				if (log.isTraceEnabled()) {
+					log.trace(String.format("IPL block 0x%X: addr=0x%08X, length=0x%X, entry=0x%08X, checkSum=0x%08X", i, addr, length, iplEntry, checksum));
+				}
+
+				if (iplBase == 0) {
+					iplBase = addr;
+				} else if (addr != nextAddr) {
+					log.error(String.format("Error at IPL offset 0x%X: 0x%08X != 0x%08X", i, addr, nextAddr));
+				}
+				if (length > 0) {
+					mem.memcpy(addr, decryptBuffer.getAddress() + 0x10, length);
+				}
+				nextAddr = addr + length;
+			}
+		}
+		iplSize = nextAddr - iplBase;
+
+		if (iplBase == 0) {
+			iplBase = decryptBuffer.getAddress();
+			iplSize = decryptBufferSize;
+		}
+
+		if (log.isTraceEnabled()) {
+			log.trace(String.format("IPL size=0x%X: %s", iplSize, Utilities.getMemoryDump(mem, iplBase, Math.min(iplSize, 1024))));
+		}
+
+		patchIpl(mem);
+
+    	addMMIORange(iplBase, iplSize);
+		// The 2nd part of the IPL will be uncompressed at 0x04000000
+		addMMIORange(0x04000000, 0xE0000);
+
+		return true;
+    }
+
     private boolean loadIpl(boolean loadFromNand) {
     	int result;
     	Memory mem = getMMIO();
@@ -1086,7 +1179,7 @@ public class reboot extends HLEModule {
 				int dataSize = decryptBuffer.getValue32(112);
 				int dataOffset = decryptBuffer.getValue32(116);
 				int inSize = KirkEngine.KIRK_CMD1_HEADER.SIZEOF + Utilities.alignUp(dataSize, 15) + dataOffset;
-				result = Modules.semaphoreModule.hleUtilsBufferCopyWithRange(decryptBuffer, decryptBufferSize, decryptBuffer, inSize, KIRK.PSP_KIRK_CMD_DECRYPT_PRIVATE);
+				result = Modules.semaphoreModule.hleUtilsBufferCopyWithRange(decryptBuffer, decryptBufferSize, decryptBuffer, inSize, KIRK_CMD_DECRYPT_PRIVATE);
 				if (result != 0) {
 					log.error(String.format("hleUtilsBufferCopyWithRange returned 0x%08X", result));
 				}
