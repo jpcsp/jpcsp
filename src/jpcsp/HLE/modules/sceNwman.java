@@ -28,14 +28,14 @@ import jpcsp.HLE.BufferInfo.LengthInfo;
 import jpcsp.HLE.BufferInfo.Usage;
 import jpcsp.crypto.CryptoEngine;
 import jpcsp.crypto.PRX;
+import jpcsp.util.Utilities;
 
 public class sceNwman extends HLEModule {
     public static Logger log = Modules.getLogger("sceNwman");
     private PRX prxEngine = new CryptoEngine().getPRXEngine();
 
-    @HLEFunction(nid = 0x9555D68D, version = 100)
-    public int sceNwman_9555D68D(@BufferInfo(lengthInfo = LengthInfo.nextParameter, usage = Usage.inout) TPointer bufferAddr, int bufferSize, @BufferInfo(usage = Usage.out) TPointer32 resultSizeAddr) {
-        int tag = bufferAddr.getValue32(0xD0);
+    public int hleNwman_driver_9555D68D(byte[] buffer, int bufferOffset, int bufferSize, TPointer32 resultSizeAddr) {
+        int tag = Utilities.readUnaligned32(buffer, bufferOffset + 0xD0);
         int type;
         switch (tag) {
         	case 0x06000000:
@@ -48,16 +48,23 @@ public class sceNwman extends HLEModule {
     			return -301;
         }
 
-        byte[] buffer = bufferAddr.getArray8(bufferSize);
     	int result = prxEngine.DecryptPRX(buffer, bufferSize, type, null, null);
 
-    	bufferAddr.setArray(buffer);
     	int resultSize = 0;
     	if (result > 0) {
     		resultSize = result;
     		result = 0;
     	}
     	resultSizeAddr.setValue(resultSize);
+
+    	return result;
+    }
+
+    @HLEFunction(nid = 0x9555D68D, version = 100)
+    public int sceNwman_driver_9555D68D(@BufferInfo(lengthInfo = LengthInfo.nextParameter, usage = Usage.inout) TPointer bufferAddr, int bufferSize, @BufferInfo(usage = Usage.out) TPointer32 resultSizeAddr) {
+        byte[] buffer = bufferAddr.getArray8(bufferSize);
+    	int result = hleNwman_driver_9555D68D(buffer, 0, bufferSize, resultSizeAddr);
+    	bufferAddr.setArray(buffer);
 
     	return result;
     }
