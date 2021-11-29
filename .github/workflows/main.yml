@@ -3,6 +3,8 @@ name: CI
 on:
   push:
     branches: [ master ]
+    tags:
+      - '*'
   pull_request:
     branches: [ master ]
 
@@ -22,9 +24,16 @@ jobs:
         run: ant -f build-auto.xml dist
         
       - name: Move builds to apporiate artifact folders
-        run: cd dist;rm -R -- */;cd ..;mkdir -p dist/{buildWin32,buildLinux,buildMacOS};mv dist/*windows* dist/buildWin32/;mv dist/*linux* dist/buildLinux/;mv dist/*macosx* dist/buildMacOS/;
-        continue-on-error: true
-      
+        run: |
+          # Remove all unnecessary build folders since we will only release builds with archived with 7zip
+          cd dist
+          rm -R -- */
+          cd ..
+          # Make directories for artifact releases and move all of builds to their respective folders
+          mkdir -p dist/{buildWin32,buildLinux,buildMacOS}
+          mv dist/*windows* dist/buildWin32/
+          mv dist/*linux* dist/buildLinux/
+          mv dist/*macosx* dist/buildMacOS/      
       - name: Publishing Win32 builds
         uses: actions/upload-artifact@v2
         with:
@@ -42,3 +51,13 @@ jobs:
         with:
           name: Mac OS builds
           path: dist/buildMacOS
+          
+      - name: Release tagged builds
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          files: |
+            dist/buildLinux/*.7z
+            dist/buildMacOS/*.7z
+            dist/buildWin32/*.7z
