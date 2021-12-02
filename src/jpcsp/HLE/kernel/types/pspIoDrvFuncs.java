@@ -38,7 +38,7 @@ public class pspIoDrvFuncs extends pspAbstractMemoryMappedStructure {
 	public int ioMount;
 	public int ioUmount;
 	public int ioDevctl;
-	public int ioUnk21;
+	public int ioCancel;
 
 	@Override
 	protected void read() {
@@ -63,7 +63,7 @@ public class pspIoDrvFuncs extends pspAbstractMemoryMappedStructure {
 		ioMount = read32();
 		ioUmount = read32();
 		ioDevctl = read32();
-		ioUnk21 = read32();
+		ioCancel = read32();
 	}
 
 	@Override
@@ -89,7 +89,7 @@ public class pspIoDrvFuncs extends pspAbstractMemoryMappedStructure {
 		write32(ioMount);
 		write32(ioUmount);
 		write32(ioDevctl);
-		write32(ioUnk21);
+		write32(ioCancel);
 	}
 
 	@Override
@@ -131,7 +131,7 @@ public class pspIoDrvFuncs extends pspAbstractMemoryMappedStructure {
 		toString(s, "ioMount", ioMount);
 		toString(s, "ioUmount", ioUmount);
 		toString(s, "ioDevctl", ioDevctl);
-		toString(s, "ioUnk21", ioUnk21);
+		toString(s, "ioCancel", ioCancel);
 
 		return s.toString();
 	}
