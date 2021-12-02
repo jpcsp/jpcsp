@@ -114,6 +114,7 @@ public class reboot extends HLEModule {
 	private int iplEntry;
 	private int iplBase;
 	private int iplSize;
+	private boolean usingKbooti;
 
     private static class SetLog4jMDC implements IAction {
 		@Override
@@ -617,6 +618,20 @@ public class reboot extends HLEModule {
     	return true;
     }
 
+    private void addMMIORangeIPL() {
+		// The IPL will be loaded at 0x040EC000 from the Nand
+		addMMIORange(0x040EC000, 0x1E000);
+		// The 2nd part of the IPL will be uncompressed at 0x04000000
+		addMMIORange(0x04000000, 0xE0000);
+
+		// For multiloader_ipl.bin
+		addMMIORange(0x041E0000, 0x4000);
+		addMMIORange(0x040E0000, 0x5000);
+
+		// For Pro-CFW CIPL
+		addMMIORange(0xBFD00000, 0x1000);
+    }
+
     /**
      * Boot using the IPL code is not working as it is computing a hash
      * on the IPL code located at 0xBFC00000 and using this hash value
@@ -626,6 +641,7 @@ public class reboot extends HLEModule {
      */
     private boolean bootIpl() {
     	if (loadKbooti()) {
+    		usingKbooti = true;
     	} else {
 			// The Pre-IPL is testing the GPIO port 4 to decide if needs to boot
 			// from the Nand (normal battery) or from the MemoryStick (service/Pandora battery)
@@ -640,6 +656,7 @@ public class reboot extends HLEModule {
     	}
 
     	addMMIORange(preIplCopy, 0x1000);
+    	addMMIORangeIPL();
     	HLEUtilities.getInstance().installHLESyscallWithJump(new TPointer(preIplCopy, 0x000), this, "hlePreIplStart");
     	HLEUtilities.getInstance().installHLESyscall(new TPointer(preIplCopy, 0x2A0), this, "hlePreIplIcacheInvalidateAll");
     	HLEUtilities.getInstance().installHLESyscall(new TPointer(preIplCopy, 0x2D8), this, "hlePreIplDcacheWritebackInvalidateAll");
@@ -688,17 +705,7 @@ public class reboot extends HLEModule {
 
 		addMMIORange(preIpl, preIplSize);
 		addMMIORange(preIplCopy, preIplSize);
-		// The IPL will be loaded at 0x040EC000 from the Nand
-		addMMIORange(0x040EC000, 0x1E000);
-		// The 2nd part of the IPL will be uncompressed at 0x04000000
-		addMMIORange(0x04000000, 0xE0000);
-
-		// For multiloader_ipl.bin
-		addMMIORange(0x041E0000, 0x4000);
-		addMMIORange(0x040E0000, 0x5000);
-
-		// For Pro-CFW CIPL
-		addMMIORange(0xBFD00000, 0x1000);
+		addMMIORangeIPL();
 
 		SceModule iplModule = new SceModule(true);
 		iplModule.modname = getName();
@@ -1118,8 +1125,6 @@ public class reboot extends HLEModule {
 		patchIpl(mem);
 
     	addMMIORange(iplBase, iplSize);
-		// The 2nd part of the IPL will be uncompressed at 0x04000000
-		addMMIORange(0x04000000, 0xE0000);
 
 		return true;
     }
@@ -1228,9 +1233,6 @@ public class reboot extends HLEModule {
 			checksum += keyWithoutPreIpl[i];
 		}
 		keyAddr.setUnsignedValue8(0x20, checksum);
-
-		// The 2nd part of the IPL will be uncompressed at 0x04000000
-		addMMIORange(0x04000000, 0xE0000);
     }
 
     private void patchIpl(Memory mem) {
@@ -1384,4 +1386,8 @@ public class reboot extends HLEModule {
 
     	return continueAddress;
     }
+
+	public boolean isUsingKbooti() {
+		return usingKbooti;
+	}
 }

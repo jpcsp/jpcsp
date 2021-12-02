@@ -16,7 +16,6 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules;
 
-import static jpcsp.Allegrex.compiler.RuntimeContextLLE.getFirmwareVersion;
 import static jpcsp.HLE.Modules.sceChkregModule;
 import static jpcsp.HLE.modules.sceChkreg.PS_CODE_EUROPE;
 import static jpcsp.hardware.Nand.pageSize;
@@ -111,11 +110,12 @@ public class sceIdStorage extends HLEModule {
 		switch (key) {
 			case 0x0004:
 				buffer.setValue32(0, 0x4272796E); // Fixed value "nyrB"
-				if (getFirmwareVersion() == 100) {
-					buffer.setUnsignedValue8(24, 0x94 & 0x7F);
-				} else {
-					buffer.setUnsignedValue8(24, 0x94);
+				int unknown24 = 0x94;
+				if (Modules.rebootModule.isUsingKbooti()) {
+					// The IPL code from the kbooti.bin is checking that the value is in the range [0..127]
+					unknown24 &= 0x7F;
 				}
+				buffer.setUnsignedValue8(24, unknown24);
 				break;
 			case 0x0005:
 				buffer.setValue32(0, 0x436C6B67); // Fixed value "gklC"

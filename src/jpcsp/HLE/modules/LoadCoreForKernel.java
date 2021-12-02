@@ -577,7 +577,8 @@ public class LoadCoreForKernel extends HLEModule {
     		//    ...
     		//    addiu  $a0, $baseRegister, offsetLow
     		//    ...
-    		//    sw     $zr, 524($a0)
+    		//    sw     $zr, 524($a0)  // For Firmware >  2.01
+			// or sw     $zr, 20($a1)   // For Firmware <= 2.01
     		//
     		// The loadCodeBaseAddress is then
     		//    (offsetHigh << 16) + offsetLow
@@ -587,7 +588,7 @@ public class LoadCoreForKernel extends HLEModule {
 			if (getFirmwareVersion() <= 201) {
 				swOpcode = SW(_zr, _a1, 20); // sw $zr, 20($a1)
 			}
-			for (int i = 0x13000; i < 0x18000 && loadCoreBaseAddress == 0; i += 4) {
+			for (int i = 0x12000; i < 0x18000 && loadCoreBaseAddress == 0; i += 4) {
 				int addr = MemoryMap.START_KERNEL + i;
 				if (mem.internalRead32(addr) == swOpcode) {
 					if (log.isDebugEnabled()) {
