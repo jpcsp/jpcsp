@@ -30,26 +30,41 @@ jobs:
           rm -R -- */
           cd ..
           # Make directories for artifact releases and move all of builds to their respective folders
-          mkdir -p dist/{buildWin32,buildLinux,buildMacOS}
-          mv dist/*windows* dist/buildWin32/
-          mv dist/*linux* dist/buildLinux/
-          mv dist/*macosx* dist/buildMacOS/      
-      - name: Publishing Win32 builds
+          mkdir -p dist/{buildWin32/x86,buildWin32/amd64,buildLinux/x86,buildLinux/amd64,buildMacOS}
+          mv dist/*linux-amd64* dist/buildLinux/amd64/
+          mv dist/*linux-x86* dist/buildLinux/x86/
+          mv dist/*windows-x86* dist/buildWin32/x86/
+          mv dist/*windows-amd64* dist/buildWin32/amd64/
+          mv dist/*macosx* dist/buildMacOS/
+     
+      - name: Publishing Win32 x86 build
         uses: actions/upload-artifact@v2
         with:
-          name: Win32 builds
-          path: dist/buildWin32
-      
-      - name: Publishing Linux builds
-        uses: actions/upload-artifact@v2
-        with:
-          name: Linux builds
-          path: dist/buildLinux
+          name: Win32 x86 build
+          path: dist/buildWin32/x86
 
-      - name: Publishing MacOS builds
+      - name: Publishing Win32 amd64 build
         uses: actions/upload-artifact@v2
         with:
-          name: Mac OS builds
+          name: Win32 amd64 build
+          path: dist/buildWin32/amd64
+      
+      - name: Publishing Linux x86 build
+        uses: actions/upload-artifact@v2
+        with:
+          name: Linux x86 build
+          path: dist/buildLinux/x86
+
+      - name: Publishing Linux amd64 build
+        uses: actions/upload-artifact@v2
+        with:
+          name: Linux amd64 build
+          path: dist/buildLinux/amd64
+
+      - name: Publishing MacOS build
+        uses: actions/upload-artifact@v2
+        with:
+          name: Mac OS build
           path: dist/buildMacOS
           
       - name: Release tagged builds
@@ -58,6 +73,8 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           files: |
-            dist/buildLinux/*.7z
+            dist/buildLinux/x86/*.7z
+            dist/buildLinux/amd64/*.7z
             dist/buildMacOS/*.7z
-            dist/buildWin32/*.7z
+            dist/buildWin32/x86/*.7z
+            dist/buildWin32/amd64/*.7z
