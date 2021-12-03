@@ -26,6 +26,7 @@ import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLEModule;
 import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.Modules;
+import jpcsp.HLE.PspString;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.TPointer32;
 import jpcsp.util.Utilities;
@@ -35,8 +36,8 @@ public class sceVshBridge extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0xA5628F0D, version = 150)
-    public int vshKernelLoadModuleVSH() {
-    	return 0;
+    public int vshKernelLoadModuleVSH(PspString fileName, int flags, @CanBeNull @BufferInfo(lengthInfo = LengthInfo.variableLength, usage = Usage.in) TPointer optionAddr) {
+        return 0;
     }
 
     @HLEUnimplemented

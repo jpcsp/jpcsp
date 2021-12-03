@@ -241,4 +241,11 @@ public class InterruptManager extends HLEModule {
 	public int sceKernelQuerySystemCall(TPointer func) {
 		return -1;
 	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x02475AAF, version = 150)
+	@HLEFunction(nid = 0xF2F1E983, version = 660)
+	public int sceKernelIsInterruptOccurred(int intrNumber) {
+		return 0;
+	}
 }
