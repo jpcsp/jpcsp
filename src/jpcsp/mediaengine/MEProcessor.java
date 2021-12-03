@@ -16,6 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.mediaengine;
 
+import static jpcsp.Allegrex.compiler.RuntimeContextLLE.getFirmwareVersion;
 import static jpcsp.Allegrex.compiler.RuntimeContextLLE.pendingInterruptIPbitsME;
 import static jpcsp.HLE.kernel.managers.IntrManager.EXCEP_INT;
 import static jpcsp.mediaengine.MEMemory.SIZE_ME_RAM;
@@ -73,9 +74,10 @@ public class MEProcessor extends Processor {
 	private Instruction optimizedInstructions1[];
 	private Instruction optimizedInstructions2[];
 	private static final int optimizedRunStart1 = MemoryMap.START_RAM + 0x300000;
-	private static final int optimizedRunEnd1   = optimizedRunStart1 + 0x8E194;
+	private static final int optimizedRunEnd1   = optimizedRunStart1 + (getFirmwareVersion() <= 150 ? 0xD5F20 : 0x8E194);
 	private static final int optimizedRunStart2 = MemoryMap.START_RAM;
 	private static final int optimizedRunEnd2   = optimizedRunStart2 + 0x3000;
+	private static final int dumpAddress = getFirmwareVersion() <= 150 ? 0x883800F8 : 0x883000E0;
 
 	private class ExitAction implements IAction {
 		@Override
@@ -368,7 +370,7 @@ public class MEProcessor extends Processor {
 			count++;
 
 			if (DUMP) {
-				if (cpu.pc == 0x883000E0) {
+				if (cpu.pc == dumpAddress) {
 					dumpToFile("MEMemory.dump", new TPointer(meMemory, 0).forceNonNull(), SIZE_ME_RAM);
 					dumpToFile("meimg.img", new TPointer(meMemory, optimizedRunStart1), optimizedRunEnd1 - optimizedRunStart1);
 				}
