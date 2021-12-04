@@ -46,7 +46,6 @@ public class MMIOHandlerInterruptMan extends MMIOHandlerBase {
 	public static final int NUMBER_INTERRUPTS = 64;
 	private final boolean interruptTriggered[] = new boolean[NUMBER_INTERRUPTS];
 	private final boolean interruptEnabled[] = new boolean[NUMBER_INTERRUPTS];
-	private final boolean interruptOccurred[] = new boolean[NUMBER_INTERRUPTS];
 	private final Processor processor;
 
 	public static MMIOHandlerInterruptMan getInstance(Processor processor) {
@@ -77,7 +76,6 @@ public class MMIOHandlerInterruptMan extends MMIOHandlerBase {
 		stream.readVersion(STATE_VERSION);
 		stream.readBooleans(interruptTriggered);
 		stream.readBooleans(interruptEnabled);
-		stream.readBooleans(interruptOccurred);
 		super.read(stream);
 	}
 
@@ -86,7 +84,6 @@ public class MMIOHandlerInterruptMan extends MMIOHandlerBase {
 		stream.writeVersion(STATE_VERSION);
 		stream.writeBooleans(interruptTriggered);
 		stream.writeBooleans(interruptEnabled);
-		stream.writeBooleans(interruptOccurred);
 		super.write(stream);
 	}
 
@@ -96,7 +93,6 @@ public class MMIOHandlerInterruptMan extends MMIOHandlerBase {
 
 		Arrays.fill(interruptTriggered, false);
 		Arrays.fill(interruptEnabled, false);
-		Arrays.fill(interruptOccurred, false);
 	}
 
 	public void triggerInterrupt(int interruptNumber) {
@@ -199,25 +195,28 @@ public class MMIOHandlerInterruptMan extends MMIOHandlerBase {
 
 	@Override
 	public int read32(int address) {
-		if (log.isTraceEnabled()) {
-			log.trace(String.format("0x%08X - read32(0x%08X) on %s", getPc(), address, this));
+		int value;
+		switch (address - baseAddress) {
+			// Interrupt triggered (only those which are enabled):
+			case 0x00: value = getBits1(interruptTriggered) & getBits1(interruptEnabled); break;
+			case 0x10: value = getBits2(interruptTriggered) & getBits2(interruptEnabled); break;
+			case 0x20: value = getBits3(interruptTriggered) & getBits3(interruptEnabled); break;
+			// Interrupt occurred (read only inside sceKernelIsInterruptOccurred, never written):
+			case 0x04: value = getBits1(interruptTriggered); break;
+			case 0x14: value = getBits2(interruptTriggered); break;
+			case 0x24: value = getBits3(interruptTriggered); break;
+			// Interrupt enabled:
+			case 0x08: value = getBits1(interruptEnabled); break;
+			case 0x18: value = getBits2(interruptEnabled); break;
+			case 0x28: value = getBits3(interruptEnabled); break;
+			default: value = super.read32(address); break;
 		}
 
-		switch (address - baseAddress) {
-			// Interrupt triggered:
-			case 0x00: return getBits1(interruptTriggered);
-			case 0x10: return getBits2(interruptTriggered);
-			case 0x20: return getBits3(interruptTriggered);
-			// Interrupt occurred (read only inside sceKernelIsInterruptOccurred, never written):
-			case 0x04: return getBits1(interruptOccurred);
-			case 0x14: return getBits2(interruptOccurred);
-			case 0x24: return getBits3(interruptOccurred);
-			// Interrupt enabled:
-			case 0x08: return getBits1(interruptEnabled);
-			case 0x18: return getBits2(interruptEnabled);
-			case 0x28: return getBits3(interruptEnabled);
+		if (log.isTraceEnabled()) {
+			log.trace(String.format("0x%08X - read32(0x%08X) on %s returning 0x%08X", getPc(), address, this, value));
 		}
-		return super.read32(address);
+
+		return value;
 	}
 
 	@Override
@@ -292,7 +291,6 @@ public class MMIOHandlerInterruptMan extends MMIOHandlerBase {
 	public String toString() {
 		StringBuilder sb = new StringBuilder();
 		toString(sb, "interruptTriggered", interruptTriggered);
-		toString(sb, "interruptOccurred", interruptOccurred);
 		toString(sb, "interruptEnabled", interruptEnabled);
 
 		return sb.toString();
