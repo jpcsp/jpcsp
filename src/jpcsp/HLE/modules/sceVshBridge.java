@@ -18,6 +18,8 @@ package jpcsp.HLE.modules;
 
 import org.apache.log4j.Logger;
 
+import jpcsp.Emulator;
+import jpcsp.Allegrex.compiler.RuntimeContextLLE;
 import jpcsp.HLE.BufferInfo;
 import jpcsp.HLE.BufferInfo.LengthInfo;
 import jpcsp.HLE.BufferInfo.Usage;
@@ -29,6 +31,7 @@ import jpcsp.HLE.Modules;
 import jpcsp.HLE.PspString;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.TPointer32;
+import jpcsp.HLE.kernel.types.SceModule;
 import jpcsp.util.Utilities;
 
 public class sceVshBridge extends HLEModule {
@@ -350,10 +353,15 @@ public class sceVshBridge extends HLEModule {
     	return 0;
     }
 
-    @HLEUnimplemented
     @HLEFunction(nid = 0x9929DDA5, version = 150)
     public int vshKernelExitVSH() {
-    	return 0;
+    	// When running a PSP official updater, perform a PSP reboot
+    	SceModule module = Emulator.getInstance().getModule();
+    	if (module != null && "updater".equals(module.modname)) {
+    		return Modules.scePowerModule.scePowerRequestColdReset(0);
+    	}
+
+    	return Modules.LoadExecForUserModule.sceKernelExitGame();
     }
 
     @HLEUnimplemented

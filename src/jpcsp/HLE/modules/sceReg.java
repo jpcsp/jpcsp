@@ -16,6 +16,7 @@
  */
 package jpcsp.HLE.modules;
 
+import static jpcsp.Allegrex.compiler.RuntimeContextLLE.getFirmwareVersion;
 import static jpcsp.hardware.Wlan.MAC_ADDRESS_LENGTH;
 import static jpcsp.util.Constants.charset;
 import static jpcsp.util.Utilities.alignUp;
@@ -387,7 +388,7 @@ public class sceReg extends HLEModule {
 
     protected static class RegistryDirectoryHeader {
     	public static final int SIZE_OF = 58;
-    	public static final int NO_PARENT = 0xFFFF;
+    	public static final int NO_PARENT = getFirmwareVersion() <= 152 ? 0x0000 : 0xFFFF;
     	public int unknown0;
     	public int unknown1;
     	public int parent;
@@ -1833,7 +1834,7 @@ public class sceReg extends HLEModule {
     			ptype.setValue(REG_TYPE_INT);
     			psize.setValue(4);
     			if (size >= 4) {
-    				buf.setValue32(0x66);
+    				buf.setValue32(getRegistryCategoryVersion());
     			}
     		} else {
     			log.warn(String.format("Unknown registry entry '%s/%s'", fullName, name));
@@ -2086,6 +2087,14 @@ public class sceReg extends HLEModule {
     	return 0;
     }
 
+	private int getRegistryCategoryVersion() {
+		int firmwareVersion = getFirmwareVersion();
+		if (firmwareVersion <= 152) {
+			return 1;
+		}
+		return 102;
+	}
+
 	private void createEmptyRegistry() {
     	Settings settings = Settings.getInstance();
 		Registry registry = new Registry(256, 256);
@@ -2093,7 +2102,7 @@ public class sceReg extends HLEModule {
 		int parent;
 
 		index = registry.addDirectory(RegistryDirectoryHeader.NO_PARENT, "REGISTRY", 1, 1);
-		registry.addKey(index, "category_version", 102);
+		registry.addKey(index, "category_version", getRegistryCategoryVersion());
 
 		index = registry.addDirectory(RegistryDirectoryHeader.NO_PARENT, "CONFIG", 20, 2);
 		registry.addKey(index, "VIDEO");

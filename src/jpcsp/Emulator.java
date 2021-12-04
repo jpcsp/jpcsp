@@ -493,6 +493,10 @@ public class Emulator implements Runnable {
     	this.moduleLoaded = moduleLoaded;
     }
 
+    public SceModule getModule() {
+    	return module;
+    }
+
     public void onReboot() {
     	if (log.isDebugEnabled()) {
     		log.debug(String.format("Emulator onReboot"));

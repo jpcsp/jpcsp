@@ -666,10 +666,12 @@ public class IoFileMgrForUser extends HLEModule {
             // Close open files
             for (Iterator<IoInfo> it = fileIds.values().iterator(); it.hasNext();) {
                 IoInfo info = it.next();
-                try {
-                    info.readOnlyFile.close();
-                } catch (IOException e) {
-                    log.error("pspiofilemgr - error closing file: " + e.getMessage());
+                if (info.readOnlyFile != null) {
+	                try {
+	                    info.readOnlyFile.close();
+	                } catch (IOException e) {
+	                    log.error("pspiofilemgr - error closing file: " + e.getMessage());
+	                }
                 }
             }
         }
