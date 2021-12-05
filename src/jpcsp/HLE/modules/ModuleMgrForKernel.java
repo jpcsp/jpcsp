@@ -200,7 +200,8 @@ public class ModuleMgrForKernel extends HLEModule {
     }
 
     @HLEUnimplemented
-    @HLEFunction(nid = 0xCC873DFA, version = 150)
+    @HLEFunction(nid = 0x5F0CC575, version = 150)
+    @HLEFunction(nid = 0xCC873DFA, version = 660)
     public int sceKernelRebootBeforeForUser(TPointer param) {
     	return 0;
     }
@@ -212,7 +213,8 @@ public class ModuleMgrForKernel extends HLEModule {
     }
 
     @HLEUnimplemented
-    @HLEFunction(nid = 0x5FC3B3DA, version = 150)
+    @HLEFunction(nid = 0xB49FFB9E, version = 150)
+    @HLEFunction(nid = 0x5FC3B3DA, version = 660)
     public int sceKernelRebootBeforeForKernel(TPointer param, int unknown1, int unknown2, int unknown3) {
     	return 0;
     }
