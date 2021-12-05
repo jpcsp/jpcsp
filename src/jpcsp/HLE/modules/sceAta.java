@@ -19,6 +19,7 @@ package jpcsp.HLE.modules;
 import org.apache.log4j.Logger;
 
 import jpcsp.HLE.BufferInfo;
+import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.BufferInfo.LengthInfo;
 import jpcsp.HLE.BufferInfo.Usage;
 import jpcsp.HLE.HLEFunction;
@@ -95,7 +96,7 @@ public class sceAta extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0xC74F04B7, version = 150)
-    public int sceAtaExecPacketCmd(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=36, usage=Usage.in) TPointer driveStructure, int unknown1, int unknown2, int unknown3, int unknown4, int operationCode, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=64, usage=Usage.inout) TPointer8 unknown5) {
+    public int sceAtaExecPacketCmd(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=36, usage=Usage.in) TPointer driveStructure, int unknown1, int unknown2, int unknown3, int unknown4, int operationCode, @CanBeNull @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=64, usage=Usage.inout) TPointer8 unknown5) {
     	return 0;
     }
 
