@@ -139,4 +139,20 @@ public class memlmd extends HLEModule {
 	public boolean memlmd_2AE425D2(int subType) {
 		return true;
 	}
+
+    @HLEUnimplemented
+	@HLEFunction(nid = 0x8BDB1A3E, version = 150)
+	@HLEFunction(nid = 0xEF73E85B, version = 660)
+	public int sceUtilsGetLoadModuleABLength(@BufferInfo(lengthInfo = LengthInfo.nextParameter, usage = Usage.in) TPointer loadModuleBuffer, int size, @BufferInfo(usage = Usage.out) TPointer32 lengthAddr) {
+    	lengthAddr.setValue(0);
+		return 0;
+	}
+
+    @HLEUnimplemented
+	@HLEFunction(nid = 0x185F0A2A, version = 150)
+	@HLEFunction(nid = 0xCF03556B, version = 660)
+	public int sceUtilsGetLoadModuleABLengthByPolling(@BufferInfo(lengthInfo = LengthInfo.nextParameter, usage = Usage.in) TPointer loadModuleBuffer, int size, @BufferInfo(usage = Usage.out) TPointer32 lengthAddr) {
+    	lengthAddr.setValue(0);
+		return 0;
+	}
 }

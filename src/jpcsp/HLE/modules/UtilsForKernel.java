@@ -102,4 +102,10 @@ public class UtilsForKernel extends HLEModule {
 
     	return decompressedLength;
     }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x78934841, version = 150)
+    public int sceKernelGzipDecompress(@BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.out) TPointer dest, int destSize, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=0x100, usage=Usage.in) TPointer src, @CanBeNull @BufferInfo(usage=Usage.out) TPointer32 crc32Addr) {
+    	return Modules.sceDefltModule.sceGzipDecompress(dest, destSize, src, crc32Addr);
+    }
 }

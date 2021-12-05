@@ -343,4 +343,16 @@ public class SysclibForKernel extends HLEModule {
 
 		return size;
 	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x1AB53A58, version = 150)
+    public int strtok_r() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x097049BD, version = 150)
+    public int bcopy() {
+		return 0;
+	}
 }

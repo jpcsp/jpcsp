@@ -21,6 +21,7 @@ import org.apache.log4j.Logger;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLEModule;
+import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.PspString;
 
@@ -30,5 +31,11 @@ public class StdioForKernel extends HLEModule {
     @HLEFunction(nid = 0xCAB439DF, version = 150)
     public int StdioForKernel_printf(CpuState cpu, PspString formatString) {
     	return Modules.SysMemUserForUserModule.hleKernelPrintf(cpu, formatString, log);
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xD97C8CB9, version = 150)
+    public int puts() {
+    	return 0;
     }
 }
