@@ -211,6 +211,11 @@ public class LoadExecForUser extends HLEModule {
     @HLELogging(level="info")
     @HLEFunction(nid = 0x05572A5F, version = 150, checkInsideInterrupt = true)
     public int sceKernelExitGame() {
+    	// When running a PSP official updater, perform a PSP reboot
+    	if (Emulator.getInstance().isPspOfficialUpdater()) {
+    		return Modules.scePowerModule.scePowerRequestColdReset(0);
+    	}
+
         Emulator.PauseEmu();
         RuntimeContext.reset();
         Modules.ThreadManForUserModule.stop();

@@ -3514,7 +3514,7 @@ private void threeTimesResizeActionPerformed(java.awt.event.ActionEvent evt) {//
         Modules.sceDisplayModule.setCalledFromCommandLine();
         HTTPServer.processProxyRequestLocally = true;
 
-        if (loadedFile != null) {
+        if (loadedFile != null && umdLoaded) {
 			try {
 				MMIOHandlerUmd.getInstance().switchUmd(loadedFile.getPath());
 			} catch (IOException e) {

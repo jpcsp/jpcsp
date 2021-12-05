@@ -29,7 +29,6 @@ import org.apache.log4j.Logger;
 
 import jpcsp.Emulator;
 import jpcsp.Memory;
-import jpcsp.State;
 import jpcsp.HLE.BufferInfo;
 import jpcsp.HLE.BufferInfo.LengthInfo;
 import jpcsp.HLE.BufferInfo.Usage;
@@ -311,7 +310,7 @@ public class sceUmdMan extends HLEModule {
     	// The official PSP Update EBOOT only accepts the following values
 		// otherwise it displays an error "LPTFFFFFFF7".
 		// Not sure of the meaning of those values.
-		if (!mediumPresent && "MSTKUPDATE".equals(State.discId)) {
+		if (!mediumPresent && Emulator.getInstance().isPspOfficialUpdater()) {
 			resultAddr.setUnsignedValue8(2, 9);
 			resultAddr.setUnsignedValue8(12, 2);
 			resultAddr.setUnsignedValue8(13, 0);

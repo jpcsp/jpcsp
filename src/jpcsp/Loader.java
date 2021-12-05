@@ -32,6 +32,7 @@ import static jpcsp.util.HLEUtilities.ADDIU;
 import static jpcsp.util.HLEUtilities.JR;
 import static jpcsp.util.HLEUtilities.MOVE;
 import static jpcsp.util.HLEUtilities.NOP;
+import static jpcsp.util.Utilities.isMatchingPsfTitle;
 import static jpcsp.util.Utilities.patch;
 import static jpcsp.util.Utilities.patchRemoveStringChar;
 import static jpcsp.util.Utilities.readUByte;
@@ -1878,19 +1879,6 @@ public class Loader {
             ElfHeaderInfo.ProgInfo = elf.getProgInfo();
             ElfHeaderInfo.SectInfo = elf.getSectInfo();
         }
-    }
-
-    private boolean isMatchingPsfTitle(SceModule module, String re) {
-    	if (module.psf == null) {
-    		return false;
-    	}
-
-    	String title = module.psf.getString("TITLE");
-    	if (title == null) {
-    		return false;
-    	}
-
-    	return title.matches(re);
     }
 
     /**

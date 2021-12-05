@@ -17,6 +17,7 @@
 package jpcsp;
 
 import static jpcsp.HLE.modules.SysMemUserForUser.USER_PARTITION_ID;
+import static jpcsp.util.Utilities.isMatchingPsfTitle;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -205,10 +206,24 @@ public class Emulator implements Runnable {
         return module;
     }
 
-    private void initCpu(boolean fromSyscall) {
+    public boolean isPspOfficialUpdater() {
     	String discId = module.psf != null ? module.psf.getString("DISC_ID") : State.discId;
     	// The official PSP Update EBOOT requires MMIO to access the Nand
         if ("MSTKUPDATE".equals(discId)) {
+        	return true;
+        }
+
+        // PSP Updater 1.50, 1.51 and 1.52 do not have a DISC_ID, check the TITLE
+    	if (isMatchingPsfTitle(module, "PSP. Update ver 1\\.5[0-2]")) {
+    		return true;
+    	}
+
+    	return false;
+    }
+
+    private void initCpu(boolean fromSyscall) {
+    	// The official PSP Update EBOOT requires MMIO to access the Nand
+        if (isPspOfficialUpdater()) {
         	RuntimeContextLLE.createMMIO();
         }
 

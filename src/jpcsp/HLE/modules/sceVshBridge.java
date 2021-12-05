@@ -355,12 +355,6 @@ public class sceVshBridge extends HLEModule {
 
     @HLEFunction(nid = 0x9929DDA5, version = 150)
     public int vshKernelExitVSH() {
-    	// When running a PSP official updater, perform a PSP reboot
-    	SceModule module = Emulator.getInstance().getModule();
-    	if (module != null && "updater".equals(module.modname)) {
-    		return Modules.scePowerModule.scePowerRequestColdReset(0);
-    	}
-
     	return Modules.LoadExecForUserModule.sceKernelExitGame();
     }
 

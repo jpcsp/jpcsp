@@ -2459,4 +2459,17 @@ public class Utilities {
 	public static int setByte1(int value, int value8) {
 		return (value & 0xFFFF00FF) | (getByte0(value8) << 8);
 	}
+
+    public static boolean isMatchingPsfTitle(SceModule module, String re) {
+    	if (module.psf == null) {
+    		return false;
+    	}
+
+    	String title = module.psf.getString("TITLE");
+    	if (title == null) {
+    		return false;
+    	}
+
+    	return title.matches(re);
+    }
 }
