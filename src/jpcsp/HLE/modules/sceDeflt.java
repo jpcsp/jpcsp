@@ -39,7 +39,6 @@ import jpcsp.memory.IMemoryWriter;
 import jpcsp.memory.MemoryReader;
 import jpcsp.memory.MemoryWriter;
 import jpcsp.util.MemoryInputStream;
-import jpcsp.util.Utilities;
 
 import org.apache.log4j.Logger;
 
@@ -61,10 +60,6 @@ public class sceDeflt extends HLEModule {
 
 	@HLEFunction(nid = 0x6DBCF897, version = 150)
 	public int sceGzipDecompress(@BufferInfo(lengthInfo=LengthInfo.returnValue, usage=Usage.out) TPointer outBufferAddr, int outBufferLength, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=16, usage=Usage.in) TPointer inBufferAddr, @CanBeNull @BufferInfo(usage=Usage.out) TPointer32 crc32Addr) {
-    	if (log.isTraceEnabled()) {
-    		log.trace(String.format("sceGzipDecompress: %s", Utilities.getMemoryDump(inBufferAddr.getAddress(), 16)));
-    	}
-
     	int result;
     	CRC32 crc32 = new CRC32();
 		byte[] buffer = new byte[4096];
