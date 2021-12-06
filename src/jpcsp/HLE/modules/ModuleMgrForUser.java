@@ -20,6 +20,7 @@ import static jpcsp.Allegrex.Common._a0;
 import static jpcsp.Allegrex.Common._a1;
 import static jpcsp.Allegrex.Common._ra;
 import static jpcsp.Allegrex.Common._sp;
+import static jpcsp.Allegrex.compiler.RuntimeContextLLE.getFirmwareVersion;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_ERRNO_DEVICE_NOT_FOUND;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_ERRNO_FILE_NOT_FOUND;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_UNKNOWN_MODULE;
@@ -716,7 +717,8 @@ public class ModuleMgrForUser extends HLEModule {
     }
 
     public boolean isSignChecked(String path) {
-    	return path != null && path.startsWith("flash0:");
+    	int firmwareVersion = getFirmwareVersion();
+    	return path != null && path.startsWith("flash0:") && (firmwareVersion <= 0 || firmwareVersion >= 200);
     }
 
 	public int getStartModuleHandler() {
