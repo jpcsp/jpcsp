@@ -68,7 +68,7 @@ public class PRX {
     }
 
 	// PRXDecrypter TAG struct.
-    private class TAG_INFO {
+    public static class TAG_INFO {
         int tag; // 4 byte value at offset 0xD0 in the PRX file
         int[] key; // 144 bytes keys
         int[] xor1; // Optional xor1
@@ -693,8 +693,6 @@ public class PRX {
     }
 
     public int DecryptPRX(byte[] buf, int size, int type, byte[] xor1, byte[] xor2, boolean forceNewMethod) {
-    	int result = 0;
-
         // Fetch the PRX tag.
         int tag = readUnaligned32(buf, 0xD0);
 
@@ -705,9 +703,18 @@ public class PRX {
             return -1;
         }
 
+        return DecryptPRX(buf, size, type, xor1, xor2, forceNewMethod, pti);
+    }
+
+    public int DecryptPRX(byte[] buf, int size, int type, byte[] xor1, byte[] xor2, boolean forceNewMethod, TAG_INFO pti) {
+    	int result = 0;
+
         if (pti.xor1 != null && xor1 == null) {
         	xor1 = intArrayToByteArray(pti.xor1);
         }
+
+        // Fetch the PRX tag.
+        int tag = readUnaligned32(buf, 0xD0);
 
         // Fetch the final ELF size.
         int retsize = readUnaligned32(buf, 0xB0);

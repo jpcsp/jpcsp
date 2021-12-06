@@ -25,6 +25,10 @@ import org.apache.log4j.Logger;
 import jpcsp.HLE.BufferInfo;
 import jpcsp.HLE.BufferInfo.LengthInfo;
 import jpcsp.HLE.BufferInfo.Usage;
+import jpcsp.crypto.CryptoEngine;
+import jpcsp.crypto.KeyVault;
+import jpcsp.crypto.PRX;
+import jpcsp.crypto.PRX.TAG_INFO;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLEModule;
 import jpcsp.HLE.HLEUnimplemented;
@@ -34,6 +38,7 @@ import jpcsp.HLE.TPointer32;
 
 public class memlmd extends HLEModule {
     public static Logger log = Modules.getLogger("memlmd");
+    private PRX prxEngine = new CryptoEngine().getPRXEngine();
 
     public static byte[] getKey(int[] intKey) {
     	byte[] key = new byte[intKey.length << 2];
@@ -107,27 +112,6 @@ public class memlmd extends HLEModule {
 	}
 
     @HLEUnimplemented
-	@HLEFunction(nid = 0xEF73E85B, version = 660)
-	public int memlmd_EF73E85B(@BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.inout) TPointer buffer, int size, @BufferInfo(usage=Usage.out) TPointer32 resultSize) {
-    	resultSize.setValue(size);
-
-    	Modules.LoadCoreForKernelModule.decodeInitModuleData(buffer, size, resultSize);
-
-    	return 0;
-	}
-
-    @HLEUnimplemented
-	@HLEFunction(nid = 0xCF03556B, version = 660)
-	public int memlmd_CF03556B(@BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.inout) TPointer buffer, int size, @BufferInfo(usage=Usage.out) TPointer32 resultSize) {
-    	// Same as memlmd_EF73E85B?
-    	resultSize.setValue(size);
-
-    	Modules.LoadCoreForKernelModule.decodeInitModuleData(buffer, size, resultSize);
-
-    	return 0;
-	}
-
-    @HLEUnimplemented
 	@HLEFunction(nid = 0x2F3D7E2D, version = 660)
 	public int memlmd_2F3D7E2D() {
     	// Has no parameters
@@ -143,16 +127,42 @@ public class memlmd extends HLEModule {
     @HLEUnimplemented
 	@HLEFunction(nid = 0x8BDB1A3E, version = 150)
 	@HLEFunction(nid = 0xEF73E85B, version = 660)
-	public int sceUtilsGetLoadModuleABLength(@BufferInfo(lengthInfo = LengthInfo.nextParameter, usage = Usage.in) TPointer loadModuleBuffer, int size, @BufferInfo(usage = Usage.out) TPointer32 lengthAddr) {
-    	lengthAddr.setValue(0);
-		return 0;
+	public int sceUtilsGetLoadModuleABLength(@BufferInfo(lengthInfo = LengthInfo.nextParameter, usage = Usage.inout) TPointer loadModuleBuffer, int size, @BufferInfo(usage = Usage.out) TPointer32 lengthAddr) {
+    	if (Modules.LoadCoreForKernelModule.decodeInitModuleData(loadModuleBuffer, size, lengthAddr)) {
+    		return 0;
+    	}
+
+    	byte[] bytes = loadModuleBuffer.getArray8(size);
+
+    	int tag = loadModuleBuffer.getUnalignedValue32(0xD0);
+    	TAG_INFO tagInfo;
+    	switch (tag) {
+    		case 0x00000000:
+    	    	tagInfo = new TAG_INFO(tag, KeyVault.key_00000000, 0x42, 0);
+    			break;
+    		case 0x01000000:
+    	    	tagInfo = new TAG_INFO(tag, KeyVault.key_01000000, 0x43, 0);
+    	    	break;
+	    	default:
+	    		log.error(String.format("sceUtilsGetLoadModuleABLength unknown tag 0x%08X", tag));
+    	    	return -1;
+    	}
+
+    	final int type = 0;
+    	int result = prxEngine.DecryptPRX(bytes, size, type, null, null, false, tagInfo);
+    	if (result >= 0) {
+    		lengthAddr.setValue(result);
+    		loadModuleBuffer.setArray(bytes, result);
+    		result = 0;
+    	}
+
+    	return result;
 	}
 
     @HLEUnimplemented
 	@HLEFunction(nid = 0x185F0A2A, version = 150)
 	@HLEFunction(nid = 0xCF03556B, version = 660)
-	public int sceUtilsGetLoadModuleABLengthByPolling(@BufferInfo(lengthInfo = LengthInfo.nextParameter, usage = Usage.in) TPointer loadModuleBuffer, int size, @BufferInfo(usage = Usage.out) TPointer32 lengthAddr) {
-    	lengthAddr.setValue(0);
-		return 0;
+	public int sceUtilsGetLoadModuleABLengthByPolling(@BufferInfo(lengthInfo = LengthInfo.nextParameter, usage = Usage.inout) TPointer loadModuleBuffer, int size, @BufferInfo(usage = Usage.out) TPointer32 lengthAddr) {
+    	return sceUtilsGetLoadModuleABLength(loadModuleBuffer, size, lengthAddr);
 	}
 }
