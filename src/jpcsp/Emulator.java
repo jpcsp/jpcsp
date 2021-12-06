@@ -207,8 +207,12 @@ public class Emulator implements Runnable {
     }
 
     public boolean isPspOfficialUpdater() {
+    	if (module == null) {
+    		return false;
+    	}
+
     	String discId = module.psf != null ? module.psf.getString("DISC_ID") : State.discId;
-    	// The official PSP Update EBOOT requires MMIO to access the Nand
+    	// The official PSP Update EBOOT has DISC_ID=MSTKUPDATE
         if ("MSTKUPDATE".equals(discId)) {
         	return true;
         }
