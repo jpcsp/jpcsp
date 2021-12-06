@@ -388,6 +388,8 @@ public class sceReg extends HLEModule {
 
     protected static class RegistryDirectoryHeader {
     	public static final int SIZE_OF = 58;
+    	// Up to firmware 1.52, top categories have a parent 0x0000.
+    	// From firmware 2.00, top categories have a parent 0xFFFF.
     	public static final int NO_PARENT = getFirmwareVersion() <= 152 ? 0x0000 : 0xFFFF;
     	public int unknown0;
     	public int unknown1;
@@ -2091,6 +2093,8 @@ public class sceReg extends HLEModule {
 		int firmwareVersion = getFirmwareVersion();
 		if (firmwareVersion <= 152) {
 			return 1;
+		} else if (firmwareVersion <= 200) {
+			return 6;
 		}
 		return 102;
 	}
