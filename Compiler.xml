@@ -6599,6 +6599,7 @@
 	</NativeCodeSequence>
 	<NativeCodeSequence name="strcpy">
 		<Class>jpcsp.Allegrex.compiler.nativeCode.Strcpy</Class>
+		<Method>strcpyCheckNull</Method>
 		<IsReturning>true</IsReturning>
 		<CodeInstructions><![CDATA[
 0800E494:[2C860001]: sltiu      $a2, $a0, 1

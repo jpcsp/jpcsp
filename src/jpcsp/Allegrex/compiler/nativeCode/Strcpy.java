@@ -29,4 +29,17 @@ public class Strcpy extends AbstractNativeCodeSequence {
 
 		setGprV0(dstAddr);
 	}
+
+	static public void strcpyCheckNull() {
+		int dstAddr = getGprA0();
+		int srcAddr = getGprA1();
+
+		if (dstAddr == 0 || srcAddr == 0) {
+			setGprV0(0);
+		} else {
+			strcpy(dstAddr, srcAddr);
+
+			setGprV0(dstAddr);
+		}
+	}
 }
