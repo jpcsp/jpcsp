@@ -984,7 +984,7 @@ public class ThreadManForUser extends HLEModule {
     }
 
     private void executePendingCallbacks(SceKernelThreadInfo thread) {
-        if (!thread.pendingCallbacks.isEmpty()) {
+        if (thread != null && !thread.pendingCallbacks.isEmpty()) {
         	if (RuntimeContext.canExecuteCallback(thread)) {
 	    		Callback callback = thread.pendingCallbacks.poll();
 	        	if (log.isDebugEnabled()) {
@@ -1001,7 +1001,7 @@ public class ThreadManForUser extends HLEModule {
 
     private boolean executePendingActions(SceKernelThreadInfo thread) {
     	boolean actionExecuted = false;
-        if (!thread.pendingActions.isEmpty()) {
+        if (thread != null && !thread.pendingActions.isEmpty()) {
         	if (currentThread == thread) {
 	    		IAction action = thread.pendingActions.poll();
 	        	if (log.isDebugEnabled()) {

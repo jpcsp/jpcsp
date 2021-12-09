@@ -87,6 +87,7 @@ import jpcsp.memory.IntArrayMemory;
 import jpcsp.memory.MemoryReader;
 import jpcsp.memory.MemoryWriter;
 import jpcsp.memory.mmio.MMIO;
+import jpcsp.settings.Settings;
 
 public class Utilities {
 	public static final int KB = 1024;
@@ -1876,6 +1877,10 @@ public class Utilities {
     }
 
     public static boolean writeCompleteFile(String fileName, byte[] buffer, boolean createDirectories) {
+    	return writeCompleteFile(fileName, buffer, 0, buffer.length, createDirectories);
+    }
+
+    public static boolean writeCompleteFile(String fileName, byte[] buffer, int offset, int size, boolean createDirectories) {
     	StringBuilder localFileName = new StringBuilder();
     	IVirtualFileSystem vfs = Modules.IoFileMgrForUserModule.getVirtualFileSystem(fileName, localFileName);
     	if (vfs == null) {
@@ -1905,9 +1910,9 @@ public class Utilities {
     	}
 
     	// Write the complete file
-    	int writeLength = vFile.ioWrite(buffer, 0, buffer.length);
+    	int writeLength = vFile.ioWrite(buffer, offset, size);
     	vFile.ioClose();
-    	if (writeLength != buffer.length) {
+    	if (writeLength != size) {
     		return false;
     	}
 
@@ -2471,5 +2476,35 @@ public class Utilities {
     	}
 
     	return title.matches(re);
+    }
+
+    public static String pspifyFilename(String localFileName) {
+    	String pspFileName = localFileName.replace(File.separator, "/");
+
+        // Files relative to ms0 directory
+    	String ms0 = Settings.getInstance().getDirectoryMapping("ms0");
+        if (pspFileName.startsWith(ms0)) {
+            return "ms0:" + pspFileName.substring(ms0.length() - 1);
+        }
+        // Files relative to flash0 directory
+        String flash0 = Settings.getInstance().getDirectoryMapping("flash0");
+        if (pspFileName.startsWith(flash0)) {
+            return "flash0:" + pspFileName.substring(flash0.length() - 1);
+        }
+
+        // Files with absolute path but also in ms0 directory
+        try {
+            String ms0path = new File(ms0).getCanonicalPath();
+            if (localFileName.startsWith(ms0path)) {
+                // Strip off absolute prefix
+                return "ms0:" + pspFileName.substring(ms0path.length());
+            }
+        } catch (IOException e) {
+            Emulator.log.error("pspifyFilename", e);
+        }
+
+        // Files anywhere on user's hard drive, may not work
+        // use host0:/ ?
+        return pspFileName;
     }
 }

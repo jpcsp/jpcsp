@@ -2090,12 +2090,70 @@ public class sceReg extends HLEModule {
     }
 
 	private int getRegistryCategoryVersion() {
-		int firmwareVersion = getFirmwareVersion();
+		final int firmwareVersion = getFirmwareVersion();
+
 		if (firmwareVersion <= 152) {
+			// Firmware 1.50, 1.51, 1.52
 			return 1;
-		} else if (firmwareVersion <= 200) {
+		} else if (firmwareVersion <= 201) {
+			// Firmware 2.00, 2.01
 			return 6;
+		} else if (firmwareVersion <= 250) {
+			// Firmware 2.50
+			return 19;
+		} else if (firmwareVersion <= 260) {
+			// Firmware 2.60
+			return 20;
+		} else if (firmwareVersion <= 271) {
+			// Firmware 2.70, 2.71
+			return 27;
+		} else if (firmwareVersion <= 282) {
+			// Firmware 2.80, 2.81, 2.82
+			return 32;
+		} else if (firmwareVersion <= 303) {
+			// Firmware 3.00, 3.01, 3.02, 3.03
+			return 38;
+		} else if (firmwareVersion <= 311) {
+			// Firmware 3.10, 3.11
+			return 44;
+		} else if (firmwareVersion <= 340) {
+			// Firmware 3.30, 3.40
+			return 49;
+		} else if (firmwareVersion <= 352) {
+			// Firmware 3.50, 3.51, 3.52
+			return 53;
+		} else if (firmwareVersion <= 360) {
+			// Firmware 3.60
+			return 54;
+		} else if (firmwareVersion <= 373) {
+			// Firmware 3.70, 3.71, 3.72, 3.73
+			return 59;
+		} else if (firmwareVersion <= 393) {
+			// Firmware 3.80, 3.90, 3.93
+			return 62;
+		} else if (firmwareVersion <= 401) {
+			// Firmware 3.95, 3.96, 4.00, 4.01
+			return 64;
+		} else if (firmwareVersion <= 405) {
+			// Firmware 4.05
+			return 67;
+		} else if (firmwareVersion <= 505) {
+			// Firmware 5.00, 5.01, 5.02, 5.03, 5.05
+			return 76;
+		} else if (firmwareVersion <= 555) {
+			// Firmware 5.50, 5.51, 5.55
+			return 88;
+		} else if (firmwareVersion <= 570) {
+			// Firmware 5.70
+			return 97;
+		} else if (firmwareVersion <= 610) {
+			// Firmware 6.00, 6.10
+			return 99;
+		} else if (firmwareVersion <= 620) {
+			// Firmware 6.20
+			return 100;
 		}
+		// Firmware 6.30, 6.31, 6.35, 6.36, 6.37, 6.38, 6.39, 6.60, 6.61
 		return 102;
 	}
 

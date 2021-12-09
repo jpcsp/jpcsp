@@ -21,6 +21,8 @@ import static jpcsp.util.Utilities.isMatchingPsfTitle;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import jpcsp.Allegrex.compiler.Compiler;
 import jpcsp.Allegrex.compiler.Profiler;
@@ -191,6 +193,7 @@ public class Emulator implements Runnable {
         }
 
         moduleLoaded = true;
+        RuntimeContextLLE.onEmulatorLoad();
         initCpu(fromSyscall);
 
         // Delete breakpoints and reset to PC
@@ -223,6 +226,34 @@ public class Emulator implements Runnable {
     	}
 
     	return false;
+    }
+
+    public int getPspOfficialUpdaterVersion() {
+    	if (module == null || module.psf == null) {
+    		return -1;
+    	}
+
+    	String updateVer = module.psf.getString("UPDATER_VER");
+    	if (updateVer == null) {
+    		return -1;
+    	}
+
+    	int version = Integer.parseInt(updateVer.replace(".", ""));
+
+    	// PSP Updater 3.80 has a wrong "UPDATER_VER = 9.99",
+    	// extract the correct version from the TITLE.
+    	if (version == 999) {
+    		String title = module.psf.getString("TITLE");
+    		if (title != null) {
+    			Pattern p = Pattern.compile("PSP. Update ver ([1-6]\\.[0-9][0-9])");
+    			Matcher m = p.matcher(title);
+    			if (m.matches()) {
+    				version = Integer.parseInt(m.group(1).replace(".", ""));
+    			}
+    		}
+    	}
+
+    	return version;
     }
 
     private void initCpu(boolean fromSyscall) {

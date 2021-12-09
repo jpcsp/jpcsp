@@ -687,7 +687,7 @@ public class LoadCoreForKernel extends HLEModule {
     	int registeredModulesOffset;
     	if (getFirmwareVersion() <= 201) {
     		registeredModulesOffset = 20;
-    	} else if (getFirmwareVersion() < 300) {
+    	} else if (getFirmwareVersion() <= 555) {
     		registeredModulesOffset = 528;
     	} else {
     		registeredModulesOffset = 524;

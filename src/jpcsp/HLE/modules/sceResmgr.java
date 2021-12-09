@@ -25,12 +25,14 @@ import static jpcsp.util.Utilities.writeUnaligned32;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 import java.util.Arrays;
 
 import org.apache.log4j.Logger;
 
 import jpcsp.Emulator;
+import jpcsp.Allegrex.compiler.RuntimeContextLLE;
 import jpcsp.HLE.BufferInfo;
 import jpcsp.HLE.BufferInfo.LengthInfo;
 import jpcsp.HLE.BufferInfo.Usage;
@@ -39,8 +41,11 @@ import jpcsp.HLE.HLEModule;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.TPointer32;
+import jpcsp.HLE.kernel.types.SceModule;
 import jpcsp.crypto.CryptoEngine;
 import jpcsp.crypto.PRX;
+import jpcsp.format.PBP;
+import jpcsp.format.PSAR;
 import jpcsp.graphics.capture.CaptureImage;
 import jpcsp.hardware.Model;
 import jpcsp.settings.Settings;
@@ -53,17 +58,69 @@ public class sceResmgr extends HLEModule {
 			"system:57716@release_660,0x06060010:\n" +
 			"vsh:p6616@release_660,v58533@release_660,20110727:\n" +
 			"target:1:WorldWide\n";
+	private static final String system_plugin_bg_rco = "flash0:/vsh/resource/system_plugin_bg.rco";
+	private static final String system_plugin_fg_rco = "flash0:/vsh/resource/system_plugin_fg.rco";
 
     @Override
 	public void start() {
     	createDummyIndexDat();
     	createDummyBackgroundImages();
+    	createRco();
 
     	super.start();
 	}
 
+    private static void createRco() {
+    	//
+    	// The PSP Update for firmware 1.50 and 1.51 are expecting to find the following 2 files:
+    	//      flash0:/vsh/resource/system_plugin_bg.rco
+    	//      flash0:/vsh/resource/system_plugin_fg.rco
+    	// before starting the installation of the files on flash0.
+    	//
+    	// As those files are not yet available, simply extract those 2 files
+    	// from the EBOOT.PBP of the updater itself (PSAR format).
+    	//
+    	if (Emulator.getInstance().isPspOfficialUpdater()) {
+    		int updaterVersion = Emulator.getInstance().getPspOfficialUpdaterVersion();
+    		if (updaterVersion == 150 || updaterVersion == 151) {
+    			SceModule module = Emulator.getInstance().getModule();
+    			byte[] buffer = readCompleteFile(module.pspfilename);
+    			if (buffer != null) {
+	    			try {
+						PBP pbp = new PBP(ByteBuffer.wrap(buffer));
+						if (pbp.isValid()) {
+							PSAR psar = new PSAR(buffer, pbp.getOffsetPsarData(), pbp.getSizePsarData());
+							if (psar.readHeader() == 0) {
+								// Buffer large enough the store the longest of both files
+								final byte[] content = new byte[50000];
+
+								int result = psar.extractFile(content, 0, system_plugin_bg_rco);
+								if (result >= 0) {
+									writeCompleteFile(system_plugin_bg_rco, content, 0, result, true);
+								}
+
+								result = psar.extractFile(content, 0, system_plugin_fg_rco);
+								if (result >= 0) {
+									writeCompleteFile(system_plugin_fg_rco, content, 0, result, true);
+								}
+							}
+						}
+					} catch (IOException e) {
+						if (log.isDebugEnabled()) {
+							log.debug("createRco", e);
+						}
+					}
+    			}
+    		}
+    	}
+    }
+
     private static void createDummyIndexDat() {
-    	int firmwareVersion = Emulator.getInstance().getFirmwareVersion();
+    	int firmwareVersion = RuntimeContextLLE.getFirmwareVersion();
+    	if (firmwareVersion <= 0) {
+    		firmwareVersion = Emulator.getInstance().getFirmwareVersion();
+    	}
+
     	String fileNameFormat;
     	if (firmwareVersion == 0 || firmwareVersion >= 500) {
     		// Starting with FW 5.00, the filename includes the PSP generation

@@ -32,7 +32,6 @@ import static jpcsp.util.HLEUtilities.ADDIU;
 import static jpcsp.util.HLEUtilities.JR;
 import static jpcsp.util.HLEUtilities.MOVE;
 import static jpcsp.util.HLEUtilities.NOP;
-import static jpcsp.util.Utilities.isMatchingPsfTitle;
 import static jpcsp.util.Utilities.patch;
 import static jpcsp.util.Utilities.patchRemoveStringChar;
 import static jpcsp.util.Utilities.readUByte;
@@ -1952,33 +1951,6 @@ public class Loader {
     		patch(mem, module, 0x00004548, 0x7C0F6244, NOP()); // Allow loading of privileged modules being not encrypted (take SceLoadCoreExecFileInfo.modInfoAttribute from the ELF module info, https://github.com/uofw/uofw/blob/master/src/loadcore/loadelf.c#L351)
     		patch(mem, module, 0x00004550, 0x14E0002C, 0x1000002C); // Allow loading of privileged modules being not encrypted (https://github.com/uofw/uofw/blob/master/src/loadcore/loadelf.c#L352)
     		patch(mem, module, 0x00003D58, 0x10C0FFBE, NOP()); // Allow linking user stub to kernel lib
-    	}
-
-    	// Patch of the PSP updater for the Firmware 1.50
-    	if ("updater".equals(module.modname) && isMatchingPsfTitle(module, "PSP. Update ver 1\\.50")) {
-    		// The 1.50 updater is reading
-    		//    flash0:/vsh/resource/system_plugin_bg.rco
-    		//    flash0:/vsh/resource/system_plugin_fg.rco
-    		// and is expecting to find entries named "mute", "mute_shadow", "hold" and "hold_shadow"
-    		// in those files. Unfortunately, the original 1.03 version of those files is not available
-    		// and later file versions do not include those entries.
-    		// The updater is however crashing when those entries are not found.
-    		// So, we patch the updater to retrieve an entry named "clock" instead of those 4 entries.
-    		// The "clock" entry is found in later version of the rco files and does not
-    		// impact the update 1.50 when using it instead of the original 4 entries.
-    		//
-    		// Change string "mute" into "clock"
-    		patch(mem, module, 0x000F5C2C, 0x6574756D, 0x636F6C63);
-    		patch(mem, module, 0x000F5C30, 0x00000000, 0x0000006B);
-    		// Change string "mute_shadow" into "clock"
-    		patch(mem, module, 0x000F5C34, 0x6574756D, 0x636F6C63);
-    		patch(mem, module, 0x000F5C38, 0x6168735F, 0x0000006B);
-    		// Change string "hold" into "clock"
-    		patch(mem, module, 0x000F5C40, 0x646C6F68, 0x636F6C63);
-    		patch(mem, module, 0x000F5C44, 0x00000000, 0x0000006B);
-    		// Change string "hold_shadow" into "clock"
-    		patch(mem, module, 0x000F5C48, 0x646C6F68, 0x636F6C63);
-    		patch(mem, module, 0x000F5C4C, 0x6168735F, 0x0000006B);
     	}
 
     	Modules.scePopsManModule.patchModule(mem, module);

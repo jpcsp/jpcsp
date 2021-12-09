@@ -21,6 +21,7 @@ import static jpcsp.Allegrex.Common._sp;
 import static jpcsp.Allegrex.Common._t9;
 import static jpcsp.Allegrex.Common._v0;
 import static jpcsp.Allegrex.Common._zr;
+import static jpcsp.Allegrex.compiler.RuntimeContextLLE.getFirmwareVersion;
 import static jpcsp.Allegrex.compiler.RuntimeContextLLE.getMMIO;
 import static jpcsp.HLE.HLEModuleManager.HLESyscallNid;
 import static jpcsp.HLE.Modules.LoadCoreForKernelModule;
@@ -142,17 +143,17 @@ public class reboot extends HLEModule {
     }
 
     public boolean isAvailable() {
+    	Model.init();
+
     	String generationSuffix = "";
-    	// Starting with Firmware 3.00, some file names include the PSP generation number
-    	if (RuntimeContextLLE.getFirmwareVersion() >= 300) {
+    	// Starting with Firmware 5.00, some file names include the PSP generation number
+    	if (getFirmwareVersion() >= 500) {
     		generationSuffix = String.format("_%02dg", Model.getGeneration());
     	}
     	final String[] fileNames = {
     			"flash0:/kd/loadexec%s.prx",
     			"flash0:/kd/sysmem.prx"
     	};
-
-    	Model.init();
 
     	for (String fileName : fileNames) {
     		String completeFileName = String.format(fileName, generationSuffix);
@@ -722,7 +723,7 @@ public class reboot extends HLEModule {
     	rebootModule.text_addr = rebootBaseAddress;
     	addFunctionNames(rebootModule);
 
-    	switch (RuntimeContextLLE.getFirmwareVersion()) {
+    	switch (getFirmwareVersion()) {
     		case 639:
 	        	addFunctionNid(0x04008A88, "sceIdStorageReadLeaf");
 	        	addFunctionNid(0x04009310, "sceIdStorageLookup");
@@ -904,7 +905,7 @@ public class reboot extends HLEModule {
     	}
 
     	boolean isInterruptContext = processor.cp0.getControlRegister(13) != 0;
-    	if (isInterruptContext && RuntimeContextLLE.getFirmwareVersion() > 200) {
+    	if (isInterruptContext && getFirmwareVersion() > 200) {
     		RuntimeContext.setLog4jMDC("Interrupt");
     	} else {
         	Memory mem = Memory.getInstance();

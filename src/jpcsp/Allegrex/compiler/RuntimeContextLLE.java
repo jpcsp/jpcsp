@@ -402,6 +402,11 @@ public class RuntimeContextLLE {
 		stream.writeInt(pendingInterruptIPbitsME);
 	}
 
+	public static void onEmulatorLoad() {
+		// Force a reload of the cached firmware version
+		firmwareVersion = -1;
+	}
+
 	public static int getFirmwareVersion() {
 		if (firmwareVersion < 0) {
 			firmwareVersion = 0;
@@ -420,6 +425,11 @@ public class RuntimeContextLLE {
 	    					log.debug(String.format("firmwareVersion=%d", firmwareVersion));
 	    				}
 	    			}
+	    		}
+	    	} else if (Emulator.getInstance().isPspOfficialUpdater()) {
+	    		int updateVersion = Emulator.getInstance().getPspOfficialUpdaterVersion();
+	    		if (updateVersion >= 0) {
+	    			firmwareVersion = updateVersion;
 	    		}
 	    	}
 		}

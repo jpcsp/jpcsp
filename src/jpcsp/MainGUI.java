@@ -20,6 +20,7 @@ import static jpcsp.Allegrex.compiler.RuntimeContext.setLog4jMDC;
 import static jpcsp.graphics.VideoEngineUtilities.getResizedHeight;
 import static jpcsp.graphics.VideoEngineUtilities.getResizedWidth;
 import static jpcsp.graphics.VideoEngineUtilities.getViewportResizeScaleFactor;
+import static jpcsp.util.Utilities.pspifyFilename;
 
 import java.awt.*;
 import java.awt.event.ActionEvent;
@@ -1529,33 +1530,6 @@ private void OpenFileActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRS
             }
         }
 }//GEN-LAST:event_OpenFileActionPerformed
-
-    private String pspifyFilename(String pcfilename) {
-        // Files relative to ms0 directory
-        if (pcfilename.startsWith("ms0")) {
-            return "ms0:" + pcfilename.substring(3).replaceAll("\\\\", "/").toUpperCase();
-        }
-        // Files relative to flash0 directory
-        if (pcfilename.startsWith("flash0")) {
-            return "flash0:" + pcfilename.substring(6).replaceAll("\\\\", "/");
-        }
-
-        // Files with absolute path but also in ms0 directory
-        try {
-            String ms0path = new File("ms0").getCanonicalPath();
-            if (pcfilename.startsWith(ms0path)) {
-                // Strip off absolute prefix
-                return "ms0:" + pcfilename.substring(ms0path.length()).replaceAll("\\\\", "/");
-            }
-        } catch (Exception e) {
-            // Required by File.getCanonicalPath
-            e.printStackTrace();
-        }
-
-        // Files anywhere on user's hard drive, may not work
-        // use host0:/ ?
-        return pcfilename.replaceAll("\\\\", "/");
-    }
 
     public void loadFile(File file) {
     	loadFile(file, false);
