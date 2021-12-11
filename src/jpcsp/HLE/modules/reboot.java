@@ -90,6 +90,7 @@ import jpcsp.hardware.Nand;
 import jpcsp.memory.IntArrayMemory;
 import jpcsp.memory.mmio.MMIO;
 import jpcsp.memory.mmio.MMIOHandlerGpio;
+import jpcsp.memory.mmio.MMIOHandlerKirk;
 import jpcsp.memory.mmio.memorystick.MMIOHandlerMemoryStick;
 import jpcsp.util.HLEUtilities;
 import jpcsp.util.Utilities;
@@ -553,6 +554,8 @@ public class reboot extends HLEModule {
     	getMMIO().remapMemoryAtProcessorReset();
 
     	addMMIORange(0xBFC00F00, 0x100);
+
+    	MMIOHandlerKirk.getInstance().setInitDone();
 
     	int rebootMemSize = rebootModule.text_size + rebootModule.data_size + rebootModule.bss_size;
     	SysMemInfo rebootMemInfo = Modules.SysMemUserForUserModule.malloc(VSHELL_PARTITION_ID, "reboot", PSP_SMEM_Addr, rebootMemSize, rebootModule.text_addr);

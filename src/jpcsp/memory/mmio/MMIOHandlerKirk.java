@@ -63,6 +63,7 @@ import libkirk.KirkEngine;
 public class MMIOHandlerKirk extends MMIOHandlerBase {
 	private static Logger log = semaphore.log;
 	private static final int STATE_VERSION = 0;
+	public static final int BASE_ADDRESS = 0xBDE00000;
 	public static final int RESULT_SUCCESS = 0;
 	public static final int STATUS_PHASE1_IN_PROGRESS = 0x00;
 	public static final int STATUS_PHASE1_COMPLETED = 0x01;
@@ -74,6 +75,7 @@ public class MMIOHandlerKirk extends MMIOHandlerBase {
 	public static final int STATUS_PHASE2_MASK = STATUS_PHASE2_COMPLETED | STATUS_PHASE2_ERROR;
 	private final int signature = 0x4B52494B; // "KIRK"
 	private final int version = 0x30313030; // "0010"
+	private static MMIOHandlerKirk instance;
 	private int error;
 	private int command;
 	private int result;
@@ -95,7 +97,14 @@ public class MMIOHandlerKirk extends MMIOHandlerBase {
 		}
 	}
 
-	public MMIOHandlerKirk(int baseAddress) {
+	public static MMIOHandlerKirk getInstance() {
+		if (instance == null) {
+			instance = new MMIOHandlerKirk(BASE_ADDRESS);
+		}
+		return instance;
+	}
+
+	private MMIOHandlerKirk(int baseAddress) {
 		super(baseAddress);
 
 		reset();
@@ -383,6 +392,10 @@ public class MMIOHandlerKirk extends MMIOHandlerBase {
 		libkirk.KirkEngine.kirk_init(fuseId);
 	}
 
+	public void setInitDone() {
+		initDone = true;
+	}
+
 	private int hleUtilsBufferCopyWithRange() {
 		TPointer outAddr = new TPointer(getMemory(), normalizeAddress(destAddr));
 		TPointer inAddr = new TPointer(getMemory(), normalizeAddress(sourceAddr));
@@ -449,7 +462,7 @@ public class MMIOHandlerKirk extends MMIOHandlerBase {
             	inSize = 8;
             	outSize = 28;
             	initKirk();
-            	initDone = true;
+            	setInitDone();
             	break;
             case PSP_KIRK_CMD_CERT_VERIFY:
             	inSize = 0xB8;

@@ -116,7 +116,7 @@ public class MMIO extends Memory {
     		addHandler(MMIOHandlerEFlashAta.BASE_ADDRESS, 0x10, MMIOHandlerEFlashAta.getInstance());
     		addHandler(0xBDB00000, 0x48, new MMIOHandlerEFlashDma(0xBDB00000));
     	}
-    	addHandler(0xBDE00000, 0x3C, new MMIOHandlerKirk(0xBDE00000));
+    	addHandler(MMIOHandlerKirk.BASE_ADDRESS, 0x3C, MMIOHandlerKirk.getInstance());
     	addHandler(MMIOHandlerUmd.BASE_ADDRESS, 0x98, MMIOHandlerUmd.getInstance());
     	addHandler(MMIOHandlerAudio.BASE_ADDRESS, 0x80, MMIOHandlerAudio.getInstance());
     	addHandler(0xBE140000, 0x204, new MMIOHandlerLcdc(0xBE140000));
