@@ -149,7 +149,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         "ms0/PSP/MUSIC",
         "ms0/PSP/PHOTO",
         "ms0/PSP/SAVEDATA",
-        "ms0/PSP/LICENCE",
+        "ms0/PSP/LICENSE",
         "ms0/PSP/THEME",
         "ms0/PSP/SYSTEM",
         "ms0/PSP/SYSTEM/BROWSER",
