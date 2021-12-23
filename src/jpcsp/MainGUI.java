@@ -136,8 +136,28 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
     private List<RecentElement> recentUMD = new LinkedList<RecentElement>();
     private List<RecentElement> recentFile = new LinkedList<RecentElement>();
     private final static String[] userDir = {
+        "MP_ROOT/100ANV01",
+        "MP_ROOT/100MNV01",
+        "ms0/ISO",
+        "ms0/ISO/VIDEO",
+        "ms0/MUSIC",
+        "ms0/PICTURE",
+        "ms0/VIDEO",
+        "ms0/seplugins",
+        "ms0/PSP/GAME150",
+        "ms0/PSP/COMMON",
+        "ms0/PSP/MUSIC",
+        "ms0/PSP/PHOTO",
         "ms0/PSP/SAVEDATA",
+        "ms0/PSP/LICENSE",
+        "ms0/PSP/THEME",
+        "ms0/PSP/SYSTEM",
+        "ms0/PSP/SYSTEM/BROWSER",
+        "ms0/PSP/SYSTEM/RRSCH",
+        "ms0/PSP/SYSTEM/RRSCH/CHANNELS",
         "ms0/PSP/GAME",
+        "ms0/PSP/GAME/UPDATE",
+        "ms0/PSP/GAME/RECOVERY",
         "tmp"
     };
     private static final String logConfigurationSettingLeft = "    %1$-40s %3$c%2$s%4$c";
