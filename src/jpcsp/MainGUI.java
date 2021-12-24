@@ -136,8 +136,8 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
     private List<RecentElement> recentUMD = new LinkedList<RecentElement>();
     private List<RecentElement> recentFile = new LinkedList<RecentElement>();
     private final static String[] userDir = {
-        "MP_ROOT/100ANV01",
-        "MP_ROOT/100MNV01",
+        "ms0/MP_ROOT/100ANV01",
+        "ms0/MP_ROOT/100MNV01",
         "ms0/ISO",
         "ms0/ISO/VIDEO",
         "ms0/MUSIC",
