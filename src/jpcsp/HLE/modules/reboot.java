@@ -16,8 +16,6 @@
  */
 package jpcsp.HLE.modules;
 
-import static jpcsp.Allegrex.Common._s0;
-import static jpcsp.Allegrex.Common._sp;
 import static jpcsp.Allegrex.Common._t9;
 import static jpcsp.Allegrex.Common._v0;
 import static jpcsp.Allegrex.Common._zr;
@@ -30,16 +28,24 @@ import static jpcsp.HLE.modules.SysMemUserForUser.KERNEL_PARTITION_ID;
 import static jpcsp.HLE.modules.SysMemUserForUser.PSP_SMEM_Addr;
 import static jpcsp.HLE.modules.SysMemUserForUser.USER_PARTITION_ID;
 import static jpcsp.HLE.modules.SysMemUserForUser.VSHELL_PARTITION_ID;
-import static jpcsp.util.HLEUtilities.ADDIU;
+import static jpcsp.util.HLEUtilities.JAL;
 import static jpcsp.util.HLEUtilities.LUI;
 import static jpcsp.util.HLEUtilities.MOVE;
-import static jpcsp.util.HLEUtilities.SW;
+import static jpcsp.util.HLEUtilities.SYSCALL;
 import static jpcsp.MemoryMap.START_SCRATCHPAD;
+import static jpcsp.hardware.Model.MODEL_PSP_BRITE;
+import static jpcsp.hardware.Model.MODEL_PSP_FAT;
+import static jpcsp.hardware.Model.MODEL_PSP_SLIM;
 import static jpcsp.memory.mmio.MMIOHandlerGpio.GPIO_PORT_SERVICE_BATTERY;
+import static jpcsp.util.Utilities.alignUp;
 import static jpcsp.util.Utilities.clearBit;
+import static jpcsp.util.Utilities.hasBit;
 import static jpcsp.util.Utilities.readCompleteFile;
 import static jpcsp.util.Utilities.readUnaligned32;
+import static libkirk.KirkEngine.KIRK_CMD_DECRYPT_IV_0;
 import static libkirk.KirkEngine.KIRK_CMD_DECRYPT_PRIVATE;
+import static libkirk.KirkEngine.KIRK_CMD_ECDSA_VERIFY;
+import static libkirk.KirkEngine.KIRK_CMD_SHA1_HASH;
 import static libkirk.KirkEngine.KIRK_MODE_CMD1;
 
 import java.io.File;
@@ -56,6 +62,7 @@ import jpcsp.Loader;
 import jpcsp.Memory;
 import jpcsp.MemoryMap;
 import jpcsp.Processor;
+import jpcsp.Allegrex.CpuState;
 import jpcsp.Allegrex.Decoder;
 import jpcsp.Allegrex.Interpreter;
 import jpcsp.Allegrex.compiler.Compiler;
@@ -64,13 +71,11 @@ import jpcsp.Allegrex.compiler.RuntimeContextLLE;
 import jpcsp.HLE.BufferInfo;
 import jpcsp.HLE.BufferInfo.LengthInfo;
 import jpcsp.HLE.BufferInfo.Usage;
-import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLEModule;
 import jpcsp.HLE.HLEModuleManager;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.TPointer;
-import jpcsp.HLE.TPointer32;
 import jpcsp.HLE.VFS.IVirtualFile;
 import jpcsp.HLE.VFS.IVirtualFileSystem;
 import jpcsp.HLE.VFS.local.LocalVirtualFile;
@@ -87,7 +92,10 @@ import jpcsp.filesystems.SeekableRandomFile;
 import jpcsp.format.PSP;
 import jpcsp.hardware.Model;
 import jpcsp.hardware.Nand;
+import jpcsp.memory.ByteArrayMemory;
+import jpcsp.memory.IMemoryWriter;
 import jpcsp.memory.IntArrayMemory;
+import jpcsp.memory.MemoryWriter;
 import jpcsp.memory.mmio.MMIO;
 import jpcsp.memory.mmio.MMIOHandlerGpio;
 import jpcsp.memory.mmio.MMIOHandlerKirk;
@@ -95,6 +103,7 @@ import jpcsp.memory.mmio.memorystick.MMIOHandlerMemoryStick;
 import jpcsp.util.HLEUtilities;
 import jpcsp.util.Utilities;
 import libkirk.KirkEngine;
+import libkirk.KirkEngine.KIRK_AES128CBC_HEADER;
 
 public class reboot extends HLEModule {
     public static Logger log = Modules.getLogger("reboot");
@@ -169,13 +178,17 @@ public class reboot extends HLEModule {
     	return true;
     }
 
-    public boolean loadAndRun() {
+	public boolean isUsingKbooti() {
+		return usingKbooti;
+	}
+
+	public boolean loadAndRun() {
     	if (!enableReboot) {
     		return false;
     	}
 
         Model.init();
-    	Modules.SysMemUserForUserModule.setMemory64MB(Model.getGeneration() > 1);
+    	Modules.SysMemUserForUserModule.setMemory64MB(Model.getModel() > MODEL_PSP_FAT);
     	RuntimeContextLLE.reset();
         RuntimeContextLLE.start();
         RuntimeContext.updateMemory();
@@ -215,17 +228,15 @@ public class reboot extends HLEModule {
 
 		File preIplFile = new File(getPreIplFileName());
 		if (preIplFile.canRead() && preIplFile.length() == 0x1000) {
+			if (log.isDebugEnabled()) {
+				log.debug(String.format("Best boot method is BOOT_PREIPL for PSP Model '%s'", Model.getModelName()));
+			}
 			bootMethod = BOOT_PREIPL;
 		} else {
-	    	switch (Model.getGeneration()) {
-		    	case 1:
-		    	case 2:
-	    			bootMethod = BOOT_IPL;
-		    		break;
-		    	default:
-		    		bootMethod = BOOT_LOADEXEC_PRX;
-		    		break;
-	    	}
+			if (log.isDebugEnabled()) {
+				log.debug(String.format("Best boot method is BOOT_IPL for PSP Model '%s'", Model.getModelName()));
+			}
+			bootMethod = BOOT_IPL;
 		}
 
     	return bootMethod;
@@ -659,13 +670,16 @@ public class reboot extends HLEModule {
 	    	}
     	}
 
+		addMMIORange(preIplAddress, preIplSize);
     	addMMIORange(preIplCopy, 0x1000);
     	addMMIORangeIPL();
-    	HLEUtilities.getInstance().installHLESyscallWithJump(new TPointer(preIplCopy, 0x000), this, "hlePreIplStart");
-    	HLEUtilities.getInstance().installHLESyscall(new TPointer(preIplCopy, 0x2A0), this, "hlePreIplIcacheInvalidateAll");
-    	HLEUtilities.getInstance().installHLESyscall(new TPointer(preIplCopy, 0x2D8), this, "hlePreIplDcacheWritebackInvalidateAll");
-    	HLEUtilities.getInstance().installHLESyscall(new TPointer(preIplCopy, 0x334), this, "hlePreIplNandReadPage");
-    	HLEUtilities.getInstance().installHLESyscall(new TPointer(preIplCopy, 0x418), this, "hlePreIplMemoryStickReadSector");
+    	if (Model.getModel() <= MODEL_PSP_SLIM) {
+	    	HLEUtilities.getInstance().installHLESyscallWithJump(new TPointer(preIplCopy, 0x000), this, "hlePreIplStart");
+	    	HLEUtilities.getInstance().installHLESyscall(new TPointer(preIplCopy, 0x2A0), this, "hlePreIplIcacheInvalidateAll");
+	    	HLEUtilities.getInstance().installHLESyscall(new TPointer(preIplCopy, 0x2D8), this, "hlePreIplDcacheWritebackInvalidateAll");
+	    	HLEUtilities.getInstance().installHLESyscall(new TPointer(preIplCopy, 0x334), this, "hlePreIplNandReadPage");
+	    	HLEUtilities.getInstance().installHLESyscall(new TPointer(preIplCopy, 0x418), this, "hlePreIplMemoryStickReadSector");
+    	}
 
 		SceModule iplModule = new SceModule(true);
 		iplModule.modname = getName();
@@ -1133,10 +1147,19 @@ public class reboot extends HLEModule {
 		return true;
     }
 
+    private int iplKirkCommand(TPointer outAddr, int outSize, TPointer inAddr, int inSize, int cmd) {
+    	if (MMIOHandlerKirk.getInstance().preDecrypt(outAddr, outSize, inAddr, inSize, cmd)) {
+    		return 0;
+    	}
+
+    	return Modules.semaphoreModule.hleUtilsBufferCopyWithRange(outAddr, outSize, inAddr, inSize, cmd);
+    }
+
     private boolean loadIpl(boolean loadFromNand) {
     	int result;
     	Memory mem = getMMIO();
 
+    	final boolean isPsp3000 = Model.getModel() >= MODEL_PSP_BRITE;
     	final TPointer nandSpareBuffer = new TPointer(preIplCopy, 0x810);
     	final TPointer iplFatSectorBuffer = new TPointer(preIplCopy, 0x81C);
 
@@ -1159,11 +1182,20 @@ public class reboot extends HLEModule {
     	}
 
 		final TPointer decryptBuffer = new TPointer(mem, 0xBFD00000);
+		final TPointer hashDecryptBuffer = new TPointer(decryptBuffer, 0xFCC);
+		final TPointer hashBuffer = new TPointer(decryptBuffer, 0x004);
+		final TPointer checkHashBuffer = new TPointer(decryptBuffer, 0xF80);
+		final TPointer ecdsaSignatureBuffer = new TPointer(decryptBuffer, 0xFA0);
+		final TPointer ecdsaMessageHash = new ByteArrayMemory(new byte[20]).getPointer();
+		final TPointer ecdsaSignature = new ByteArrayMemory(new byte[40]).getPointer();
+		final int hashSize = 20;
     	final int decryptBufferPages = 8;
     	final int decryptBufferSize = decryptBufferPages * Nand.pageSize;
 		int nextAddr = 0;
 		iplBase = 0;
 		iplEntry = 0;
+		int previousChecksum = 0;
+		boolean ecdsaHash = false;
 		for (int i = 0; i < Nand.pageSize && iplEntry == 0; i += 2) {
 			for (int j = 0; j < Nand.pagesPerBlock && iplEntry == 0; j += decryptBufferPages) {
 				for (int page = 0; page < decryptBufferPages; page++) {
@@ -1188,9 +1220,57 @@ public class reboot extends HLEModule {
 				int dataSize = decryptBuffer.getValue32(112);
 				int dataOffset = decryptBuffer.getValue32(116);
 				int inSize = KirkEngine.KIRK_CMD1_HEADER.SIZEOF + Utilities.alignUp(dataSize, 15) + dataOffset;
-				result = Modules.semaphoreModule.hleUtilsBufferCopyWithRange(decryptBuffer, decryptBufferSize, decryptBuffer, inSize, KIRK_CMD_DECRYPT_PRIVATE);
+				int cmd = KIRK_CMD_DECRYPT_PRIVATE;
+				if (isPsp3000) {
+					cmd = decryptBuffer.getValue32(96) & 0x3;
+					decryptBuffer.setUnsignedValue16(98, 0);
+					ecdsaHash = hasBit(decryptBuffer.getValue32(100), 0);
+				}
+				result = iplKirkCommand(decryptBuffer, decryptBufferSize, decryptBuffer, inSize, cmd);
 				if (result != 0) {
-					log.error(String.format("hleUtilsBufferCopyWithRange returned 0x%08X", result));
+					log.error(String.format("hleUtilsBufferCopyWithRange cmd=0x%X returned 0x%08X", cmd, result));
+					return false;
+				}
+
+				if (isPsp3000) {
+					hashDecryptBuffer.setValue32(0, KirkEngine.KIRK_MODE_DECRYPT_CBC);
+					hashDecryptBuffer.setValue32(4, 0);
+					hashDecryptBuffer.setValue32(8, 0);
+					hashDecryptBuffer.setValue32(12, 0x6C); // seed
+					hashDecryptBuffer.setValue32(16, hashSize);
+					result = iplKirkCommand(hashDecryptBuffer, hashSize, hashDecryptBuffer, alignUp(hashSize, 15) + KIRK_AES128CBC_HEADER.SIZEOF, KIRK_CMD_DECRYPT_IV_0);
+					if (result != 0) {
+						log.error(String.format("hleUtilsBufferCopyWithRange KIRK_CMD_DECRYPT_IV_0 returned 0x%08X", result));
+						return false;
+					}
+
+					int addr = decryptBuffer.getValue32(0);
+					int length = decryptBuffer.getValue32(4);
+					TPointer ptr = new TPointer(decryptBuffer, length);
+					ptr.setValue32(16, addr);
+					ptr.setValue32(20, length);
+					hashBuffer.setValue32(0, length + 16);
+					result = iplKirkCommand(checkHashBuffer, hashSize, hashBuffer, length + 20, KIRK_CMD_SHA1_HASH);
+					if (result != 0) {
+						log.error(String.format("hleUtilsBufferCopyWithRange KIRK_CMD_SHA1_HASH returned 0x%08X", result));
+						return false;
+					}
+
+					decryptBuffer.setValue32(4, length);
+
+					for (int k = 0; k < hashSize; k += 4) {
+						if (checkHashBuffer.getValue32(k) != hashDecryptBuffer.getValue32(k)) {
+							log.error(String.format("IPL invalid hash at offset 0x%X: 0x%08X != 0x%08X", k, checkHashBuffer.getValue32(k), hashDecryptBuffer.getValue32(k)));
+							return false;
+						}
+						ecdsaMessageHash.setValue32(k, ecdsaMessageHash.getValue32(k) ^ checkHashBuffer.getValue32(k));
+					}
+
+					ecdsaSignature.memcpy(ecdsaSignatureBuffer, 40);
+
+					for (int k = dataSize; k < decryptBufferSize; k += 4) {
+						decryptBuffer.setValue32(k, 13);
+					}
 				}
 
 				int addr = decryptBuffer.getValue32(0);
@@ -1201,17 +1281,62 @@ public class reboot extends HLEModule {
 					log.trace(String.format("IPL block 0x%X: addr=0x%08X, length=0x%X, entry=0x%08X, checkSum=0x%08X", i, addr, length, iplEntry, checksum));
 				}
 
+				if (previousChecksum != checksum) {
+					log.error(String.format("IPL checksum=0x%08X not matching previousChecksum=0x%08X", checksum, previousChecksum));
+					return false;
+				}
+
 				if (iplBase == 0) {
 					iplBase = addr;
 				} else if (addr != nextAddr) {
 					log.error(String.format("Error at IPL offset 0x%X: 0x%08X != 0x%08X", i, addr, nextAddr));
 				}
-				if (length > 0) {
-					mem.memcpy(addr, decryptBuffer.getAddress() + 0x10, length);
+
+				if (length > 0 && addr != 0) {
+					previousChecksum = 0;
+					for (int k = 0; k < length; k += 4) {
+						int value = decryptBuffer.getValue32(0x10 + k);
+						mem.write32(addr + k, value);
+						previousChecksum += value;
+					}
 				}
 				nextAddr = addr + length;
 			}
 		}
+
+		if (isPsp3000) {
+			if (!ecdsaHash) {
+				// ECDSA hash is mandatory for the entry IPL block
+				return false;
+			}
+
+			final byte[] ecdsaPublicKey = new byte[] {
+				(byte) 0xBC, (byte) 0x66, (byte) 0x06, (byte) 0x11,
+				(byte) 0xA7, (byte) 0x0B, (byte) 0xD7, (byte) 0xF2,
+				(byte) 0xD1, (byte) 0x40, (byte) 0xA4, (byte) 0x82,
+				(byte) 0x15, (byte) 0xC0, (byte) 0x96, (byte) 0xD1,
+				(byte) 0x1D, (byte) 0x2D, (byte) 0x41, (byte) 0x12,
+				(byte) 0xF0, (byte) 0xE9, (byte) 0x37, (byte) 0x9A,
+				(byte) 0xC4, (byte) 0xE0, (byte) 0xD3, (byte) 0x87,
+				(byte) 0xC5, (byte) 0x42, (byte) 0xD0, (byte) 0x91,
+				(byte) 0x34, (byte) 0x9D, (byte) 0xD1, (byte) 0x51,
+				(byte) 0x69, (byte) 0xDD, (byte) 0x5A, (byte) 0x87
+			};
+			decryptBuffer.setArray(0, ecdsaPublicKey);
+			decryptBuffer.memcpy(40, ecdsaMessageHash, 20);
+			ecdsaMessageHash.clear(20);
+			decryptBuffer.memcpy(60, ecdsaSignature, 40);
+			ecdsaSignatureBuffer.clear(40);
+			result = iplKirkCommand(TPointer.NULL, 0, decryptBuffer, 0x64, KIRK_CMD_ECDSA_VERIFY);
+			if (result != 0) {
+				log.error(String.format("hleUtilsBufferCopyWithRange KIRK_CMD_ECDSA_VERIFY returned 0x%08X", result));
+				return false;
+			}
+			decryptBuffer.clear(100);
+
+			mem.write32(preIplAddress + 0xFFC, 0x20070910);
+		}
+
 		iplSize = nextAddr - iplBase;
 
 		if (iplBase == 0) {
@@ -1282,10 +1407,12 @@ public class reboot extends HLEModule {
 	    		patchIplKey(keyAddr, keyWithoutPreIpl, keyWithPreIpl);
 	    		break;
     		default:
-	        	int sceGzipDecompressAddr = iplBase + 0x910;
-	        	if (mem.read32(sceGzipDecompressAddr) == ADDIU(_sp, _sp, -64)) {
-	        		HLEUtilities.getInstance().installHLESyscall(new TPointer(mem, sceGzipDecompressAddr), this, "hleIplGzipDecompress");
-	        	}
+    			int hashDigestPatchAddr = iplBase + 0x1224;
+    			if (mem.read32(hashDigestPatchAddr) == JAL(iplBase + 0xE04)) {
+    				mem.write32(iplBase + 0x1224, SYSCALL(this, "hleIplHashDigestPatch"));
+    			} else {
+    				log.error(String.format("patchIpl unknown IPL code at 0x%08X for PSP Model %s", iplBase, Model.getModelName()));
+    			}
 	        	break;
     	}
     }
@@ -1335,63 +1462,64 @@ public class reboot extends HLEModule {
     	return 0;
     }
 
-    private void patchMainBin(TPointer addr) {
-    	// disable decryption of key at 0xBFD00200
-    	addr.setValue32(0x90, MOVE(_v0, _zr)); 
+    private byte[] getHashDigest() {
+    	switch (Model.getGeneration()) {
+	    	case 3:
+	        	return new byte[] {
+	        			(byte) 0x41, (byte) 0x38, (byte) 0x9D, (byte) 0xB4, (byte) 0x0B, (byte) 0x91, (byte) 0x24, (byte) 0x98,
+	        			(byte) 0x37, (byte) 0xFF, (byte) 0x3D, (byte) 0x49, (byte) 0x13, (byte) 0x5C, (byte) 0x5A, (byte) 0x58,
+	        			(byte) 0xAE, (byte) 0xD7, (byte) 0x37, (byte) 0x16, (byte) 0x57, (byte) 0x1E, (byte) 0x10, (byte) 0x4F,
+	        			(byte) 0xF3, (byte) 0x20, (byte) 0xFE, (byte) 0xA5
+	        	};
+	    	case 4:
+	        	return new byte[] {
+	        			(byte) 0xB6, (byte) 0x89, (byte) 0x96, (byte) 0x09, (byte) 0x68, (byte) 0xF2, (byte) 0x41, (byte) 0xA5,
+	        			(byte) 0xB3, (byte) 0x7E, (byte) 0x27, (byte) 0x12, (byte) 0x55, (byte) 0xA6, (byte) 0xBB, (byte) 0x1C,
+	        			(byte) 0xEB, (byte) 0x51, (byte) 0xEE, (byte) 0x0B, (byte) 0x24, (byte) 0x81, (byte) 0x9E, (byte) 0xAC,
+	        			(byte) 0xEC, (byte) 0x68, (byte) 0x3B, (byte) 0x50
+	        	};
+	    	case 7:
+	        	return new byte[] {
+	        			(byte) 0x7F, (byte) 0x40, (byte) 0x66, (byte) 0x89, (byte) 0xD7, (byte) 0x53, (byte) 0x7E, (byte) 0x65,
+	        			(byte) 0x74, (byte) 0xF2, (byte) 0x2B, (byte) 0x5B, (byte) 0x24, (byte) 0x8F, (byte) 0xE7, (byte) 0xCF,
+	        			(byte) 0xFE, (byte) 0xA8, (byte) 0xEF, (byte) 0x38, (byte) 0x5E, (byte) 0xC0, (byte) 0x4D, (byte) 0x0D,
+	        			(byte) 0xCB, (byte) 0xAD, (byte) 0xDB, (byte) 0x39
+	        	};
+	    	case 9:
+	        	return new byte[] {
+	        			(byte) 0xD6, (byte) 0x18, (byte) 0x12, (byte) 0x0E, (byte) 0x3E, (byte) 0x2B, (byte) 0xE9, (byte) 0xDF,
+	        			(byte) 0x1E, (byte) 0xC0, (byte) 0x8D, (byte) 0xD4, (byte) 0x33, (byte) 0xE5, (byte) 0x85, (byte) 0x84,
+	        			(byte) 0x4A, (byte) 0xC6, (byte) 0xB7, (byte) 0xEF, (byte) 0x31, (byte) 0xFF, (byte) 0x16, (byte) 0xE7,
+	        			(byte) 0x03, (byte) 0xF9, (byte) 0x7E, (byte) 0x3F
+	        	};
+	    	case 11:
+	        	return new byte[] {
+	        			(byte) 0xC9, (byte) 0xF8, (byte) 0xFD, (byte) 0xAB, (byte) 0x97, (byte) 0xE8, (byte) 0x14, (byte) 0x44,
+	        			(byte) 0xAD, (byte) 0x5F, (byte) 0x93, (byte) 0x4C, (byte) 0x1E, (byte) 0x61, (byte) 0x09, (byte) 0x49,
+	        			(byte) 0x43, (byte) 0x72, (byte) 0xB1, (byte) 0x56, (byte) 0x91, (byte) 0x60, (byte) 0x3B, (byte) 0x67,
+	        			(byte) 0xA1, (byte) 0x2D, (byte) 0x9A, (byte) 0x44
+	        	};
+        	default:
+        		log.error(String.format("getHashDigest unimplemented for PSP model %s", Model.getModelName()));
+        		break;
+    	}
 
-    	// Always generate a random value full of 0's
-    	addr.setValue32(0x5DF8, SW(_zr, _s0, 0));
-    	addr.setValue32(0x5DFC, SW(_zr, _s0, 4));
-    	addr.setValue32(0x5E00, SW(_zr, _s0, 8));
-    	addr.setValue32(0x5E04, SW(_zr, _s0, 12));
-    	addr.setValue32(0x5E08, SW(_zr, _s0, 16));
+    	return null;
     }
 
     @HLEFunction(nid = HLESyscallNid, version = 150)
-    public int hleIplGzipDecompress(TPointer outBufferAddr, int outBufferLength, TPointer inBufferAddr, @CanBeNull TPointer32 crc32Addr) {
-    	if (Modules.sceDefltModule.sceGzipIsValid(inBufferAddr)) {
-    		return Modules.sceDefltModule.sceGzipDecompress(outBufferAddr, outBufferLength, inBufferAddr, crc32Addr);
-    	}
-
-    	File mainBin = new File(String.format("iplMain_%02dg.bin", Model.getGeneration()));
-    	if (mainBin.canRead()) {
-    		byte[] buffer = new byte[outBufferLength];
-			try {
-				InputStream is = new FileInputStream(mainBin);
-				int readLength = is.read(buffer);
-				is.close();
-
-				outBufferAddr.setArray(buffer, readLength);
-
-		    	addMMIORange(outBufferAddr.getAddress(), readLength);
-
-		    	patchMainBin(outBufferAddr);
-			} catch (IOException e) {
-				log.error("hleIplGzipDecompress", e);
-			}
-    	} else {
-    		HLEUtilities.getInstance().installHLESyscallWithJump(outBufferAddr, this, "hleIplStart");
-    	}
-
-    	return 0;
-    }
-
-    @HLEFunction(nid = HLESyscallNid, version = 150)
-    public int hleIplStart() {
-    	int continueAddress = 0;
-
-    	if (log.isTraceEnabled()) {
-    		log.trace(String.format("hleIplStart is there anything patched in this area: %s", Utilities.getMemoryDump(0x04000000, 0x10000)));
-    	}
+    public void hleIplHashDigestPatch(CpuState cpu) {
+    	final byte[] hashDigest = getHashDigest();
+    	int hashDigestAddr = cpu._t0;
 
     	if (log.isDebugEnabled()) {
-    		log.debug(String.format("hleIplStart continueAddress=0x%08X", continueAddress));
-    	}
+			log.debug(String.format("hleIplHashDigestPatch writing hash digest to 0x%08X", hashDigestAddr));
+		}
 
-    	return continueAddress;
+		IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(getMemory(), hashDigestAddr, hashDigest.length, 1);
+		for (int i = 0; i < hashDigest.length; i++) {
+			memoryWriter.writeNext(hashDigest[i]);
+		}
+		memoryWriter.flush();
     }
-
-	public boolean isUsingKbooti() {
-		return usingKbooti;
-	}
 }

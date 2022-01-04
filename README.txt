@@ -944,10 +944,10 @@ When such a file is present, Jpcsp is running the pre-IPL code when pressing the
 i.e. it runs the complete boot process like on a real PSP.
 When such a file is not present (which is the default situation as such files are not
 distributed with Jpcsp), Jpcsp is simulating the behaviour of the pre-IPL and is running directly
-the IPL code. On a PSP-1000 or PSP-2000, Jpcsp will load the IPL from the NAND or from
-the memory stick depending if the battery is identified as a Pandora battery (having
-a service serial number 0xFFFFFFFF). The battery serial number can be written using an
-homebrew (like you would do on a real PSP) or by adding the line
+the IPL code. Jpcsp will load the IPL from the NAND or from the memory stick depending
+if the battery is identified as a Pandora battery (having a service serial number 0xFFFFFFFF).
+The battery serial number can be written using an homebrew (like you would do on a real PSP)
+or by adding the line
 	batterySerialNumber=0xFFFFFFFF
 to the Setting.properties file in the Jpcsp main directory.
 

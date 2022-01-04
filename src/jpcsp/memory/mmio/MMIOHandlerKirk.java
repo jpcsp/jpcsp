@@ -219,7 +219,7 @@ public class MMIOHandlerKirk extends MMIOHandlerBase {
 		int x4 = xorkeys[idx + 3];
 	    x1 = ((x1 >>> rot) | (x1 << (0x20-rot)));
 	    x2 = Integer.reverse(((x2 >>> rot) | (x2 << (0x20-rot))));
-	    x3 = (((x3 >>> rot) | (x3 << (0x20-rot)))  ^ x4);
+	    x3 = (((x3 >>> rot) | (x3 << (0x20-rot))) ^ x4);
 	    x4 = ((x4 >>> rot) | (x4 << (0x20-rot)));
 	    buffer.setValue32( 0, buffer.getValue32( 0) ^ x1);
 	    buffer.setValue32( 4, buffer.getValue32( 4) ^ x2);
@@ -244,6 +244,23 @@ public class MMIOHandlerKirk extends MMIOHandlerBase {
 		return new int[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
 	}
 
+	private static int[] getKeyStep2() {
+		switch (Model.getGeneration()) {
+			case 2:
+			case 3:
+				return new int[] { 0xDB, 0xB1, 0x1E, 0x20, 0x48, 0x83, 0xB1, 0x6F, 0x65, 0x8C, 0x3D, 0x30, 0xE0, 0xFE, 0xCB, 0xBF };
+			case 4:
+			case 7:
+			case 9:
+			case 11:
+				return new int[] { 0x34, 0xDB, 0x81, 0x24, 0x1D, 0x6F, 0x40, 0x57, 0xF3, 0xDA, 0x48, 0x08, 0xE3, 0x46, 0x67, 0x42 };
+			case 5:
+		}
+
+		log.error(String.format("getKeyStep2 unimplemented for PSP generation %d", Model.getGeneration()));
+		return new int[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+	}
+
 	private static int[] getXorKeyStep2() {
 		switch (Model.getGeneration()) {
 			case 2:
@@ -259,6 +276,23 @@ public class MMIOHandlerKirk extends MMIOHandlerBase {
 
 		log.error(String.format("getXorKeyStep2 unimplemented for PSP generation %d", Model.getGeneration()));
 		return new int[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+	}
+
+	private static int[] getKeyStep3() {
+		switch (Model.getGeneration()) {
+			case 2:
+			case 3:
+				return new int[] { 0x04, 0xF4, 0x69, 0x8A, 0x8C, 0xAA, 0x95, 0x30, 0xCE, 0x3B, 0xE8, 0x84, 0xCA, 0x9A, 0x07, 0x9A };
+			case 4:
+			case 7:
+			case 9:
+			case 11:
+				return new int[] { 0xE0, 0xDC, 0x41, 0xAF, 0xC2, 0xCD, 0x1C, 0x2D, 0x95, 0x8E, 0xA6, 0x78, 0x4D, 0x16, 0x7A, 0x85 };
+			case 5:
+		}
+
+		log.error(String.format("getKeyStep3 unimplemented for PSP generation %d", Model.getGeneration()));
+		return new int[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
 	}
 
 	private static int[] getXorKeyStep3() {
@@ -278,7 +312,7 @@ public class MMIOHandlerKirk extends MMIOHandlerBase {
 		return new int[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
 	}
 
-	private boolean preDecrypt(TPointer outAddr, int outSize, TPointer inAddr, int inSize) {
+	public boolean preDecrypt(TPointer outAddr, int outSize, TPointer inAddr, int inSize, int command) {
 		boolean processed = false;
 
 		if (!initDone && command == PSP_KIRK_CMD_DECRYPT_PRIVATE && Model.getGeneration() >= 3 && inSize > 0xC0) {
@@ -317,7 +351,7 @@ public class MMIOHandlerKirk extends MMIOHandlerBase {
 				    		if (log.isDebugEnabled()) {
 				    			log.debug(String.format("preDecrypt for IPL, keySeed=0x%X step %d", keySeed, stepPreDecryptKeySeed0x15));
 				    		}
-							final int key1[] = new int[] { 0xDB, 0xB1, 0x1E, 0x20, 0x48, 0x83, 0xB1, 0x6F, 0x65, 0x8C, 0x3D, 0x30, 0xE0, 0xFE, 0xCB, 0xBF };
+							final int key1[] = getKeyStep2();
 							final byte xorKey1_1[] = getKey(getXorKeyBFD00210());
 							final int keyFromVault1[] = getKeyBFD00210();
 							final int xorKey1_2[] = getXorKeyStep2();
@@ -339,7 +373,7 @@ public class MMIOHandlerKirk extends MMIOHandlerBase {
 				    		if (log.isDebugEnabled()) {
 				    			log.debug(String.format("preDecrypt for IPL, keySeed=0x%X step %d", keySeed, stepPreDecryptKeySeed0x15));
 				    		}
-							final int key2[] = new int[] { 0x04, 0xF4, 0x69, 0x8A, 0x8C, 0xAA, 0x95, 0x30, 0xCE, 0x3B, 0xE8, 0x84, 0xCA, 0x9A, 0x07, 0x9A };
+							final int key2[] = getKeyStep3();
 							final byte xorKey2_1[] = getKey(getXorKeyBFD00210());
 							final int keyFromVault2[] = getKeyBFD00210();
 							final int xorKey2_2[] = getXorKeyStep3();
@@ -492,7 +526,7 @@ public class MMIOHandlerKirk extends MMIOHandlerBase {
 			log.debug(String.format("hleUtilsBufferCopyWithRange input: %s", Utilities.getMemoryDump(inAddr, inSize)));
 		}
 
-		if (!preDecrypt(outAddr, outSize, inAddr, inSize)) {
+		if (!preDecrypt(outAddr, outSize, inAddr, inSize, command)) {
 			result = Modules.semaphoreModule.hleUtilsBufferCopyWithRange(outAddr, outSize, inAddr, inSize, command);
 		}
 

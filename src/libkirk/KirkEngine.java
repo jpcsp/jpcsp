@@ -162,6 +162,7 @@ public class KirkEngine {
 	private static final AES.AES_ctx aes_kirk1 = new AES.AES_ctx(); //global
 	private static final byte[] PRNG_DATA = new byte[0x14];
 	private static boolean is_kirk_initialized; //"init" emulation
+	private static final boolean noRandomData = false;
 	/* ------------------------- INTERNAL STUFF END ------------------------- */
 
 	public static class ECDSA_SIG {
@@ -604,7 +605,7 @@ public class KirkEngine {
 		}
 
 		memcpy(temp, 4, PRNG_DATA, 0x14);
-		write32(temp, 0x18, curtime());
+		write32(temp, 0x18, noRandomData ? 0 : curtime());
 		memcpy(temp, 0x1C, key, 0x10);
 		header.data_size = 0x100;
 		header.write(temp, 0);
@@ -1127,7 +1128,7 @@ public class KirkEngine {
 		}
 
 		memcpy(temp, 4, PRNG_DATA, 0x14);
-		write32(temp, 0x18, curtime());
+		write32(temp, 0x18, noRandomData ? 0 : curtime());
 		memcpy(temp, 0x1C, key, 0x10);
 		header.data_size = 0x100;
 		header.write(temp, 0);
