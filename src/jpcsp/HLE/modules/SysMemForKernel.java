@@ -28,6 +28,8 @@ import static jpcsp.MemoryMap.START_KERNEL;
 import static jpcsp.MemoryMap.START_USERSPACE;
 
 import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
 
 import jpcsp.Memory;
 import jpcsp.MemoryMap;
@@ -82,71 +84,143 @@ public class SysMemForKernel extends HLEModule {
     private int uidTypeListMetaRoot;
     private int systemStatus;
 
+    private static class HeapBlockInformation {
+    	protected SysMemInfo sysMemInfo;
+		protected MemoryChunkList freeMemoryChunks;
+		protected final int id;
+		private static int nextId = 1;
+
+		public HeapBlockInformation(SysMemInfo sysMemInfo, MemoryChunkList freeMemoryChunks) {
+			this.sysMemInfo = sysMemInfo;
+			this.freeMemoryChunks = freeMemoryChunks;
+			id = nextId++;
+		}
+
+		public void free() {
+			Modules.SysMemUserForUserModule.free(sysMemInfo);
+			sysMemInfo = null;
+			freeMemoryChunks = null;
+		}
+
+		@Override
+		public String toString() {
+			return String.format("HeapBlock[id=0x%X, freeMemoryChunks=%s]", id, freeMemoryChunks);
+		}
+    }
+
     protected static class HeapInformation {
     	private static final String uidPurpose = "SysMemForKernel-Heap";
     	private static final int HEAP_BLOCK_HEADER_SIZE = 8;
+    	protected final Memory mem;
     	protected final int uid;
 		protected final int partitionId;
     	protected final int size;
     	protected final int flags;
+		protected final int type = SysMemUserForUser.PSP_SMEM_Low; // Which memory type to use?
     	protected final String name;
-    	protected SysMemInfo sysMemInfo;
-    	protected MemoryChunkList freeMemoryChunks;
+    	protected final List<HeapBlockInformation> heapBlocks = new LinkedList<HeapBlockInformation>();
 
-    	public HeapInformation(int partitionId, int size, int flags, String name) {
+    	public HeapInformation(Memory mem, int partitionId, int size, int flags, String name) {
+    		this.mem = mem;
 			this.partitionId = partitionId;
 			this.size = size;
 			this.flags = flags;
 			this.name = name;
 
-			int type = SysMemUserForUser.PSP_SMEM_Low; // Which memory type to use?
-			sysMemInfo = Modules.SysMemUserForUserModule.malloc(partitionId, name, type, size, 0);
-			if (sysMemInfo == null) {
-				uid = -1;
-			} else {
-				MemoryChunk memoryChunk = new MemoryChunk(sysMemInfo.addr, size);
-				freeMemoryChunks = new MemoryChunkList(memoryChunk);
-
+			if (allocNewHeapBlock() != null) {
 				uid = SceUidManager.getNewUid(uidPurpose);
+			} else {
+				uid = -1;
 			}
     	}
 
     	public void free() {
-    		if (sysMemInfo != null) {
-    			Modules.SysMemUserForUserModule.free(sysMemInfo);
-    			sysMemInfo = null;
-    			freeMemoryChunks = null;
-
-    			SceUidManager.releaseUid(uid, uidPurpose);
+    		for (HeapBlockInformation heapBlock : heapBlocks) {
+    			heapBlock.free();
     		}
+    		heapBlocks.clear();
+			if (uid != -1) {
+				SceUidManager.releaseUid(uid, uidPurpose);
+			}
     	}
 
-    	public int allocBlock(int blockSize) {
-    		if (freeMemoryChunks == null) {
+    	private HeapBlockInformation allocNewHeapBlock() {
+    		SysMemInfo sysMemInfo = Modules.SysMemUserForUserModule.malloc(partitionId, name, type, size, 0);
+    		if (sysMemInfo == null) {
+    			return null;
+    		}
+
+			MemoryChunk memoryChunk = new MemoryChunk(sysMemInfo.addr, size);
+			HeapBlockInformation heapBlock = new HeapBlockInformation(sysMemInfo, new MemoryChunkList(memoryChunk));
+			heapBlocks.add(heapBlock);
+
+			return heapBlock;
+    	}
+
+    	private int allocBlock(HeapBlockInformation heapBlock, int blockSize) {
+    		if (heapBlock == null || heapBlock.freeMemoryChunks == null) {
     			return 0;
     		}
 
-    		MemoryChunk allocatedMemoryChunk = freeMemoryChunks.allocLow(blockSize + HEAP_BLOCK_HEADER_SIZE, 0);
-    		if (allocatedMemoryChunk == null) {
-    			return 0;
-    		}
+    		MemoryChunk allocatedMemoryChunk = heapBlock.freeMemoryChunks.allocLow(blockSize + HEAP_BLOCK_HEADER_SIZE, 0);
+			if (allocatedMemoryChunk == null) {
+				return 0;
+			}
 
-    		Memory.getInstance().write32(allocatedMemoryChunk.addr, allocatedMemoryChunk.size - HEAP_BLOCK_HEADER_SIZE);
+    		mem.write32(allocatedMemoryChunk.addr, allocatedMemoryChunk.size - HEAP_BLOCK_HEADER_SIZE);
+    		mem.write32(allocatedMemoryChunk.addr + 4, heapBlock.id);
 
     		return allocatedMemoryChunk.addr + HEAP_BLOCK_HEADER_SIZE;
     	}
 
+    	public int allocBlock(int blockSize) {
+    		if (heapBlocks.isEmpty()) {
+    			return 0;
+    		}
+
+    		for (HeapBlockInformation heapBlock : heapBlocks) {
+				int addr = allocBlock(heapBlock, blockSize);
+				if (addr != 0) {
+					return addr;
+				}
+    		}
+
+    		if (blockSize <= size - HEAP_BLOCK_HEADER_SIZE) {
+    			HeapBlockInformation heapBlock = allocNewHeapBlock();
+    			int addr = allocBlock(heapBlock, blockSize);
+    			if (addr != 0) {
+    				return addr;
+    			}
+    		}
+
+    		return 0;
+    	}
+
     	public void freeBlock(int addr) {
     		addr -= HEAP_BLOCK_HEADER_SIZE;
-    		int blockSize = Memory.getInstance().read32(addr);
+    		int blockSize = mem.read32(addr);
+    		int heapBlockId = mem.read32(addr + 4);
 
     		MemoryChunk memoryChunk = new MemoryChunk(addr, blockSize + HEAP_BLOCK_HEADER_SIZE);
-    		freeMemoryChunks.add(memoryChunk);
+
+    		for (HeapBlockInformation heapBlock : heapBlocks) {
+    			if (heapBlock.id == heapBlockId) {
+    				heapBlock.freeMemoryChunks.add(memoryChunk);
+
+    				if (heapBlock.freeMemoryChunks.isCompletelyFree()) {
+    					heapBlock.free();
+    					heapBlocks.remove(heapBlock);
+    				}
+    				return;
+    			}
+    		}
+
+    		log.error(String.format("HeapInformation.freeBlock could not free addr=0x%08X, blockSize=0x%X, heapBlockId=0x%X", addr, blockSize, heapBlockId));
     	}
 
 		@Override
 		public String toString() {
-			return String.format("uid=0x%X, partitionId=0x%X, size=0x%X, flags=0x%X, name='%s', freeMemoryChunks=%s", uid, partitionId, size, flags, name, freeMemoryChunks);
+			return String.format("uid=0x%X, partitionId=0x%X, size=0x%X, flags=0x%X, name='%s', heapBlocks=%s", uid, partitionId, size, flags, name, heapBlocks);
 		}
     }
 
@@ -311,7 +385,7 @@ public class SysMemForKernel extends HLEModule {
 		// Hook to force the allocation of a larger heap for the sceLoaderCore module
 		size = Modules.LoadCoreForKernelModule.hleKernelCreateHeapHook(partitionId, size, flags, name);
 
-    	HeapInformation info = new HeapInformation(partitionId, size, flags, name);
+    	HeapInformation info = new HeapInformation(getMemory(), partitionId, size, flags, name);
 
     	if (info.uid >= 0) {
     		heaps.put(info.uid, info);
@@ -341,6 +415,29 @@ public class SysMemForKernel extends HLEModule {
     	int addr = info.allocBlock(size);
     	if (log.isDebugEnabled()) {
     		log.debug(String.format("sceKernelAllocHeapMemory(size=0x%X) returning 0x%08X, %s", size, addr, info));
+    	}
+
+    	return addr;
+    }
+
+    @HLEFunction(nid = 0xEB7A74DB, version = 150)
+    @HLEFunction(nid = 0xF2284ECC, version = 600)
+    public int sceKernelAllocHeapMemoryWithOption(int heapId, int size, @CanBeNull @BufferInfo(lengthInfo = LengthInfo.variableLength, usage = Usage.in) TPointer32 option) {
+    	int alignment = 8;
+    	if (option.isNotNull()) {
+    		alignment = option.getValue(4);
+    	}
+
+    	HeapInformation info = heaps.get(heapId);
+    	if (info == null) {
+    		return 0;
+    	}
+
+    	size = Utilities.alignUp(size, alignment - 1);
+
+    	int addr = info.allocBlock(size);
+    	if (log.isDebugEnabled()) {
+    		log.debug(String.format("sceKernelAllocHeapMemoryWithOption(size=0x%X, alignment=0x%X) returning 0x%08X, %s", size, alignment, addr, info));
     	}
 
     	return addr;

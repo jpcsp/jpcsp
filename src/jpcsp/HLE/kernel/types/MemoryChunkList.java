@@ -31,8 +31,13 @@ public class MemoryChunkList {
 	// high: MemoryChunk with the highest address.
 	// Start point to scan the list by decreasing address
 	private MemoryChunk high;
+	// Total memory used
+	private final int addr;
+	private final int size;
 
 	public MemoryChunkList(MemoryChunk initialMemoryChunk) {
+		addr = initialMemoryChunk.addr;
+		size = initialMemoryChunk.size;
 		low = initialMemoryChunk;
 		high = initialMemoryChunk;
 	}
@@ -304,6 +309,14 @@ public class MemoryChunkList {
 
 	public MemoryChunk getHighMemoryChunk() {
 		return high;
+	}
+
+	public boolean isCompletelyFree() {
+		if (low == null || high == null || low != high) {
+			return false;
+		}
+
+		return low.addr == addr && low.size == size;
 	}
 
 	private void sanityChecks() {
