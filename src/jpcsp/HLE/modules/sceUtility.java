@@ -2015,6 +2015,9 @@ public class sceUtility extends HLEModule {
 
         protected SceUtilityOskParams oskParams;
         protected OskDialog oskDialog;
+        protected int oskDataIndex;
+        protected String[] outText;
+        protected int[] result;
 
         public OskUtilityDialogState(String name) {
             super(name);
@@ -2024,21 +2027,41 @@ public class sceUtility extends HLEModule {
         protected boolean executeUpdateVisible() {
             Memory mem = Processor.memory;
 
-            if (!isDialogOpen()) {
+            if (!isDialogOpen() && isReadyForVisible()) {
+            	oskDataIndex = 0;
+            	outText = new String[oskParams.oskDataCount];
+            	result = new int[oskParams.oskDataCount];
                 oskDialog = new OskDialog(oskParams, this);
                 openDialog(oskDialog);
             } else if (!isDialogActive()) {
                 if (oskDialog.buttonPressed == SceUtilityMsgDialogParams.PSP_UTILITY_BUTTON_PRESSED_OK) {
-                    oskParams.oskData.result = SceUtilityOskData.PSP_UTILITY_OSK_DATA_CHANGED;
-                    oskParams.oskData.outText = oskDialog.textField.getText();
-                    log.info("hleUtilityOskDisplay returning '" + oskParams.oskData.outText + "'");
+                    result[oskDataIndex] = SceUtilityOskData.PSP_UTILITY_OSK_DATA_CHANGED;
+                    outText[oskDataIndex] = oskDialog.textField.getText();
+                    log.info(String.format("hleUtilityOskDisplay #%d returning '%s'", oskDataIndex + 1, oskParams.oskData[oskDataIndex].outText));
                 } else {
-                    oskParams.oskData.result = SceUtilityOskData.PSP_UTILITY_OSK_DATA_CANCELED;
-                    oskParams.oskData.outText = oskDialog.textField.getText();
+                    result[oskDataIndex] = SceUtilityOskData.PSP_UTILITY_OSK_DATA_CANCELED;
+                    outText[oskDataIndex] = oskDialog.textField.getText();
                     log.info("hleUtilityOskDisplay cancelled");
                 }
-                quitDialog(0);
-                oskParams.write(mem);
+
+                oskDataIndex++;
+                if (oskDataIndex >= oskParams.oskDataCount) {
+	                quitDialog(0);
+
+	                for (int i = 0; i < oskDataIndex; i++) {
+	                	oskParams.oskData[i].result = result[i];
+	                	oskParams.oskData[i].outText = outText[i];
+	                }
+	                oskParams.write(mem);
+
+	                oskDataIndex = 0;
+	                outText = null;
+	                result = null;
+                } else {
+                	closeDialog();
+                    oskDialog = new OskDialog(oskParams, this);
+                    openDialog(oskDialog);
+                }
             } else {
                 oskDialog.checkController();
                 updateDialog();
@@ -2051,6 +2074,10 @@ public class sceUtility extends HLEModule {
         protected pspUtilityBaseDialog createParams() {
             oskParams = new SceUtilityOskParams();
             return oskParams;
+        }
+
+        protected int getInitDelay() {
+        	return 100000;
         }
     }
 
@@ -4030,9 +4057,9 @@ public class sceUtility extends HLEModule {
         protected JTextField textField;
 
         public OskDialog(final SceUtilityOskParams oskParams, OskUtilityDialogState oskState) {
-            createDialog(oskState, oskParams.oskData.desc);
+            createDialog(oskState, oskParams.oskData[oskState.oskDataIndex].desc);
 
-            textField = new JTextField(oskParams.oskData.inText);
+            textField = new JTextField(oskParams.oskData[oskState.oskDataIndex].inText);
             messagePane.add(textField);
 
             JButton okButton = new JButton("Ok");

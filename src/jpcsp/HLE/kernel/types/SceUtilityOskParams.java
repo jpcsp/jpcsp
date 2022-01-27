@@ -19,7 +19,7 @@ package jpcsp.HLE.kernel.types;
 public class SceUtilityOskParams extends pspUtilityBaseDialog {
 	public int oskDataCount;  // Number of input fields (PSPSDK).
 	public int oskDataAddr;
-	public SceUtilityOskData oskData;
+	public SceUtilityOskData[] oskData;
     public int oskState;     // SceUtilityOskState (PSPSDK): internal status of this OSK.
         public final static int PSP_UTILITY_OSK_STATE_NONE = 0;
         public final static int PSP_UTILITY_OSK_STATE_INITIALIZING = 1;
@@ -170,8 +170,11 @@ public class SceUtilityOskParams extends pspUtilityBaseDialog {
 		oskDataCount = read32();
 		oskDataAddr = read32();
 		if (oskDataAddr != 0) {
-			oskData = new SceUtilityOskData();
-			oskData.read(mem, oskDataAddr);
+			oskData = new SceUtilityOskData[oskDataCount];
+			for (int i = 0; i < oskDataCount; i++) {
+				oskData[i] = new SceUtilityOskData();
+				oskData[i].read(mem, oskDataAddr + i * oskData[i].sizeof());
+			}
 		} else {
 			oskData = null;
 		}
@@ -187,7 +190,9 @@ public class SceUtilityOskParams extends pspUtilityBaseDialog {
 		write32(oskDataCount);
 		write32(oskDataAddr);
 		if (oskData != null && oskDataAddr != 0) {
-			oskData.write(mem, oskDataAddr);
+			for (int i = 0; i < oskDataCount; i++) {
+				oskData[i].write(mem, oskDataAddr + i * oskData[i].sizeof());
+			}
 		}
         write32(oskState);
 		write32(errorCode);
@@ -200,6 +205,6 @@ public class SceUtilityOskParams extends pspUtilityBaseDialog {
 
 	@Override
 	public String toString() {
-		return String.format("desc='%s', inText='%s', outText='%s', inputMode=%d, inputAttr=0x%X, language=%d, hide=%d, inputAllowCharType=0x%X, lines=%d, showInputText=%d, outTextLength=%d, outTextLimit=%d", oskData.desc, oskData.inText, oskData.outText, oskData.inputMode, oskData.inputAttr, oskData.language, oskData.hide, oskData.inputAllowCharType, oskData.lines, oskData.showInputText, oskData.outTextLength, oskData.outTextLimit);
+		return String.format("dataCount=%d, desc='%s', inText='%s', outText='%s', inputMode=%d, inputAttr=0x%X, language=%d, hide=%d, inputAllowCharType=0x%X, lines=%d, showInputText=%d, outTextLength=%d, outTextLimit=%d", oskDataCount, oskData[0].desc, oskData[0].inText, oskData[0].outText, oskData[0].inputMode, oskData[0].inputAttr, oskData[0].language, oskData[0].hide, oskData[0].inputAllowCharType, oskData[0].lines, oskData[0].showInputText, oskData[0].outTextLength, oskData[0].outTextLimit);
 	}
 }
