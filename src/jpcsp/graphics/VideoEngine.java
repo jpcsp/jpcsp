@@ -18,6 +18,7 @@ package jpcsp.graphics;
 
 import static java.lang.Math.max;
 import static java.lang.Math.min;
+import static jpcsp.HLE.Modules.sceDisplayModule;
 import static jpcsp.HLE.modules.sceGe_user.PSP_GE_LIST_CANCEL_DONE;
 import static jpcsp.HLE.modules.sceGe_user.PSP_GE_LIST_DONE;
 import static jpcsp.HLE.modules.sceGe_user.PSP_GE_LIST_DRAWING;
@@ -36,6 +37,8 @@ import static jpcsp.HLE.modules.sceGe_user.PSP_GE_MATRIX_TEXGEN;
 import static jpcsp.HLE.modules.sceGe_user.PSP_GE_MATRIX_VIEW;
 import static jpcsp.HLE.modules.sceGe_user.PSP_GE_MATRIX_WORLD;
 import static jpcsp.Memory.isVRAM;
+import static jpcsp.MemoryMap.END_VRAM;
+import static jpcsp.MemoryMap.START_VRAM;
 import static jpcsp.graphics.GeCommands.*;
 import static jpcsp.graphics.RE.externalge.NativeUtils.CTRL_ACTIVE;
 import static jpcsp.graphics.RE.externalge.NativeUtils.CTRL_RET1;
@@ -99,8 +102,10 @@ import jpcsp.graphics.textures.Texture;
 import jpcsp.graphics.textures.TextureCache;
 import jpcsp.hardware.Screen;
 import jpcsp.memory.IMemoryReader;
+import jpcsp.memory.IMemoryWriter;
 import jpcsp.memory.ImageReader;
 import jpcsp.memory.MemoryReader;
+import jpcsp.memory.MemoryWriter;
 import jpcsp.memory.mmio.MMIOHandlerGe;
 import jpcsp.settings.AbstractBoolSettingsListener;
 import jpcsp.settings.Settings;
@@ -2413,7 +2418,7 @@ public class VideoEngine {
 
         if (context.textureFlag.isEnabled() && !context.clearMode) {
             int textureAddr = context.texture_base_pointer[0] & Memory.addressMask;
-            if (textureAddr > MemoryMap.END_VRAM && textureAddr < MemoryMap.START_VRAM + 0x800000) {
+            if (textureAddr > MemoryMap.END_VRAM && textureAddr < MemoryMap.START_VRAM + 0x600000) {
                 if (isLogWarnEnabled) {
                     log.warn(String.format("Texture in swizzled VRAM not supported 0x%08X", textureAddr));
                 }
@@ -6481,6 +6486,14 @@ public class VideoEngine {
         }
 
         int tex_addr = context.texture_base_pointer[mipmapIndex] & Memory.addressMask;
+        if (tex_addr >= (START_VRAM + 0x600000) && tex_addr <= (END_VRAM + 0x600000)) {
+        	if (isLogDebugEnabled) {
+        		log.debug(String.format("Using a texture in swizzeld VRAM 0x%08X, assuming this is to reuse the depth buffer as a texture", tex_addr));
+        	}
+        	updateDepthBuf(context.texture_buffer_width[mipmapIndex], context.texture_height[mipmapIndex]);
+        	tex_addr -= 0x600000;
+        }
+
         if (!Memory.isAddressGood(tex_addr)) {
             if (isLogWarnEnabled) {
                 log.warn(String.format("Invalid texture address 0x%08X for texture level 0", tex_addr));
@@ -7697,6 +7710,30 @@ public class VideoEngine {
             // wait for rendering completion when switching the GE buffer (in case it is reused as a texture)
             re.waitForRenderingCompletion();
         }
+    }
+
+    private void updateDepthBuf(int depthWidth, int depthHeight) {
+    	depthHeight = Math.min(depthHeight, Screen.height);
+    	int address = context.zbp & 0x041FFFFF;
+        int depthBufferSize = depthWidth * depthHeight * 2;
+    	if (isLogDebugEnabled) {
+    		log.debug(String.format("Copying the depth buffer (%dx%d) to 0x%08X-0x%08X", depthWidth, depthHeight, address, address + depthBufferSize - 1));
+    	}
+        ByteBuffer tempByteBuffer = sceDisplayModule.getTempByteBuffer();
+        tempByteBuffer.clear();
+        re.setPixelStore(depthWidth, 2);
+    	re.readDepth(0, 0, depthWidth, depthHeight, depthBufferSize, tempByteBuffer);
+        tempByteBuffer.rewind();
+    	IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(address, depthBufferSize, 2);
+        for (int y = 0; y < depthHeight; y++) {
+            // The depth buffer is stored upside-down by OpenGL
+            tempByteBuffer.position((depthHeight - y - 1) * depthWidth * 2);
+
+            for (int x = 0; x < depthWidth; x++) {
+            	memoryWriter.writeNext(tempByteBuffer.getShort());
+            }
+        }
+        memoryWriter.flush();
     }
     // For capture/replay
 

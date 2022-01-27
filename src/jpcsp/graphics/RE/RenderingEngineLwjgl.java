@@ -1508,6 +1508,21 @@ public class RenderingEngineLwjgl extends NullRenderingEngine {
     }
 
     @Override
+    public void readDepth(int x, int y, int width, int height, int bufferSize, Buffer buffer) {
+        if (buffer instanceof IntBuffer) {
+            GL11.glReadPixels(x, y, width, height, GL11.GL_DEPTH_COMPONENT, GL11.GL_UNSIGNED_SHORT, directBufferUtilities.getDirectBuffer(bufferSize, (IntBuffer) buffer));
+        } else if (buffer instanceof FloatBuffer) {
+            GL11.glReadPixels(x, y, width, height, GL11.GL_DEPTH_COMPONENT, GL11.GL_UNSIGNED_SHORT, directBufferUtilities.getDirectBuffer(bufferSize, (FloatBuffer) buffer));
+        } else if (buffer instanceof ShortBuffer) {
+            GL11.glReadPixels(x, y, width, height, GL11.GL_DEPTH_COMPONENT, GL11.GL_UNSIGNED_SHORT, directBufferUtilities.getDirectBuffer(bufferSize, (ShortBuffer) buffer));
+        } else if (buffer instanceof ByteBuffer) {
+            GL11.glReadPixels(x, y, width, height, GL11.GL_DEPTH_COMPONENT, GL11.GL_UNSIGNED_SHORT, directBufferUtilities.getDirectBuffer(bufferSize, (ByteBuffer) buffer));
+        } else {
+            throw new IllegalArgumentException();
+        }
+    }
+
+    @Override
     public void blitFramebuffer(int srcX0, int srcY0, int srcX1, int srcY1, int dstX0, int dstY0, int dstX1, int dstY1, int mask, int filter) {
         int maskGL = 0;
         for (int i = 0; i < buffersMaskToGL.length; i++, mask >>= 1) {

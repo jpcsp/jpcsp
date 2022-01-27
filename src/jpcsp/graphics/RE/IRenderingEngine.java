@@ -524,6 +524,7 @@ public interface IRenderingEngine {
 	public void waitForRenderingCompletion();
 	public boolean canReadAllVertexInfo();
 	public void readStencil(int x, int y, int width, int height, int bufferSize, Buffer buffer);
+	public void readDepth(int x, int y, int width, int height, int bufferSize, Buffer buffer);
 	public void blitFramebuffer(int srcX0, int srcY0, int srcX1, int srcY1, int dstX0, int dstY0, int dstX1, int dstY1, int mask, int filter);
 	public boolean checkAndLogErrors(String logComment);
 	public boolean setCopyRedToAlpha(boolean copyRedToAlpha);
