@@ -187,6 +187,7 @@ public class Modules {
     public static pspvmc pspvmcModule = new pspvmc();
     public static sceAmctrl sceAmctrlModule = new sceAmctrl();
     public static sceNwman sceNwmanModule = new sceNwman();
+    public static sceUsbPspcm sceUsbPspcmModule = new sceUsbPspcm();
 
     public static Logger log = Logger.getLogger("hle");
 

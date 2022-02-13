@@ -184,7 +184,13 @@ public class ByteArrayMemory extends Memory {
 
 	@Override
 	protected void memcpy(int destination, int source, int length, boolean checkOverlap) {
-		log.error(String.format("Unimplemented memcpy destination=0x%08X, source=0x%08X, length=0x%X, checkOverlap=%b", destination, source, length, checkOverlap));
+		if (checkOverlap) {
+			log.error(String.format("Unimplemented memcpy destination=0x%08X, source=0x%08X, length=0x%X, checkOverlap=%b", destination, source, length, checkOverlap));
+		} else {
+			for (int i = 0; i < length; i++) {
+				write8(destination + i, (byte) read8(source + i));
+			}
+		}
 	}
 
 	public int getSize() {

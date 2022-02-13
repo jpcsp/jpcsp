@@ -284,7 +284,8 @@ public class HLEModuleManager {
         sceLFatFs(Modules.sceLFatFsModule),
         pspvmc(Modules.pspvmcModule),
         sceAmctrl(Modules.sceAmctrlModule),
-        sceNwman(Modules.sceNwmanModule);
+        sceNwman(Modules.sceNwmanModule),
+        sceUsbPspcm(Modules.sceUsbPspcmModule, new String[] { "usbpspcm", "PSP_MODULE_USB_PSPCM", "PSP_USB_MODULE_PSPCM" }, "flash0:/kd/usbpspcm.prx");
 
     	private HLEModule module;
     	private boolean loadedByDefault;

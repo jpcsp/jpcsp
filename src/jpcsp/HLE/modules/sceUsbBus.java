@@ -16,11 +16,25 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules;
 
+import static jpcsp.Emulator.getScheduler;
+import static jpcsp.HLE.Modules.ThreadManForUserModule;
+import static jpcsp.HLE.Modules.sceUsbPspcmModule;
+
+import java.util.LinkedList;
+import java.util.List;
+
 import org.apache.log4j.Logger;
 
+import jpcsp.Emulator;
 import jpcsp.HLE.BufferInfo;
 import jpcsp.HLE.BufferInfo.LengthInfo;
 import jpcsp.HLE.BufferInfo.Usage;
+import jpcsp.HLE.kernel.types.IAction;
+import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
+import jpcsp.HLE.kernel.types.pspUsbDriver;
+import jpcsp.HLE.kernel.types.pspUsbdDeviceReq;
+import jpcsp.scheduler.Scheduler;
+import jpcsp.util.Utilities;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLEModule;
 import jpcsp.HLE.HLEUnimplemented;
@@ -32,6 +46,87 @@ public class sceUsbBus extends HLEModule {
     private boolean unknownFlag1;
     private boolean unknownFlag2;
     private boolean unknownFlag3;
+    private final List<pspUsbDriver> registeredDrivers = new LinkedList<pspUsbDriver>();
+
+    public pspUsbDriver getRegisteredUsbDriver(String name) {
+    	for (pspUsbDriver usbDriver : registeredDrivers) {
+    		if (name.equals(usbDriver.name)) {
+    			return usbDriver;
+    		}
+    	}
+
+    	return null;
+    }
+
+    private class sceUsbbdReqComplete implements IAction {
+    	private final pspUsbdDeviceReq deviceReq;
+    	private final SceKernelThreadInfo threadInfo;
+
+		public sceUsbbdReqComplete(pspUsbdDeviceReq deviceReq, SceKernelThreadInfo threadInfo) {
+			this.deviceReq = deviceReq;
+			this.threadInfo = threadInfo;
+		}
+
+		@Override
+		public void execute() {
+			if (log.isDebugEnabled()) {
+				log.debug(String.format("Executing completion function for %s, endpnum=0x%X, isRegistered=%b: %s", deviceReq, deviceReq.endp.getValue32(0), isRegistered(deviceReq), Utilities.getMemoryDump(deviceReq.data, deviceReq.recvsize)));
+			}
+
+			if (isRegistered(deviceReq)) {
+				IAction nextAction = null;
+				if (deviceReq.nextRequest != 0) {
+					pspUsbdDeviceReq nextDeviceReq = new pspUsbdDeviceReq();
+					nextDeviceReq.read(getMemory(), deviceReq.nextRequest);
+					nextAction = new sceUsbbdReqComplete(nextDeviceReq, threadInfo);
+
+					if (log.isDebugEnabled()) {
+						log.debug(String.format("next deviceReq=%s, endpnum=0x%X", nextDeviceReq, nextDeviceReq.endp.getValue32(0)));
+					}
+				}
+				// Function to be called on completion
+				ThreadManForUserModule.executeCallback(threadInfo, deviceReq.func.getAddress(), nextAction, false, true, deviceReq.getBaseAddress());
+			}
+		}
+    	
+    }
+
+    public int hleUsbbdRegister(pspUsbDriver usbDriver) {
+    	registeredDrivers.add(usbDriver);
+
+    	return 0;
+    }
+
+    public int hleUsbbdUnregister(pspUsbDriver usbDriver) {
+    	for (pspUsbDriver registeredDriver : registeredDrivers) {
+    		if (registeredDriver == usbDriver || registeredDriver.getBaseAddress() == usbDriver.getBaseAddress()) {
+    			registeredDrivers.remove(registeredDriver);
+    			break;
+    		}
+    	}
+
+    	return 0;
+    }
+
+    private boolean isRegistered(pspUsbdDeviceReq deviceReq) {
+    	for (pspUsbDriver driver : registeredDrivers) {
+    		TPointer endpoint = new TPointer(driver.endp);
+    		for (int i = 0; i < driver.endpoints; i++) {
+    			if (deviceReq.endp.equals(endpoint)) {
+    				return true;
+    			}
+    			endpoint.add(12);
+    		}
+    	}
+
+    	return false;
+    }
+
+    public void triggerCompletionFunction(pspUsbdDeviceReq deviceReq) {
+    	if (deviceReq.func != null && deviceReq.func.isNotNull()) {
+    		getScheduler().addAction(new sceUsbbdReqComplete(deviceReq, ThreadManForUserModule.getCurrentThread()));
+    	}
+    }
 
     /**
      * Queue a send request (IN from host pov)
@@ -42,7 +137,40 @@ public class sceUsbBus extends HLEModule {
     @HLEUnimplemented
     @HLEFunction(nid = 0x23E51D8F, version = 150)
     public int sceUsbbdReqSend(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=40, usage=Usage.in) TPointer req) {
-    	return 0;
+    	int result = 0;
+
+		pspUsbDriver usbDriver = getRegisteredUsbDriver("USBPSPCommunicationDriver");
+		TPointer deviceReqAddress = new TPointer(req);
+		boolean first = true;
+		while (true) {
+	    	pspUsbdDeviceReq deviceReq = new pspUsbdDeviceReq();
+	    	deviceReq.read(deviceReqAddress);
+
+	    	if (log.isDebugEnabled()) {
+	    		log.debug(String.format("sceUsbbdReqSend size=0x%X, data=%s", deviceReq.size, Utilities.getMemoryDump(deviceReq.data, deviceReq.size)));
+	    	}
+
+	    	deviceReq.retcode = 0;
+	    	deviceReq.recvsize = deviceReq.size;
+
+	    	if (usbDriver != null) {
+	    		result = sceUsbPspcmModule.getUsbCommunicationStub().hleUsbbdReqSend(usbDriver, deviceReq, deviceReqAddress);
+	    	}
+
+	    	deviceReq.write(deviceReqAddress);
+
+	    	if (deviceReq.func.isNotNull() && first) {
+	    		Emulator.getScheduler().addAction(Scheduler.getNow() + 5000, new sceUsbbdReqComplete(deviceReq, ThreadManForUserModule.getCurrentThread()));
+	    		first = false;
+	    	}
+
+	    	if (deviceReq.nextRequest == 0) {
+	    		break;
+	    	}
+	    	deviceReqAddress = new TPointer(req.getMemory(), deviceReq.nextRequest);
+		}
+
+    	return result;
     }
 
     @HLEUnimplemented
@@ -86,7 +214,21 @@ public class sceUsbBus extends HLEModule {
     @HLEUnimplemented
     @HLEFunction(nid = 0x913EC15D, version = 150)
     public int sceUsbbdReqRecv(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=40, usage=Usage.in) TPointer req) {
-    	return 0;
+    	pspUsbdDeviceReq deviceReq = new pspUsbdDeviceReq();
+    	deviceReq.read(req);
+
+    	int result = 0;
+
+		pspUsbDriver usbDriver = getRegisteredUsbDriver("USBPSPCommunicationDriver");
+    	if (usbDriver != null) {
+    		result = sceUsbPspcmModule.getUsbCommunicationStub().hleUsbbdReqRecv(usbDriver, deviceReq, req);
+    	} else {
+        	if (deviceReq.func.isNotNull()) {
+        		Emulator.getScheduler().addAction(Scheduler.getNow() + 5000, new sceUsbbdReqComplete(deviceReq, ThreadManForUserModule.getCurrentThread()));
+        	}
+    	}
+
+    	return result;
     }
 
     /**
@@ -110,7 +252,14 @@ public class sceUsbBus extends HLEModule {
     @HLEUnimplemented
     @HLEFunction(nid = 0xB1644BE7, version = 150)
     public int sceUsbbdRegister(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=68, usage=Usage.in) TPointer drv) {
-    	return 0;
+    	pspUsbDriver usbDriver = new pspUsbDriver();
+    	usbDriver.read(drv);
+
+    	if (log.isDebugEnabled()) {
+    		log.debug(String.format("sceUsbbdRegister %s", usbDriver));
+    	}
+
+    	return hleUsbbdRegister(usbDriver);
     }
 
     /**
@@ -122,7 +271,14 @@ public class sceUsbBus extends HLEModule {
     @HLEUnimplemented
     @HLEFunction(nid = 0xC1E2A540, version = 150)
     public int sceUsbbdUnregister(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=68, usage=Usage.in) TPointer drv) {
-    	return 0;
+    	pspUsbDriver usbDriver = new pspUsbDriver();
+    	usbDriver.read(drv);
+
+    	if (log.isDebugEnabled()) {
+    		log.debug(String.format("sceUsbbdUnregister %s", usbDriver));
+    	}
+
+    	return hleUsbbdUnregister(usbDriver);
     }
 
     /**

@@ -26,11 +26,15 @@ import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.PspString;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.TPointer32;
+import jpcsp.HLE.TPointerFunction;
+
+import static jpcsp.HLE.Modules.sceUsbPspcmModule;
 
 import org.apache.log4j.Logger;
 
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
+import jpcsp.HLE.kernel.types.pspUsbDriver;
 import jpcsp.hardware.Usb;
 
 public class sceUsb extends HLEModule {
@@ -101,7 +105,26 @@ public class sceUsb extends HLEModule {
 	public int sceUsbStart(String driverName, int size, @BufferInfo(lengthInfo = LengthInfo.previousParameter, usage = Usage.in) @CanBeNull TPointer args) {
 		usbStarted = true;
 
-		int result = Modules.sceUtilityModule.loadModules(driverName);
+		int result;
+		if ("USBBusDriver".equals(driverName)) {
+			result = 0;
+		} else {
+			pspUsbDriver usbDriver = Modules.sceUsbBusModule.getRegisteredUsbDriver(driverName);
+			if (usbDriver == null) {
+				log.error(String.format("sceUsbStart unknown driver '%s'", driverName));
+				result = -1;
+			} else {
+				if (log.isDebugEnabled()) {
+					log.debug(String.format("sceUsbStart on %s", usbDriver));
+				}
+				TPointerFunction start_func = usbDriver.start_func;
+				if (start_func != null) {
+					result = start_func.executeCallback(size, args.getAddress());
+				} else {
+					result = 0;
+				}
+			}
+		}
 
 		notifyCallback();
 
@@ -121,7 +144,26 @@ public class sceUsb extends HLEModule {
 	public int sceUsbStop(String driverName, int size, @BufferInfo(lengthInfo = LengthInfo.previousParameter, usage = Usage.in) @CanBeNull TPointer args) {
 		usbStarted = false;
 
-		int result = Modules.sceUtilityModule.unloadModules(driverName);
+		int result;
+		if ("USBBusDriver".equals(driverName)) {
+			result = 0;
+		} else {
+			pspUsbDriver usbDriver = Modules.sceUsbBusModule.getRegisteredUsbDriver(driverName);
+			if (usbDriver == null) {
+				log.error(String.format("sceUsbStop unknown driver '%s'", driverName));
+				result = -1;
+			} else {
+				if (log.isDebugEnabled()) {
+					log.debug(String.format("sceUsbStop on %s", usbDriver));
+				}
+				TPointerFunction stop_func = usbDriver.stop_func;
+				if (stop_func != null) {
+					result = stop_func.executeCallback(size, args.getAddress());
+				} else {
+					result = 0;
+				}
+			}
+		}
 
 		notifyCallback();
 
@@ -177,14 +219,14 @@ public class sceUsb extends HLEModule {
 	/**
 	 * Deactivate USB driver.
 	 *
-	 * @param pid - Product ID for the default USB driver
-	 *
 	 * @return 0 on success
 	 */
 	@HLEFunction(nid = 0xC572A9C8, version = 150)
-	public int sceUsbDeactivate(int pid) {
+	public int sceUsbDeactivate() {
 		usbActivated = false;
 		notifyCallback();
+
+		sceUsbPspcmModule.onUsbDeactivate();
 
 		return 0;
 	}
@@ -260,6 +302,11 @@ public class sceUsb extends HLEModule {
 	public int sceUsbActivateWithCharging(int pid, boolean charging) {
 		usbActivated = true;
 		notifyCallback();
+
+		// Used by usbpspcm
+		if (pid == 0x1CB) {
+			sceUsbPspcmModule.onUsbActivate(pid);
+		}
 
 		return 0;
 	}

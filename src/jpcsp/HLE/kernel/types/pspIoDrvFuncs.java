@@ -16,80 +16,82 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.kernel.types;
 
+import jpcsp.HLE.TPointerFunction;
+
 public class pspIoDrvFuncs extends pspAbstractMemoryMappedStructure {
-	public int ioInit;
-	public int ioExit;
-	public int ioOpen;
-	public int ioClose;
-	public int ioRead;
-	public int ioWrite;
-	public int ioLseek;
-	public int ioIoctl;
-	public int ioRemove;
-	public int ioMkdir;
-	public int ioRmdir;
-	public int ioDopen;
-	public int ioDclose;
-	public int ioDread;
-	public int ioGetstat;
-	public int ioChstat;
-	public int ioRename;
-	public int ioChdir;
-	public int ioMount;
-	public int ioUmount;
-	public int ioDevctl;
-	public int ioCancel;
+	public TPointerFunction ioInit;
+	public TPointerFunction ioExit;
+	public TPointerFunction ioOpen;
+	public TPointerFunction ioClose;
+	public TPointerFunction ioRead;
+	public TPointerFunction ioWrite;
+	public TPointerFunction ioLseek;
+	public TPointerFunction ioIoctl;
+	public TPointerFunction ioRemove;
+	public TPointerFunction ioMkdir;
+	public TPointerFunction ioRmdir;
+	public TPointerFunction ioDopen;
+	public TPointerFunction ioDclose;
+	public TPointerFunction ioDread;
+	public TPointerFunction ioGetstat;
+	public TPointerFunction ioChstat;
+	public TPointerFunction ioRename;
+	public TPointerFunction ioChdir;
+	public TPointerFunction ioMount;
+	public TPointerFunction ioUmount;
+	public TPointerFunction ioDevctl;
+	public TPointerFunction ioCancel;
 
 	@Override
 	protected void read() {
-		ioInit = read32();
-		ioExit = read32();
-		ioOpen = read32();
-		ioClose = read32();
-		ioRead = read32();
-		ioWrite = read32();
-		ioLseek = read32();
-		ioIoctl = read32();
-		ioRemove = read32();
-		ioMkdir = read32();
-		ioRmdir = read32();
-		ioDopen = read32();
-		ioDclose = read32();
-		ioDread = read32();
-		ioGetstat = read32();
-		ioChstat = read32();
-		ioRename = read32();
-		ioChdir = read32();
-		ioMount = read32();
-		ioUmount = read32();
-		ioDevctl = read32();
-		ioCancel = read32();
+		ioInit = readPointerFunction();
+		ioExit = readPointerFunction();
+		ioOpen = readPointerFunction();
+		ioClose = readPointerFunction();
+		ioRead = readPointerFunction();
+		ioWrite = readPointerFunction();
+		ioLseek = readPointerFunction();
+		ioIoctl = readPointerFunction();
+		ioRemove = readPointerFunction();
+		ioMkdir = readPointerFunction();
+		ioRmdir = readPointerFunction();
+		ioDopen = readPointerFunction();
+		ioDclose = readPointerFunction();
+		ioDread = readPointerFunction();
+		ioGetstat = readPointerFunction();
+		ioChstat = readPointerFunction();
+		ioRename = readPointerFunction();
+		ioChdir = readPointerFunction();
+		ioMount = readPointerFunction();
+		ioUmount = readPointerFunction();
+		ioDevctl = readPointerFunction();
+		ioCancel = readPointerFunction();
 	}
 
 	@Override
 	protected void write() {
-		write32(ioInit);
-		write32(ioExit);
-		write32(ioOpen);
-		write32(ioClose);
-		write32(ioRead);
-		write32(ioWrite);
-		write32(ioLseek);
-		write32(ioIoctl);
-		write32(ioRemove);
-		write32(ioMkdir);
-		write32(ioRmdir);
-		write32(ioDopen);
-		write32(ioDclose);
-		write32(ioDread);
-		write32(ioGetstat);
-		write32(ioChstat);
-		write32(ioRename);
-		write32(ioChdir);
-		write32(ioMount);
-		write32(ioUmount);
-		write32(ioDevctl);
-		write32(ioCancel);
+		writePointerFunction(ioInit);
+		writePointerFunction(ioExit);
+		writePointerFunction(ioOpen);
+		writePointerFunction(ioClose);
+		writePointerFunction(ioRead);
+		writePointerFunction(ioWrite);
+		writePointerFunction(ioLseek);
+		writePointerFunction(ioIoctl);
+		writePointerFunction(ioRemove);
+		writePointerFunction(ioMkdir);
+		writePointerFunction(ioRmdir);
+		writePointerFunction(ioDopen);
+		writePointerFunction(ioDclose);
+		writePointerFunction(ioDread);
+		writePointerFunction(ioGetstat);
+		writePointerFunction(ioChstat);
+		writePointerFunction(ioRename);
+		writePointerFunction(ioChdir);
+		writePointerFunction(ioMount);
+		writePointerFunction(ioUmount);
+		writePointerFunction(ioDevctl);
+		writePointerFunction(ioCancel);
 	}
 
 	@Override
@@ -97,12 +99,12 @@ public class pspIoDrvFuncs extends pspAbstractMemoryMappedStructure {
 		return 88;
 	}
 
-	private static void toString(StringBuilder s, String name, int addr) {
-		if (addr != 0) {
+	private static void toString(StringBuilder s, String name, TPointerFunction addr) {
+		if (addr.isNotNull()) {
 			if (s.length() > 0) {
 				s.append(", ");
 			}
-			s.append(String.format("%s=0x%08X", name, addr));
+			s.append(String.format("%s=%s", name, addr));
 		}
 	}
 

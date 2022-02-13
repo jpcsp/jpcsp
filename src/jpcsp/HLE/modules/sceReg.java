@@ -1506,6 +1506,9 @@ public class sceReg extends HLEModule {
     		} else if ("ssid".equals(name)) {
     			ptype.setValue(REG_TYPE_STR);
     			String ssid = sceNetApctl.getSSID();
+    			if (ssid.length() > 32) {
+    				ssid = ssid.substring(0, 32);
+    			}
     			psize.setValue(ssid.length() + 1);
     			if (size > 0) {
     				Utilities.writeStringNZ(buf.getMemory(), buf.getAddress(), size, ssid);

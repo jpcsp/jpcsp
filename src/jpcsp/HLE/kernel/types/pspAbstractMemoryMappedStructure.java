@@ -22,6 +22,7 @@ import jpcsp.Memory;
 import jpcsp.HLE.ITPointerBase;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.TPointer32;
+import jpcsp.HLE.TPointerFunction;
 import jpcsp.memory.IMemoryReader;
 import jpcsp.memory.IMemoryWriter;
 import jpcsp.memory.MemoryReader;
@@ -351,6 +352,11 @@ public abstract class pspAbstractMemoryMappedStructure {
     	return new TPointer32(mem, value);
     }
 
+    protected TPointerFunction readPointerFunction() {
+    	int value = read32();
+    	return new TPointerFunction(mem, value);
+    }
+
     protected void readPointerArray(TPointer[] array) {
     	for (int i = 0; array != null && i < array.length; i++) {
     		array[i] = readPointer();
@@ -555,6 +561,14 @@ public abstract class pspAbstractMemoryMappedStructure {
     }
 
     protected void writePointer32(TPointer32 pointer) {
+    	if (pointer == null) {
+    		write32(0);
+    	} else {
+    		write32(pointer.getAddress());
+    	}
+    }
+
+    protected void writePointerFunction(TPointerFunction pointer) {
     	if (pointer == null) {
     		write32(0);
     	} else {

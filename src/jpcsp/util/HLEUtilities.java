@@ -27,6 +27,7 @@ import jpcsp.HLE.HLEModuleFunction;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.SyscallHandler;
 import jpcsp.HLE.TPointer;
+import jpcsp.HLE.TPointerFunction;
 import jpcsp.HLE.modules.SysMemUserForUser;
 import jpcsp.HLE.modules.SysMemUserForUser.SysMemInfo;
 import jpcsp.memory.IMemoryWriter;
@@ -154,6 +155,10 @@ public class HLEUtilities {
 
     public void installHLESyscall(int address, HLEModule hleModule, String hleFunctionName) {
     	installHLESyscall(new TPointer(Memory.getInstance(), address), hleModule, hleFunctionName);
+    }
+
+    public void installHLESyscall(TPointerFunction address, HLEModule hleModule, String hleFunctionName) {
+    	installHLESyscall(address.getPointer(), hleModule, hleFunctionName);
     }
 
     public void installHLESyscall(TPointer address, HLEModule hleModule, String hleFunctionName) {

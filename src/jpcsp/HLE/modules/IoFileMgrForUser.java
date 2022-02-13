@@ -18,6 +18,7 @@ package jpcsp.HLE.modules;
 
 import static jpcsp.Allegrex.Common._s0;
 import static jpcsp.HLE.HLEModuleManager.HLESyscallNid;
+import static jpcsp.HLE.Modules.SysMemUserForUserModule;
 import static jpcsp.HLE.VFS.local.LocalVirtualFileSystem.fixMsDirectoryFiles;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_ERRNO_DEVICE_NOT_FOUND;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_ERRNO_FILE_ALREADY_EXISTS;
@@ -38,6 +39,7 @@ import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.JPCSP_WAIT_IO;
 import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.PSP_THREAD_READY;
 import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.THREAD_CALLBACK_MEMORYSTICK_FAT;
 import static jpcsp.HLE.modules.SysMemUserForUser.KERNEL_PARTITION_ID;
+import static jpcsp.HLE.modules.SysMemUserForUser.PSP_SMEM_Low;
 import static jpcsp.util.Utilities.readStringNZ;
 import static jpcsp.util.Utilities.readStringZ;
 
@@ -46,12 +48,14 @@ import jpcsp.HLE.BufferInfo.LengthInfo;
 import jpcsp.HLE.BufferInfo.Usage;
 import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.HLEFunction;
+import jpcsp.HLE.HLELogging;
 import jpcsp.HLE.HLEModule;
 import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.PspString;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.TPointer32;
 import jpcsp.HLE.TPointer64;
+import jpcsp.HLE.TPointerFunction;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -61,6 +65,7 @@ import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import jpcsp.Emulator;
@@ -93,6 +98,8 @@ import jpcsp.HLE.kernel.types.SceKernelMppInfo;
 import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
 import jpcsp.HLE.kernel.types.ScePspDateTime;
 import jpcsp.HLE.kernel.types.ThreadWaitInfo;
+import jpcsp.HLE.kernel.types.pspIoDrv;
+import jpcsp.HLE.modules.SysMemUserForUser.SysMemInfo;
 import jpcsp.filesystems.SeekableDataInput;
 import jpcsp.filesystems.SeekableRandomFile;
 import jpcsp.filesystems.umdiso.UmdIsoFile;
@@ -278,6 +285,9 @@ public class IoFileMgrForUser extends HLEModule {
         public SceKernelThreadInfo asyncThread;
         public IAction asyncAction;
         private boolean truncateAtNextWrite;
+        public pspIoDrv ioDriver;
+        public SysMemInfo iob;
+        public SysMemInfo pathBuffer;
 
         // Async callback
         public int cbid = -1;
@@ -341,6 +351,32 @@ public class IoFileMgrForUser extends HLEModule {
             } else {
             	uid = -1;
             }
+        }
+
+        /** Driver version */
+        public IoInfo(String filename, pspIoDrv ioDriver, String mode, int flags, int permissions) {
+        	vFile = null;
+            this.filename = filename;
+            msFile = null;
+            readOnlyFile = null;
+            this.mode = mode;
+            this.flags = flags;
+            this.permissions = permissions;
+            sectorBlockMode = false;
+            id = getNewId();
+            if (isValidId()) {
+            	uid = getNewUid();
+            	fileIds.put(id, this);
+            	fileUids.put(uid, this);
+            } else {
+            	uid = -1;
+            }
+
+            this.ioDriver = ioDriver;
+        	final int iobSize = 144;
+            iob = SysMemUserForUserModule.malloc(KERNEL_PARTITION_ID, "IoInfo SceIoIob", PSP_SMEM_Low, iobSize, 0);
+            Memory.getInstance().memset(iob.addr, (byte) 0, iobSize);
+            pathBuffer = SysMemUserForUserModule.malloc(KERNEL_PARTITION_ID, "IoInfo PathBuffer", PSP_SMEM_Low, 1024, 0);
         }
 
         public boolean isValidId() {
@@ -1771,10 +1807,34 @@ public class IoFileMgrForUser extends HLEModule {
                 log.error(String.format("hleIoOpen - device not found '%s'", filename));
                 result = ERROR_ERRNO_DEVICE_NOT_FOUND;
         	} else if (pcfilename != null) {
-                if (log.isDebugEnabled()) {
-                    log.debug("hleIoOpen - opening file " + pcfilename);
+                Pattern pattern = Pattern.compile("([a-zA-Z]+)(\\d*):(.*)");
+                Matcher matcher = pattern.matcher(filename);
+                pspIoDrv driver = null;
+                if (matcher.matches()) {
+                	String driverName = matcher.group(1);
+            		driver = Modules.IoFileMgrForKernelModule.getDriver(driverName);
                 }
-                if (isUmdPath(pcfilename)) {
+
+                if (driver != null) {
+        			TPointerFunction ioOpen = driver.ioDrvFuncs.ioOpen;
+        			if (ioOpen != null) {
+        				info = new IoInfo(filename, driver, mode, flags, permissions);
+        				TPointer iob = new TPointer(getMemory(), info.iob.addr);
+        				int fsNum = Integer.parseInt(matcher.group(2));
+        				TPointer pathBuffer = new TPointer(getMemory(), info.pathBuffer.addr);
+        				pathBuffer.setStringNZ(1024, matcher.group(3));
+        				iob.setValue32(4, fsNum);
+        				iob.setValue32(92, pathBuffer.getAddress());
+        				iob.setValue32(96, flags);
+        				iob.setValue32(100, permissions);
+        				result = ioOpen.executeCallback(iob.getAddress());
+        				if (result >= 0) {
+        					result = info.id;
+        				}
+        			} else {
+        				result = ERROR_KERNEL_UNSUPPORTED_OPERATION;
+        			}
+        		} else if (isUmdPath(pcfilename)) {
                     // Check umd is mounted.
                     if (iso == null) {
                         log.error("hleIoOpen - no umd mounted");
@@ -1830,6 +1890,10 @@ public class IoFileMgrForUser extends HLEModule {
                         }
                     }
                 } else {
+                    if (log.isDebugEnabled()) {
+                        log.debug(String.format("hleIoOpen - opening local file '%s'", pcfilename));
+                    }
+
                     // First check if the file already exists
                     File file = new File(pcfilename);
                     if (file.exists() && (flags & (PSP_O_CREAT | PSP_O_EXCL | PSP_O_TRUNC)) == (PSP_O_CREAT | PSP_O_EXCL)) {
@@ -2039,6 +2103,13 @@ public class IoFileMgrForUser extends HLEModule {
                     if (result > 0) {
                     	info.position += result;
                     }
+                } else if (info.ioDriver != null) {
+        			TPointerFunction ioWrite = info.ioDriver.ioDrvFuncs.ioWrite;
+        			if (ioWrite != null) {
+        				result = ioWrite.executeCallback(info.iob.addr, dataAddr.getAddress(), size);
+        			} else {
+        				result = ERROR_KERNEL_UNSUPPORTED_OPERATION;
+        			}
                 } else {
                     if ((info.flags & PSP_O_APPEND) == PSP_O_APPEND) {
                         info.msFile.seek(info.msFile.length());
@@ -2161,6 +2232,13 @@ public class IoFileMgrForUser extends HLEModule {
                     		result /= UmdIsoFile.sectorLength;
                     	}
                     }
+                } else if (info.ioDriver != null) {
+        			TPointerFunction ioRead = info.ioDriver.ioDrvFuncs.ioRead;
+        			if (ioRead != null) {
+        				result = ioRead.executeCallback(info.iob.addr, data_addr, size);
+        			} else {
+        				result = ERROR_KERNEL_UNSUPPORTED_OPERATION;
+        			}
                 } else if ((info.readOnlyFile == null) || (info.position >= info.readOnlyFile.length())) {
                     // Ignore empty handles and allow seeking off the end of the file, just return 0 bytes read/written.
                     result = 0;
@@ -2445,6 +2523,13 @@ public class IoFileMgrForUser extends HLEModule {
         } else if (info.vFile != null) {
     		timings = info.vFile.getTimings();
         	result = info.vFile.ioIoctl(cmd, new TPointer(mem, indata_addr), inlen, new TPointer(mem, outdata_addr), outlen);
+        } else if (info.ioDriver != null) {
+			TPointerFunction ioIoctl = info.ioDriver.ioDrvFuncs.ioIoctl;
+			if (ioIoctl != null) {
+				result = ioIoctl.executeCallback(info.iob.addr, cmd, indata_addr, inlen, outdata_addr, outlen);
+			} else {
+				result = ERROR_KERNEL_UNSUPPORTED_OPERATION;
+			}
         } else {
             switch (cmd) {
                 // UMD file seek set.
@@ -3800,6 +3885,7 @@ public class IoFileMgrForUser extends HLEModule {
      * @param outlen
      */
     @HLEFunction(nid = 0x54F5FB11, version = 150, checkInsideInterrupt = true)
+    @HLELogging(level = "info")
     public int sceIoDevctl(PspString devicename, int cmd, @CanBeNull @BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.in) TPointer indata, int inlen, @CanBeNull @BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.out) TPointer outdata, int outlen) {
     	Map<IoOperation, IoOperationTiming> timings = defaultTimings;
         Memory mem = Processor.memory;
@@ -3817,7 +3903,28 @@ public class IoFileMgrForUser extends HLEModule {
             delayIoOperation(timings.get(IoOperation.iodevctl));
 
             return result;
-    	} else if (useVirtualFileSystem) {
+    	} else {
+    		String driverName = devicename.getString();
+    		// Remove the trailing ':'
+    		if (driverName.endsWith(":")) {
+    			driverName = driverName.substring(0, driverName.length() - 1);
+    		}
+
+    		pspIoDrv driver = Modules.IoFileMgrForKernelModule.getDriver(driverName);
+    		if (driver != null) {
+    			TPointerFunction ioDevctl = driver.ioDrvFuncs.ioDevctl;
+    			if (ioDevctl != null) {
+    				int unknownArg0 = 0;
+    				result = ioDevctl.executeCallback(unknownArg0, devicename.getAddress(), cmd, indata.getAddress(), inlen, outdata.getAddress(), outlen);
+    			} else {
+    				result = ERROR_KERNEL_UNSUPPORTED_OPERATION;
+    			}
+
+				return result;
+    		}
+    	}
+
+        if (useVirtualFileSystem) {
             log.error(String.format("sceIoDevctl - device not found '%s'", devicename));
             result = ERROR_ERRNO_DEVICE_NOT_FOUND;
 

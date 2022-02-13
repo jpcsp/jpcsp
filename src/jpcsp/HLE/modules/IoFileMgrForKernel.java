@@ -16,6 +16,9 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import org.apache.log4j.Logger;
 
 import jpcsp.HLE.HLEFunction;
@@ -27,17 +30,41 @@ import jpcsp.HLE.kernel.types.pspIoDrv;
 
 public class IoFileMgrForKernel extends HLEModule {
     public static Logger log = Modules.getLogger("IoFileMgrForKernel");
+    private final Map<String, pspIoDrv> drivers = new HashMap<String, pspIoDrv>();
 
-    @HLEUnimplemented
+	@Override
+	public void start() {
+		drivers.clear();
+
+		super.start();
+	}
+
+	public pspIoDrv getDriver(String driverName) {
+		return drivers.get(driverName);
+	}
+
+	public int hleIoAddDrv(pspIoDrv pspIoDrv) {
+    	drivers.put(pspIoDrv.name, pspIoDrv);
+
+    	return 0;
+	}
+
+	public int hleIoDelDrv(String driverName) {
+    	drivers.remove(driverName);
+
+    	return 0;
+	}
+
+	@HLEUnimplemented
     @HLEFunction(nid = 0x8E982A74, version = 150)
     public int sceIoAddDrv(pspIoDrv pspIoDrv) {
-    	return 0;
+    	return hleIoAddDrv(pspIoDrv);
     }
 
     @HLEUnimplemented
     @HLEFunction(nid = 0xC7F35804, version = 150)
     public int sceIoDelDrv(PspString driverName) {
-    	return 0;
+    	return hleIoDelDrv(driverName.getString());
     }
 
     @HLEUnimplemented
