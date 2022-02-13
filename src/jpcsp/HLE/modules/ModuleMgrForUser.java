@@ -263,6 +263,7 @@ public class ModuleMgrForUser extends HLEModule {
 					}
 				}
 				loadModuleContext.moduleVersion = psp.getDevkitVersion();
+				loadModuleContext.moduleElfVersion = psp.getModuleElfVersion();
 			} else {
 				// Try to load the module info if this is a file in ELF format...
 				SceModule moduleInfo = getModuleInfo(loadModuleContext);

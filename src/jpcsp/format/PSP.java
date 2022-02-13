@@ -201,4 +201,8 @@ public class PSP {
     public int getDevkitVersion() {
     	return devkit_version;
     }
+
+    public int getModuleElfVersion() {
+    	return (mod_ver_hi << 8) | mod_ver_lo;
+    }
 }
