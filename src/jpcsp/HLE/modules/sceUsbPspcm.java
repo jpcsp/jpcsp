@@ -16,6 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules;
 
+import static jpcsp.Allegrex.compiler.RuntimeContext.debugMemory;
 import static jpcsp.HLE.Modules.IoFileMgrForKernelModule;
 import static jpcsp.HLE.Modules.ThreadManForUserModule;
 import static jpcsp.HLE.Modules.sceUsbBusModule;
@@ -380,6 +381,13 @@ public class sceUsbPspcm extends HLEModule {
     	}
     }
 
+    private class StartRegisteredThreadAction implements IAction {
+		@Override
+		public void execute() {
+			startRegisteredThread();
+		}
+    }
+
     private class IoDevctlCallback extends HLEPointerFunction {
 		@Override
 		public int executeCallback(int unknownArg0, int deviceName, int cmd, int indata, int inlen, int outdata, int outlen) {
@@ -388,7 +396,7 @@ public class sceUsbPspcm extends HLEModule {
 					registeredThreadStarted = false;
 					if (inlen >= 4) {
 						registeredThreadUid = getMemory().read32(indata);
-						startRegisteredThread();
+						Scheduler.getInstance().addAction(Scheduler.getNow() + 100000, new StartRegisteredThreadAction());
 					} else {
 						registeredThreadUid = -1;
 					}
@@ -457,6 +465,8 @@ public class sceUsbPspcm extends HLEModule {
     }
 
     private int simulateIoRead(TPointer data, int size) {
+    	debugMemory(data.getAddress(), size);
+
     	simulateIoReadIndex++;
     	String simulateIoReadProperty = Settings.getInstance().readString(String.format("sceUsbPspcm.simulateIoRead.%d", simulateIoReadIndex));
     	simulateIoReadProperty = simulateIoReadProperty.replace(" ", "");
