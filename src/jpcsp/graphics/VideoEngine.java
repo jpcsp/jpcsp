@@ -2693,7 +2693,7 @@ public class VideoEngine {
                         multiDrawFirstVertex = vertexArray.getVertexOffset(vertexAddress);
                     } else {
                         // add buffer offset relative to vinfo.ptr_vertex (and not relative to vertexAddress)
-                        vertexInfoReader.addNativeOffset(vertexBuffer.getBufferOffset(context.vinfo.ptr_vertex));
+                        vertexInfoReader.addNativeOffset(vertexBuffer.getNativeBufferOffset(context.vinfo.ptr_vertex));
                     }
 
                     // Check if multiple PRIM's are defined in sequence and
@@ -3719,14 +3719,14 @@ public class VideoEngine {
     private void executeCommandVADDR() {
         context.vinfo.ptr_vertex = currentList.getAddressRelOffset(normalArgument);
         if (isLogDebugEnabled) {
-            log(helper.getCommandString(VADDR) + " " + String.format("%08x", context.vinfo.ptr_vertex));
+            log(String.format("%s 0x%08x", helper.getCommandString(VADDR), context.vinfo.ptr_vertex));
         }
     }
 
     private void executeCommandIADDR() {
         context.vinfo.ptr_index = currentList.getAddressRelOffset(normalArgument);
         if (isLogDebugEnabled) {
-            log(helper.getCommandString(IADDR) + " " + String.format("%08x", context.vinfo.ptr_index));
+            log(String.format("%s 0x%08X", helper.getCommandString(IADDR), context.vinfo.ptr_index));
         }
     }
 
@@ -3734,7 +3734,7 @@ public class VideoEngine {
         int ucount = normalArgument & 0xFF;
         int vcount = (normalArgument >> 8) & 0xFF;
         if (isLogDebugEnabled) {
-            log(helper.getCommandString(BEZIER) + " ucount=" + ucount + ", vcount=" + vcount);
+            log(String.format("%s ucount=%d, vcount=%d", helper.getCommandString(BEZIER), ucount, vcount));
         }
 
         if (skipThisFrame) {
@@ -3761,8 +3761,7 @@ public class VideoEngine {
         int sp_vtype = (normalArgument >> 18) & 0x3;
 
         if (isLogDebugEnabled) {
-            log(helper.getCommandString(SPLINE) + " sp_ucount=" + sp_ucount + ", sp_vcount=" + sp_vcount
-                    + " sp_utype=" + sp_utype + ", sp_vtype=" + sp_vtype);
+            log(String.format("%s sp_ucount=%d, sp_vcount=%d, sp_utype=%d, sp_vtype=%d", helper.getCommandString(SPLINE), sp_ucount, sp_vcount, sp_utype, sp_vtype));
         }
 
         if (skipThisFrame) {

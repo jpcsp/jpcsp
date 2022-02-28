@@ -16,18 +16,19 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.graphics;
 
+import static jpcsp.Allegrex.compiler.RuntimeContext.getMemoryInt;
+import static jpcsp.Allegrex.compiler.RuntimeContext.hasMemoryInt;
+import static jpcsp.util.Utilities.alignDown;
+import static jpcsp.util.Utilities.alignUp;
+
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.nio.FloatBuffer;
-import java.nio.IntBuffer;
-import java.nio.ShortBuffer;
 import java.util.HashMap;
 
 import org.apache.log4j.Logger;
 
 import jpcsp.Memory;
-import jpcsp.Allegrex.compiler.RuntimeContext;
 import jpcsp.graphics.RE.IRenderingEngine;
 import jpcsp.memory.IMemoryReader;
 import jpcsp.memory.MemoryReader;
@@ -44,6 +45,7 @@ public class VertexBuffer {
 	private int bufferLength;
 	private int stride;
 	private int[] cachedMemory;
+	// The data in the cachedBuffer will always be kept aligned on 32-bit boundaries
 	private ByteBuffer cachedBuffer;
 	private int cachedBufferOffset;
 	private HashMap<Integer, Integer> addressAlreadyChecked = new HashMap<Integer, Integer>();
@@ -85,27 +87,30 @@ public class VertexBuffer {
 		re.bindBuffer(bufferTarget, bufferId);
 	}
 
-	private int getBufferAlignment(Buffer buffer, int address) {
-		if ((address & 3) == 0) {
-			return 0;
-		}
+	/**
+	 * Always keep the buffer aligned on 32-bit boundaries.
+	 * 
+	 * @param address
+	 * @return the number of bytes to subtract from the address to be 32-bit aligned.
+	 */
+	private int getBufferAlignment(int address) {
+		return address & 3;
+	}
 
-		if (buffer instanceof IntBuffer || buffer instanceof FloatBuffer) {
-			return address & 3;
-		} else if (buffer instanceof ShortBuffer) {
-			return address & 1;
-		}
+	private int offset4(int offset) {
+		return (offset + 3) >> 2;
+	}
 
-		return 0;
+	private int length4(int length) {
+		return alignUp(length, 3);
 	}
 
 	private void loadFromMemory(int address, int length) {
 		if (length > 0) {
 			copyToCachedMemory(address, length);
 			Buffer buffer = Memory.getInstance().getBuffer(address, length);
-			int bufferAlignment = getBufferAlignment(buffer, address);
-			position(address, bufferAlignment);
-			Utilities.putBuffer(cachedBuffer, buffer, ByteOrder.LITTLE_ENDIAN, length + bufferAlignment);
+			position(alignDown(address, 3));
+			Utilities.putBuffer(cachedBuffer, buffer, ByteOrder.LITTLE_ENDIAN, length4(length));
 		}
 	}
 
@@ -118,29 +123,28 @@ public class VertexBuffer {
 			// Most common case: the buffer is fitting
 		} else if (bufferLength == 0 || (overflowBottom && overflowTop)) {
 			// Create a new buffer
-			cachedBufferOffset = getBufferAlignment(buffer, address);
-			// Always allocate 3 additional bytes at the end to allow copy
-			// from IntBuffer without running into a buffer overflow
-			final int alignmentPaddingEnd = 3;
-			cachedBuffer = ByteBuffer.allocateDirect(length + cachedBufferOffset + alignmentPaddingEnd).order(ByteOrder.LITTLE_ENDIAN);
+			cachedBufferOffset = getBufferAlignment(address);
+			cachedBuffer = ByteBuffer.allocateDirect(length4(length + cachedBufferOffset)).order(ByteOrder.LITTLE_ENDIAN);
 			bufferAddress = address;
 			bufferLength = length;
-			cachedMemory = new int[bufferLength >> 2];
+			cachedMemory = new int[offset4(bufferLength)];
 			// The buffer has been resized: its content is lost, reload it
 			reloadBufferDataPending = true;
 			extended = true;
 		} else if (overflowBottom) {
 			// Extend the buffer to the bottom
-			cachedBufferOffset = getBufferAlignment(buffer, address);
-			int extendLength = bufferAddress - address + cachedBufferOffset;
-			ByteBuffer newBuffer = ByteBuffer.allocateDirect(extendLength + cachedBuffer.capacity()).order(ByteOrder.LITTLE_ENDIAN);
+			int newCachedBufferOffset = getBufferAlignment(address);
+			int extendLength = bufferAddress - address + newCachedBufferOffset;
+			ByteBuffer newBuffer = ByteBuffer.allocateDirect(length4(extendLength + cachedBuffer.capacity())).order(ByteOrder.LITTLE_ENDIAN);
 			newBuffer.position(extendLength);
 			cachedBuffer.clear();
+			cachedBuffer.position(cachedBufferOffset);
 			newBuffer.put(cachedBuffer);
 			newBuffer.rewind();
 			cachedBuffer = newBuffer;
+			cachedBufferOffset = newCachedBufferOffset;
 			bufferLength += extendLength;
-			int[] newCachedMemory = new int[bufferLength >> 2];
+			int[] newCachedMemory = new int[offset4(bufferLength)];
 			System.arraycopy(cachedMemory, 0, newCachedMemory, extendLength >> 2, cachedMemory.length);
 			cachedMemory = newCachedMemory;
 			bufferAddress = address;
@@ -151,14 +155,14 @@ public class VertexBuffer {
 		} else if (overflowTop) {
 			// Extend the buffer to the top
 			int extendLength = address + length - (bufferAddress + bufferLength);
-			ByteBuffer newBuffer = ByteBuffer.allocateDirect(extendLength + cachedBuffer.capacity()).order(ByteOrder.LITTLE_ENDIAN);
+			ByteBuffer newBuffer = ByteBuffer.allocateDirect(length4(extendLength + cachedBuffer.capacity())).order(ByteOrder.LITTLE_ENDIAN);
 			cachedBuffer.clear();
 			newBuffer.put(cachedBuffer);
 			newBuffer.rewind();
 			cachedBuffer = newBuffer;
 			int oldBufferEnd = bufferAddress + bufferLength;
 			bufferLength += extendLength;
-			int[] newCachedMemory = new int[bufferLength >> 2];
+			int[] newCachedMemory = new int[offset4(bufferLength)];
 			System.arraycopy(cachedMemory, 0, newCachedMemory, 0, cachedMemory.length);
 			cachedMemory = newCachedMemory;
 			loadFromMemory(oldBufferEnd, address - oldBufferEnd);
@@ -170,20 +174,29 @@ public class VertexBuffer {
 		return extended;
 	}
 
-	private void position(int address) {
-		cachedBuffer.clear();
-		cachedBuffer.position(getBufferOffset(address) + cachedBufferOffset);
+	public int getBufferOffset(int address) {
+		address = Memory.normalizeAddress(address);
+		return address - bufferAddress;
 	}
 
-	private void position(int address, int bufferAlignment) {
-		position(address - bufferAlignment);
+	private int getBufferOffset4(int address) {
+		return getBufferOffset(address) >> 2;
+	}
+
+	public int getNativeBufferOffset(int address) {
+		return getBufferOffset(address) + cachedBufferOffset;
+	}
+
+	private void position(int address) {
+		cachedBuffer.clear();
+		cachedBuffer.position(getNativeBufferOffset(address));
 	}
 
 	private void copyToCachedMemory(int address, int length) {
-		int offset = getBufferOffset(address) >> 2;
-		int n = length >> 2;
-		if (RuntimeContext.hasMemoryInt()) {
-			System.arraycopy(RuntimeContext.getMemoryInt(), address >> 2, cachedMemory, offset, n);
+		int offset = getBufferOffset4(address);
+		int n = offset4(length);
+		if (hasMemoryInt()) {
+			System.arraycopy(getMemoryInt(), address >> 2, cachedMemory, offset, n);
 		} else {
 			IMemoryReader memoryReader = MemoryReader.getMemoryReader(address, length, 4);
 			for (int i = 0; i < n; i++) {
@@ -195,7 +208,7 @@ public class VertexBuffer {
 	private void checkDirty(IRenderingEngine re) {
 		if (reloadBufferDataPending) {
 			bind(re);
-			position(bufferAddress);
+			cachedBuffer.clear();
 			re.setBufferData(bufferTarget, cachedBuffer.remaining(), cachedBuffer, bufferUsage);
 			reloadBufferDataPending = false;
 			numberDirtyRanges = 0;
@@ -211,8 +224,8 @@ public class VertexBuffer {
 
 	private boolean cachedMemoryEquals(int address, int length) {
 		IMemoryReader memoryReader = MemoryReader.getMemoryReader(address, length, 4);
-		int n = length >> 2;
-		int offset = getBufferOffset(address) >> 2;
+		int offset = getBufferOffset4(address);
+		int n = offset4(length);
 		for (int i = 0; i < n; i++) {
 			if (cachedMemory[offset + i] != memoryReader.readNext()) {
 				if (log.isTraceEnabled()) {
@@ -260,20 +273,22 @@ public class VertexBuffer {
 		address = Memory.normalizeAddress(address);
 
 		if (log.isTraceEnabled()) {
-			log.trace(String.format("VertexBuffer.load(0x%08X, %d) in %s", address, length, this.toString()));
+			log.trace(String.format("VertexBuffer.load address=0x%08X, length=%d in %s", address, length, toString()));
 		}
 		if (!addressAlreadyChecked(address, length)) {
 			boolean extended = extend(buffer, address, length);
 			// Check if the memory content has changed
 			if (extended || !cachedMemoryEquals(address, length)) {
-				int bufferAlignment = getBufferAlignment(buffer, address);
-				position(address, bufferAlignment);
-				Utilities.putBuffer(cachedBuffer, buffer, ByteOrder.LITTLE_ENDIAN, length + bufferAlignment);
+				position(alignDown(address, 3));
+				if (log.isTraceEnabled()) {
+					log.trace(String.format("copy buffer from 0x%08X(buffer offset=%d) to VertexBuffer at 0x%08X(buffer offset=%d), length=%d", alignDown(address, 3), buffer.position(), bufferAddress - cachedBufferOffset + cachedBuffer.position(), cachedBuffer.position(), length4(length)));
+				}
+				Utilities.putBuffer(cachedBuffer, buffer, ByteOrder.LITTLE_ENDIAN, length4(length));
 				buffer.rewind();
 
 				if (re != null) {
 					if (log.isTraceEnabled()) {
-						log.trace(String.format("VertexBuffer reload buffer 0x%08X, %d, extended=%b", address, length, extended));
+						log.trace(String.format("VertexBuffer reload buffer address=0x%08X, length=%d, extended=%b", address, length, extended));
 					}
 
 					// No need to update the sub data if the complete buffer has been reloaded...
@@ -312,7 +327,7 @@ public class VertexBuffer {
 			setAddressAlreadyChecked(address, length);
 		} else if (re != null) {
 			if (log.isTraceEnabled()) {
-				log.trace(String.format("VertexBuffer address already checked 0x%08X, %d", address, length));
+				log.trace(String.format("VertexBuffer address already checked address=0x%08X, length=%d", address, length));
 			}
 			checkDirty(re);
 		}
@@ -325,15 +340,11 @@ public class VertexBuffer {
 		}
 		bufferLength = 0;
 		bufferAddress = 0;
+		cachedBufferOffset = 0;
 		stride = 0;
 		cachedBuffer = null;
     	cachedMemory = null;
     }
-
-	public int getBufferOffset(int address) {
-		address = Memory.normalizeAddress(address);
-		return address - bufferAddress;
-	}
 
 	public boolean isAddressInside(int address, int length, int gapSize) {
 		address = Memory.normalizeAddress(address);

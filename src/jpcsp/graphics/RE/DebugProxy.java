@@ -600,7 +600,7 @@ public class DebugProxy extends BaseRenderingEngineProxy {
 	@Override
 	public void setBufferData(int target, int size, Buffer buffer, int usage) {
 		if (isLogDebugEnabled) {
-			log.debug(String.format("setBufferData target=%d, size=%d, buffer size=%d, usage=%d", target, size, buffer == null ? 0 : buffer.capacity(), usage));
+			log.debug(String.format("setBufferData target=%d, size=%d, buffer offset=%d, buffer size=%d, usage=%d", target, size, buffer == null ? 0 : buffer.position(), buffer == null ? 0 : buffer.capacity(), usage));
 		}
 		super.setBufferData(target, size, buffer, usage);
 	}
@@ -608,7 +608,7 @@ public class DebugProxy extends BaseRenderingEngineProxy {
 	@Override
 	public void setBufferSubData(int target, int offset, int size, Buffer buffer) {
 		if (isLogDebugEnabled) {
-			log.debug(String.format("setBufferSubData target=%d, offset=%d, size=%d, buffer size=%d, buffer type=%s, buffer direct=%b", target, offset, size, buffer == null ? 0 : buffer.capacity(), buffer.getClass().getName(), buffer.isDirect()));
+			log.debug(String.format("setBufferSubData target=%d, offset=%d, size=%d, buffer offset=%d, buffer size=%d, buffer type=%s, buffer direct=%b", target, offset, size, buffer == null ? 0 : buffer.position(), buffer == null ? 0 : buffer.capacity(), buffer.getClass().getName(), buffer.isDirect()));
 		}
 		super.setBufferSubData(target, offset, size, buffer);
 	}
@@ -974,5 +974,13 @@ public class DebugProxy extends BaseRenderingEngineProxy {
 			log.debug("reset");
 		}
 		super.reset();
+	}
+
+	@Override
+	public void deleteBuffer(int buffer) {
+		if (isLogDebugEnabled) {
+			log.debug(String.format("deleteBuffer %d", buffer));
+		}
+		super.deleteBuffer(buffer);
 	}
 }
