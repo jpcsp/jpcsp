@@ -240,7 +240,7 @@ public class ImageViewer extends javax.swing.JFrame {
         }
 
         private void drawPixel(Graphics g, int x, int y) {
-            g.drawLine(x, y, x, y);
+        	g.fillRect(x, y, 1, 1);
         }
 
         @Override
