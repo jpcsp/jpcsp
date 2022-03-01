@@ -87,7 +87,7 @@ public class LocalVirtualFileSystem extends AbstractVirtualFileSystem {
     		return files;
     	}
 
-    	if (dirName != null && dirName.length() > 0) {
+    	if (dirName != null && !dirName.isEmpty()) {
 			files = Utilities.add(new String[] { "..", "." }, files);
     	}
 
@@ -103,8 +103,43 @@ public class LocalVirtualFileSystem extends AbstractVirtualFileSystem {
 		this.useDirExtendedInfo = useDirExtendedInfo;
 	}
 
+	private File fixLocalFileName(File localPath, String fileName) {
+		if (fileName == null || fileName.isEmpty()) {
+			return localPath;
+		}
+
+		File[] entries = localPath.listFiles();
+		if (entries != null) {
+			for (File entry : entries) {
+				if (fileName.equalsIgnoreCase(entry.getName())) {
+					fileName = entry.getName();
+					break;
+				}
+			}
+		}
+
+		return new File(localPath, fileName);
+	}
+
+	private File getFile(File localPath, String fileName) {
+		if (fileName == null || fileName.isEmpty()) {
+			return localPath;
+		}
+
+		if (!fileNamesAreCaseSensitive) {
+			return new File(localPath, fileName);
+		}
+
+		String[] fileNameParts = fileName.split("/");
+		File localFile = localPath;
+		for (int i = 0; i < fileNameParts.length; i++) {
+			localFile = fixLocalFileName(localFile, fileNameParts[i]);
+		}
+		return localFile;
+	}
+
 	protected File getFile(String fileName) {
-		return new File(fileName == null ? localPath : localPath + fileName);
+		return getFile(new File(localPath), fileName);
 	}
 
 	protected static String getMode(int mode) {
