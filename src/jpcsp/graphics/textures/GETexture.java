@@ -19,7 +19,10 @@ package jpcsp.graphics.textures;
 import static jpcsp.HLE.Modules.sceDisplayModule;
 import static jpcsp.graphics.GeCommands.TFLT_NEAREST;
 import static jpcsp.graphics.GeCommands.TWRAP_WRAP_MODE_CLAMP;
+import static jpcsp.graphics.VideoEngineUtilities.getMonitorContentScaleX;
+import static jpcsp.graphics.VideoEngineUtilities.getMonitorContentScaleY;
 import static jpcsp.graphics.VideoEngineUtilities.getPixelFormatBytes;
+import static jpcsp.graphics.VideoEngineUtilities.updateMonitorContentScale;
 
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
@@ -227,8 +230,9 @@ public class GETexture {
     	int viewportWidth = width;
     	int viewportHeight = height;
     	if (scaleToCanvas) {
-    		viewportWidth = sceDisplayModule.getCanvasWidth();
-    		viewportHeight = sceDisplayModule.getCanvasHeight();
+    		updateMonitorContentScale();
+    		viewportWidth = Math.round(sceDisplayModule.getCanvasWidth() * getMonitorContentScaleX());
+    		viewportHeight = Math.round(sceDisplayModule.getCanvasHeight() * getMonitorContentScaleY());
     	}
 
         if (log.isTraceEnabled()) {
