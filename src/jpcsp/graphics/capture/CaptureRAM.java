@@ -19,28 +19,29 @@ package jpcsp.graphics.capture;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.channels.Channels;
 import java.nio.channels.WritableByteChannel;
 
+import org.apache.log4j.Logger;
+
 import jpcsp.Memory;
-import jpcsp.graphics.VideoEngine;
 import jpcsp.memory.IMemoryReader;
 import jpcsp.memory.MemoryReader;
 
 /** captures a piece of RAM */
 public class CaptureRAM {
+	public static Logger log = CaptureManager.log;
 
+	private static final int headerSize = 8;
     private int packetSize;
     private int address;
     private int length;
     private Buffer buffer;
 
     public CaptureRAM(int address, int length) throws IOException {
-        packetSize = 8 + length;
+        packetSize = headerSize + length;
         this.address = address;
         this.length = length;
 
@@ -54,12 +55,10 @@ public class CaptureRAM {
         }
     }
 
-    public void write(OutputStream out) throws IOException {
-        DataOutputStream data = new DataOutputStream(out);
-
-        data.writeInt(packetSize);
-        data.writeInt(address);
-        data.writeInt(length);
+    public void write(DataOutputStream out) throws IOException {
+    	out.writeInt(packetSize);
+    	out.writeInt(address);
+    	out.writeInt(length);
 
         if (buffer instanceof ByteBuffer) {
             WritableByteChannel channel = Channels.newChannel(out);
@@ -67,32 +66,29 @@ public class CaptureRAM {
         } else {
             IMemoryReader reader = MemoryReader.getMemoryReader(address, length, 1);
             for (int i = 0; i < length; i++){
-                data.writeByte(reader.readNext());
+            	out.writeByte(reader.readNext());
             }
         }
 
-        VideoEngine.log.info(String.format("Saved memory %08x - %08x (len %08x)", address, address + length, length));
-        //VideoEngine.log.info("CaptureRAM write " + ((3 * 4) + length));
-
-        //data.flush();
-        //out.flush();
+        if (log.isDebugEnabled()) {
+        	log.debug(String.format("Saved memory 0x%08X - 0x%08X (len 0x%X)", address, address + length, length));
+        }
     }
 
 
     private CaptureRAM() {
     }
 
-    public static CaptureRAM read(InputStream in) throws IOException {
+    public static CaptureRAM read(DataInputStream in) throws IOException {
         CaptureRAM ramFragment = new CaptureRAM();
 
-        DataInputStream data = new DataInputStream(in);
-        int sizeRemaining = data.readInt();
-        if (sizeRemaining >= 8) {
-            ramFragment.address = data.readInt(); sizeRemaining -= 4;
-            ramFragment.length = data.readInt(); sizeRemaining -= 4;
+        int sizeRemaining = in.readInt();
+        if (sizeRemaining >= headerSize) {
+            ramFragment.address = in.readInt(); sizeRemaining -= 4;
+            ramFragment.length = in.readInt(); sizeRemaining -= 4;
 
-            if (sizeRemaining > data.available()) {
-                VideoEngine.log.warn("CaptureRAM read want=" + sizeRemaining + " available=" + data.available());
+            if (sizeRemaining > in.available()) {
+                log.warn(String.format("CaptureRAM read want=0x%X, available=0x%X", sizeRemaining, in.available()));
             }
 
             if (sizeRemaining >= ramFragment.length) {
@@ -101,14 +97,15 @@ public class CaptureRAM {
                 if (b == null) {
                     throw new IOException("Buffer is not backed by an array");
                 }
-                data.readFully(b, 0, ramFragment.length);
+                in.readFully(b, 0, ramFragment.length);
                 ramFragment.buffer = bb;
                 sizeRemaining -= ramFragment.length;
 
-                data.skipBytes(sizeRemaining);
+                in.skipBytes(sizeRemaining);
 
-                VideoEngine.log.info(String.format("Loaded memory %08x - %08x (len %08x)",
-                    ramFragment.address, ramFragment.address + ramFragment.length, ramFragment.length));
+                if (log.isDebugEnabled()) {
+                	log.debug(String.format("Loaded memory 0x%08X - 0x%08X (len 0x%X)", ramFragment.address, ramFragment.address + ramFragment.length, ramFragment.length));
+                }
             } else {
                 throw new IOException("Not enough bytes remaining in stream");
             }

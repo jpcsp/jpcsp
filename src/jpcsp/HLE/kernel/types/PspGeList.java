@@ -256,8 +256,10 @@ public class PspGeList {
     public void setStallAddr(int stall_addr) {
     	stall_addr &= pcAddressMask;
     	if (this.stall_addr != stall_addr) {
+    		int oldStallAddr = this.stall_addr;
     		this.stall_addr = stall_addr;
 			ExternalGE.onStallAddrUpdated(this);
+			VideoEngine.getInstance().onStallAddrUpdated(this, oldStallAddr);
     		sync();
     	}
     }

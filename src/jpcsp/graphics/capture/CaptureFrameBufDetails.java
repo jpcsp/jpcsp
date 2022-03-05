@@ -19,8 +19,6 @@ package jpcsp.graphics.capture;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.modules.sceDisplay;
@@ -43,31 +41,26 @@ public class CaptureFrameBufDetails {
         sync = display.getSync();
     }
 
-    public void write(OutputStream out) throws IOException {
-        DataOutputStream data = new DataOutputStream(out);
+    public void write(DataOutputStream out) throws IOException {
+    	out.writeInt(packetSize);
 
-        data.writeInt(packetSize);
-
-        data.writeInt(topaddrFb);
-        data.writeInt(bufferwidthFb);
-        data.writeInt(pixelformatFb);
-        data.writeInt(sync);
-
-        //VideoEngine.log.info("CaptureDisplayDetails write " + (4 + packetSize));
+    	out.writeInt(topaddrFb);
+    	out.writeInt(bufferwidthFb);
+    	out.writeInt(pixelformatFb);
+    	out.writeInt(sync);
     }
 
-    public static CaptureFrameBufDetails read(InputStream in) throws IOException {
+    public static CaptureFrameBufDetails read(DataInputStream in) throws IOException {
         CaptureFrameBufDetails details = new CaptureFrameBufDetails();
 
-        DataInputStream data = new DataInputStream(in);
-        int sizeRemaining = data.readInt();
+        int sizeRemaining = in.readInt();
         if (sizeRemaining >= packetSize) {
-            details.topaddrFb = data.readInt(); sizeRemaining -= 4;
-            details.bufferwidthFb = data.readInt(); sizeRemaining -= 4;
-            details.pixelformatFb = data.readInt(); sizeRemaining -= 4;
-            details.sync = data.readInt(); sizeRemaining -= 4;
+            details.topaddrFb = in.readInt(); sizeRemaining -= 4;
+            details.bufferwidthFb = in.readInt(); sizeRemaining -= 4;
+            details.pixelformatFb = in.readInt(); sizeRemaining -= 4;
+            details.sync = in.readInt(); sizeRemaining -= 4;
 
-            data.skipBytes(sizeRemaining);
+            in.skipBytes(sizeRemaining);
         } else {
             throw new IOException("Not enough bytes remaining in stream");
         }

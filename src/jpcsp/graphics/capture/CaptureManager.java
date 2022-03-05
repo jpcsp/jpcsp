@@ -31,41 +31,72 @@ todo:
 
 package jpcsp.graphics.capture;
 
+import static jpcsp.graphics.GeCommands.CALL;
+import static jpcsp.graphics.GeCommands.END;
+import static jpcsp.graphics.GeCommands.JUMP;
+import static jpcsp.graphics.GeCommands.RET;
+
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.IOException;
 import java.nio.Buffer;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 
 import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.HLE.kernel.types.PspGeList;
 import jpcsp.graphics.VideoEngine;
+import jpcsp.memory.IMemoryReader;
+import jpcsp.memory.MemoryReader;
 
 import org.apache.log4j.Level;
+import org.apache.log4j.Logger;
 
 public class CaptureManager {
+	public static Logger log = VideoEngine.log;
 
-    private static OutputStream out;
+	private static final int MAGIC = 0x5245504C; // REPL
+    private static final int CURRENT_VERSION = 1;
     public static boolean captureInProgress;
+    protected static int version;
+    private static DataOutputStream out;
     private static boolean listExecuted;
     private static CaptureFrameBufDetails replayFrameBufDetails;
     private static Level logLevel;
     private static HashSet<Integer> capturedImages;
+    private static Map<Integer, Integer> capturedAddresses;
 
     public static void startReplay(String filename) {
         if (captureInProgress) {
-            VideoEngine.log.error("Ignoring startReplay, capture is in progress");
+            log.error("Ignoring startReplay, capture is in progress");
             return;
         }
 
-        VideoEngine.log.info("Starting replay: " + filename);
+        log.info(String.format("Starting replay '%s'", filename));
 
         try {
-            InputStream in = new BufferedInputStream(new FileInputStream(filename));
+            DataInputStream in = new DataInputStream(new BufferedInputStream(new FileInputStream(filename)));
+
+            // Read the version of the replay file format
+            int magic = in.readInt();
+            if (magic != MAGIC) {
+            	log.error(String.format("Not a replay file"));
+            	in.close();
+            	return;
+            }
+
+            version = in.readInt();
+            if (version > CURRENT_VERSION) {
+            	log.error(String.format("Unsupported replay file version 0x%X", version));
+            	in.close();
+            	return;
+            }
 
             while (in.available() > 0) {
                 CaptureHeader header = CaptureHeader.read(in);
@@ -82,26 +113,19 @@ public class CaptureManager {
                         ramFragment.commit();
                         break;
 
-                    // deprecated
-                    case CaptureHeader.PACKET_TYPE_DISPLAY_DETAILS:
-                        CaptureDisplayDetails displayDetails = CaptureDisplayDetails.read(in);
-                        displayDetails.commit();
-                        break;
-
                     case CaptureHeader.PACKET_TYPE_FRAMEBUF_DETAILS:
                         // don't replay this one immediately, wait until after the list has finished executing
                         replayFrameBufDetails = CaptureFrameBufDetails.read(in);
                         break;
 
                     default:
-                        throw new Exception("Unknown packet type " + packetType);
+                        throw new IOException(String.format("Unknown packet type %d", packetType));
                 }
             }
 
             in.close();
-        } catch(Exception e) {
-            VideoEngine.log.error("Failed to start replay: " + e.getMessage());
-            e.printStackTrace();
+        } catch(IOException e) {
+            log.error("Failed to start replay", e);
         }
     }
 
@@ -110,57 +134,47 @@ public class CaptureManager {
         replayFrameBufDetails.commit();
         replayFrameBufDetails = null;
 
-        VideoEngine.log.info("Replay completed");
+        log.info("Replay completed");
         Emulator.PauseEmu();
     }
 
     public static void startCapture(String filename, PspGeList list) {
-    //public static void startCapture(int displayBufferAddress, int displayBufferWidth, int displayBufferPsm,
-    //    int drawBufferAddress, int drawBufferWidth, int drawBufferPsm,
-    //    int depthBufferAddress, int depthBufferWidth) {
         if (captureInProgress) {
-            VideoEngine.log.error("Ignoring startCapture, capture is already in progress");
+            log.error("Ignoring startCapture, capture is already in progress");
             return;
         }
 
         // Set the VideoEngine log level to TRACE when capturing,
         // the information in the log file is also interesting
-        logLevel = VideoEngine.log.getLevel();
+        logLevel = log.getLevel();
         VideoEngine.getInstance().setLogLevel(Level.TRACE);
         capturedImages = new HashSet<Integer>();
+        capturedAddresses = new HashMap<Integer, Integer>();
 
         try {
-            VideoEngine.log.info("Starting capture... (list=" + list.id + ")");
-            out = new BufferedOutputStream(new FileOutputStream(filename));
+            log.info(String.format("Starting capture... (list=0x%X)", list.id));
+            out = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(filename)));
 
-            CaptureHeader header;
-
-            /*
-            // write render target details
-            header = new CaptureHeader(CaptureHeader.PACKET_TYPE_DISPLAY_DETAILS);
-            header.write(out);
-            CaptureDisplayDetails displayDetails = new CaptureDisplayDetails();
-            displayDetails.write(out);
-            */
+            out.writeInt(MAGIC);
+            out.writeInt(CURRENT_VERSION);
 
             // write command buffer
-            header = new CaptureHeader(CaptureHeader.PACKET_TYPE_LIST);
+            CaptureHeader header = new CaptureHeader(CaptureHeader.PACKET_TYPE_LIST);
             header.write(out);
             CaptureList commandList = new CaptureList(list);
             commandList.write(out);
 
             captureInProgress = true;
             listExecuted = false;
-        } catch(Exception e) {
-            VideoEngine.log.error("Failed to start capture: " + e.getMessage());
-            e.printStackTrace();
+        } catch(IOException e) {
+            log.error("Failed to start capture", e);
             Emulator.PauseEmu();
         }
     }
 
     public static void endCapture() {
         if (!captureInProgress) {
-            VideoEngine.log.warn("Ignoring endCapture, capture hasn't been started");
+            log.warn("Ignoring endCapture, capture hasn't been started");
             Emulator.PauseEmu();
             return;
         }
@@ -169,27 +183,82 @@ public class CaptureManager {
             out.flush();
             out.close();
             out = null;
-        } catch(Exception e) {
-            VideoEngine.log.error("Failed to end capture: " + e.getMessage());
-            e.printStackTrace();
+        } catch(IOException e) {
+            log.error("Failed to end capture", e);
             Emulator.PauseEmu();
         }
 
+        capturedAddresses = null;
+        capturedImages = null;
         captureInProgress = false;
 
-        VideoEngine.log.info("Capture completed");
-        VideoEngine.log.setLevel(logLevel);
+        log.info("Capture completed");
+        log.setLevel(logLevel);
         Emulator.PauseEmu();
+    }
+
+    protected static int getListCmdsLength(int address, int stall) {
+    	IMemoryReader memoryReader;
+    	if (stall == 0) {
+    		memoryReader = MemoryReader.getMemoryReader(address, 4);
+    	} else {
+    		memoryReader = MemoryReader.getMemoryReader(address, stall - address, 4);
+    	}
+
+    	while (memoryReader.getCurrentAddress() != stall) {
+    		int instruction = memoryReader.readNext();
+    		int command = VideoEngine.command(instruction);
+    		if (command == END || command == JUMP || command == RET || command == CALL) {
+    			break;
+    		}
+    	}
+
+    	int length = memoryReader.getCurrentAddress() - address;
+
+    	return length;
+    }
+
+    public static void captureList(PspGeList list) {
+    	captureList(list.getPc(), list.getStallAddr());
+    }
+
+    public static void captureList(int address, int stall) {
+        if (!captureInProgress) {
+            log.warn("Ignoring captureList, capture hasn't been started");
+            return;
+        }
+
+        int length = getListCmdsLength(address, stall);
+        if (log.isDebugEnabled()) {
+        	log.debug(String.format("captureList pc=0x%08X, stall=0x%08X, length=0x%X", address, stall, length));
+        }
+    	captureRAM(address, length);
+    }
+
+    private static boolean isAlreadyCaptured(int address, int length) {
+        Integer capturedLength = capturedAddresses.get(address);
+        return capturedLength != null && capturedLength.intValue() >= length;
     }
 
     public static void captureRAM(int address, int length) {
         if (!captureInProgress) {
-            VideoEngine.log.warn("Ignoring captureRAM, capture hasn't been started");
+            log.warn("Ignoring captureRAM, capture hasn't been started");
             return;
         }
 
-        if (!Memory.isAddressGood(address)) {
+        if (!Memory.isAddressGood(address) || length <= 0) {
         	return;
+        }
+
+        if (isAlreadyCaptured(address, length)) {
+        	if (log.isDebugEnabled()) {
+        		log.debug(String.format("captureRAM already captured address=0x%08X, length=0x%X", address, length));
+        	}
+        	return;
+        }
+
+        if (log.isDebugEnabled()) {
+        	log.debug(String.format("captureRAM address=0x%08X, length=0x%X", address, length));
         }
 
         try {
@@ -199,9 +268,10 @@ public class CaptureManager {
 
             CaptureRAM captureRAM = new CaptureRAM(address, length);
             captureRAM.write(out);
-        } catch (Exception e) {
-            VideoEngine.log.error("Failed to capture RAM: " + e.getMessage());
-            e.printStackTrace();
+
+            capturedAddresses.put(address, length);
+        } catch (IOException e) {
+            log.error("Failed to capture RAM", e);
         }
     }
 
@@ -213,9 +283,8 @@ public class CaptureManager {
             if (capturedImages != null) {
             	capturedImages.add(imageaddr);
             }
-        } catch (Exception e) {
-            VideoEngine.log.error("Failed to capture Image: " + e.getMessage());
-            e.printStackTrace();
+        } catch (IOException e) {
+            log.error("Failed to capture Image", e);
             Emulator.PauseEmu();
         }
     }
@@ -230,7 +299,7 @@ public class CaptureManager {
 
     public static void captureFrameBufDetails() {
         if (!captureInProgress) {
-            VideoEngine.log.warn("Ignoring captureRAM, capture hasn't been started");
+            log.warn("Ignoring captureFrameBufDetails, capture hasn't been started");
             return;
         }
 
@@ -240,9 +309,8 @@ public class CaptureManager {
 
             CaptureFrameBufDetails details = new CaptureFrameBufDetails();
             details.write(out);
-        } catch(Exception e) {
-            VideoEngine.log.error("Failed to capture frame buf details: " + e.getMessage());
-            e.printStackTrace();
+        } catch(IOException e) {
+            log.error("Failed to capture frame buf details", e);
             Emulator.PauseEmu();
         }
     }

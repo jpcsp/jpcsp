@@ -492,6 +492,13 @@ public class VideoEngine {
     	}
     }
 
+    public void onStallAddrUpdated(PspGeList list, int oldStallAddr) {
+        if (State.captureGeNextFrame) {
+            log.info("Capture List after update stall address");
+            CaptureManager.captureList(oldStallAddr, list.getStallAddr());
+        }
+    }
+
     public int numberDrawLists() {
         synchronized (drawListQueue) {
             return drawListQueue.size();
@@ -3173,13 +3180,9 @@ public class VideoEngine {
 
         vertexStatistics.end();
 
-        // Don't capture the ram if the vertex list is embedded in the display list. TODO handle stall_addr == 0 better
-        // TODO may need to move inside the loop if indices are used, or find the largest index so we can calculate the size of the vertex list
         if (State.captureGeNextFrame) {
-            if (!isVertexBufferEmbedded()) {
-                log.info("Capture PRIM");
-                CaptureManager.captureRAM(context.vinfo.ptr_vertex, context.vinfo.vertexSize * numberOfVertex);
-            }
+            log.info("Capture PRIM");
+            CaptureManager.captureRAM(context.vinfo.ptr_vertex, context.vinfo.vertexSize * numberOfVertex);
             display.captureGeImage();
             textureChanged = true;
         }
@@ -3633,6 +3636,11 @@ public class VideoEngine {
         }
         re.endBoundingBox(context.vinfo);
 
+        if (State.captureGeNextFrame) {
+            log.info("Capture BBOX");
+            CaptureManager.captureRAM(context.vinfo.ptr_vertex, context.vinfo.vertexSize * numberOfVertexBoundingBox);
+        }
+
         endRendering(numberOfVertexBoundingBox);
 
         isBoundingBox = false;
@@ -3645,9 +3653,12 @@ public class VideoEngine {
             takeConditionalJump = true;
         } else if (export3D && !export3DOnlyVisible) {
             takeConditionalJump = false;
+        } else if (State.captureGeNextFrame) {
+        	takeConditionalJump = false;
         } else {
             takeConditionalJump = !re.isBoundingBoxVisible();
         }
+
 
         if (takeConditionalJump) {
             int oldPc = currentList.getPc();
@@ -3656,9 +3667,20 @@ public class VideoEngine {
             if (isLogDebugEnabled) {
                 log(String.format("%s old PC: 0x%08X, new PC: 0x%08X", helper.getCommandString(BJUMP), oldPc, newPc));
             }
+
+            if (State.captureGeNextFrame) {
+                log.info("Capture List after taking BJUMP");
+                CaptureManager.captureList(currentList);
+            }
         } else {
             if (isLogDebugEnabled) {
                 log(String.format("%s not taking Conditional Jump", helper.getCommandString(BJUMP)));
+            }
+
+            if (State.captureGeNextFrame) {
+                log.info("Capture List after not taking BJUMP");
+                int jumpPc = currentList.getAddressRelOffset(normalArgument);
+                CaptureManager.captureList(jumpPc, currentList.getStallAddr());
             }
         }
     }
@@ -3786,6 +3808,11 @@ public class VideoEngine {
         if (isLogDebugEnabled) {
             log(String.format("%s old PC: 0x%08X, new PC: 0x%08X", helper.getCommandString(JUMP), oldPc, newPc));
         }
+
+        if (State.captureGeNextFrame) {
+            log.info("Capture List after JUMP");
+            CaptureManager.captureList(currentList);
+        }
     }
 
     private void executeCommandCALL() {
@@ -3829,6 +3856,11 @@ public class VideoEngine {
         if (isLogDebugEnabled) {
             log(String.format("%s old PC: 0x%08X, new PC: 0x%08X", helper.getCommandString(CALL), oldPc, newPc));
         }
+
+        if (State.captureGeNextFrame) {
+            log.info("Capture List after CALL");
+            CaptureManager.captureList(currentList);
+        }
     }
 
     private void executeCommandRET() {
@@ -3851,9 +3883,24 @@ public class VideoEngine {
         if (isLogDebugEnabled) {
             log(String.format("%s old PC: 0x%08X, new PC: 0x%08X", helper.getCommandString(RET), oldPc, newPc));
         }
+
+        if (State.captureGeNextFrame) {
+            log.info("Capture List after RET");
+            CaptureManager.captureList(currentList);
+        }
     }
 
     private void executeCommandEND() {
+    	if (State.replayGeNextFrame) {
+	        int previousCommand = command(currentList.readPreviousInstruction());
+	        if (previousCommand == SIGNAL) {
+	    		if (isLogDebugEnabled) {
+	    			log(String.format("%s/%s during replay is ignored", helper.getCommandString(previousCommand), helper.getCommandString(END)));
+	    		}
+	    		return;
+	        }
+    	}
+
     	if (lleRun) {
     		lleCtrl = clearFlag(lleCtrl, CTRL_ACTIVE);
     		lleInterrupt = setFlag(lleInterrupt, INTR_STAT_END);
@@ -6563,17 +6610,8 @@ public class VideoEngine {
         // Load the texture if not yet loaded
         if (texture == null || !texture.isLoaded() || State.captureGeNextFrame) {
             if (isLogDebugEnabled) {
-                log(helper.getCommandString(TFLUSH)
-                        + " " + String.format("0x%08X", context.texture_base_pointer[mipmapIndex])
-                        + ", buffer_width=" + context.texture_buffer_width[mipmapIndex]
-                        + " (" + context.texture_width[mipmapIndex] + "," + context.texture_height[mipmapIndex] + ")");
-
-                log(helper.getCommandString(TFLUSH)
-                        + " texture_storage=0x" + Integer.toHexString(context.texture_storage)
-                        + "(" + getPsmName(context.texture_storage)
-                        + "), tex_clut_mode=0x" + Integer.toHexString(context.tex_clut_mode)
-                        + ", tex_clut_addr=" + String.format("0x%08X", context.tex_clut_addr)
-                        + ", texture_swizzle=" + context.texture_swizzle);
+                log(String.format("%s 0x%08X, buffer_width=%d (%d,%d)", helper.getCommandString(TFLUSH), context.texture_base_pointer[mipmapIndex], context.texture_buffer_width[mipmapIndex], context.texture_width[mipmapIndex], context.texture_height[mipmapIndex]));
+                log(String.format("%s texture_storage=0x%X(%s), tex_clut_mode=0x%X, tex_clut_addr=0x%08X, texture_swizzle=%b", helper.getCommandString(TFLUSH), context.texture_storage, getPsmName(context.texture_storage), context.tex_clut_mode, context.tex_clut_addr, context.texture_swizzle));
             }
 
             if (isGeProfilerEnabled) {
@@ -7263,6 +7301,11 @@ public class VideoEngine {
         boolean useTexture = context.vinfo.texture != 0 || context.textureFlag.isEnabled();
         boolean useNormal = context.lightingFlag.isEnabled();
 
+        if (State.captureGeNextFrame) {
+            log.info("Capture drawSpline");
+            CaptureManager.captureRAM(context.vinfo.ptr_vertex, context.vinfo.vertexSize * ucount * vcount);
+        }
+
         VertexInfo cachedVertexInfo = null;
         if (useVertexCache) {
             int numberOfVertex = context.patch_div_t * (context.patch_div_s + 1) * 2;
@@ -7275,12 +7318,6 @@ public class VideoEngine {
         if (cachedVertexInfo == null) {
             // Generate control points.
             VertexState[][] ctrlpoints = getControlPoints(ucount, vcount);
-
-            // GE capture.
-            if (State.captureGeNextFrame && !isVertexBufferEmbedded()) {
-                log.info("Capture drawSpline");
-                CaptureManager.captureRAM(context.vinfo.ptr_vertex, context.vinfo.vertexSize * ucount * vcount);
-            }
 
             // Generate patch VertexState.
             patch = new VertexState[context.patch_div_s + 1][context.patch_div_t + 1];
@@ -7362,6 +7399,11 @@ public class VideoEngine {
         boolean useTexture = context.vinfo.texture != 0 || context.textureFlag.isEnabled();
         boolean useNormal = context.lightingFlag.isEnabled();
 
+        if (State.captureGeNextFrame) {
+            log.info("Capture drawBezier");
+            CaptureManager.captureRAM(context.vinfo.ptr_vertex, context.vinfo.vertexSize * ucount * vcount);
+        }
+
         VertexInfo cachedVertexInfo = null;
         if (useVertexCache) {
             int numberOfVertex = context.patch_div_t * (context.patch_div_s + 1) * 2;
@@ -7373,13 +7415,6 @@ public class VideoEngine {
         VertexState[][] patch = null;
         if (cachedVertexInfo == null) {
             VertexState[][] anchors = getControlPoints(ucount, vcount);
-
-            // Don't capture the ram if the vertex list is embedded in the display list. TODO handle stall_addr == 0 better
-            // TODO may need to move inside the loop if indices are used, or find the largest index so we can calculate the size of the vertex list
-            if (State.captureGeNextFrame && !isVertexBufferEmbedded()) {
-                log.info("Capture drawBezier");
-                CaptureManager.captureRAM(context.vinfo.ptr_vertex, context.vinfo.vertexSize * ucount * vcount);
-            }
 
             // Generate patch VertexState.
             patch = new VertexState[context.patch_div_s + 1][context.patch_div_t + 1];
@@ -7754,11 +7789,6 @@ public class VideoEngine {
 
     public int getPSM() {
         return context.psm;
-    }
-
-    private boolean isVertexBufferEmbedded() {
-        // stall_addr may be 0
-        return (context.vinfo.ptr_vertex >= currentList.list_addr && context.vinfo.ptr_vertex < currentList.getStallAddr());
     }
 
     public int getClutNumEntries() {

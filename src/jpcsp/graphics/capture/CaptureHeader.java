@@ -19,21 +19,18 @@ package jpcsp.graphics.capture;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 
 /**
  * generic packet header for saved capture stream
- * immutable */
+ * immutable
+ **/
 public class CaptureHeader {
 
     // for use by other classes
     public static final int PACKET_TYPE_RESERVED = 0;
     public static final int PACKET_TYPE_LIST = 1;
     public static final int PACKET_TYPE_RAM = 2;
-    public static final int PACKET_TYPE_DISPLAY_DETAILS = 3;
-    public static final int PACKET_TYPE_FRAMEBUF_DETAILS = 4;
-
+    public static final int PACKET_TYPE_FRAMEBUF_DETAILS = 3;
 
     private static final int size = 4;
     private int packetType;
@@ -42,24 +39,21 @@ public class CaptureHeader {
         this.packetType = packetType;
     }
 
-    public void write(OutputStream out) throws IOException {
-        DataOutputStream data = new DataOutputStream(out);
-        data.writeInt(size);
-        data.writeInt(packetType);
+    public void write(DataOutputStream out) throws IOException {
+        out.writeInt(size);
+        out.writeInt(packetType);
     }
 
     private CaptureHeader() {
     }
 
-    public static CaptureHeader read(InputStream in) throws IOException {
+    public static CaptureHeader read(DataInputStream in) throws IOException {
         CaptureHeader header = new CaptureHeader();
 
-        DataInputStream data = new DataInputStream(in);
-        int sizeRemaining = data.readInt();
+        int sizeRemaining = in.readInt();
         if (sizeRemaining >= size) {
-            header.packetType = data.readInt(); sizeRemaining -= 4;
-            data.skipBytes(sizeRemaining);
-            //VideoEngine.log.info("CaptureHeader type " + header.packetType);
+            header.packetType = in.readInt(); sizeRemaining -= 4;
+            in.skipBytes(sizeRemaining);
         } else {
             throw new IOException("Not enough bytes remaining in stream");
         }

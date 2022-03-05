@@ -48,7 +48,6 @@ import javax.imageio.ImageIO;
 
 import org.apache.log4j.Logger;
 
-import jpcsp.graphics.VideoEngine;
 import jpcsp.memory.IMemoryReader;
 import jpcsp.memory.MemoryReader;
 
@@ -57,7 +56,7 @@ import jpcsp.memory.MemoryReader;
  *
  */
 public class CaptureImage {
-	private static Logger log = VideoEngine.log;
+	private static Logger log = CaptureManager.log;
 	private static final String bmpFileFormat = "bmp";
 	private static final String pngFileFormat = "png";
 	private int imageaddr;

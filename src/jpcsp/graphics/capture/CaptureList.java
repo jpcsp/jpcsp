@@ -19,92 +19,60 @@ package jpcsp.graphics.capture;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 
-import jpcsp.Memory;
+import org.apache.log4j.Logger;
+
 import jpcsp.HLE.kernel.types.PspGeList;
-import jpcsp.graphics.GeCommands;
 import jpcsp.graphics.VideoEngine;
 
 /** captures a display list
  * - PspGeList details
  * - backing RAM containing the GE instructions */
 public class CaptureList {
+	public static Logger log = CaptureManager.log;
 
-    private static final int packetSize = 16;
+    private static final int packetSize = 12;
     private PspGeList list;
     private CaptureRAM listBuffer;
 
-    public CaptureList(PspGeList list) throws Exception {
+    private CaptureList() {
+    }
+
+    public CaptureList(PspGeList list) throws IOException {
     	this.list = new PspGeList(list.id);
     	this.list.init(list.list_addr, list.getStallAddr(), list.cbid, list.optParams);
 
-        if (list.getStallAddr() - list.list_addr == 0) {
-        	VideoEngine.log.error("Capture: Command list is empty");
-        }
-
-        int listSize = 0;
-        if (list.getStallAddr() == 0) {
-            // Scan list for END command
-        	Memory mem = Memory.getInstance();
-        	for (int listPc = list.list_addr; Memory.isAddressGood(listPc); listPc += 4) {
-        		int instruction = mem.read32(listPc);
-        		int command = VideoEngine.command(instruction);
-        		if (command == GeCommands.END) {
-        			listSize = listPc - list.list_addr + 4;
-        			break;
-        		} else if (command == GeCommands.JUMP) {
-        			VideoEngine.log.error("Found a JUMP instruction while scanning the list. Aborting the scan.");
-        			listSize = listPc - list.list_addr + 4;
-        			break;
-        		} else if (command == GeCommands.RET) {
-        			VideoEngine.log.error("Found a RET instruction while scanning the list. Aborting the scan.");
-        			listSize = listPc - list.list_addr + 4;
-        			break;
-        		} else if (command == GeCommands.CALL) {
-        			VideoEngine.log.warn("Found a CALL instruction while scanning the list. Ignoring the called list.");
-        		}
-        	}
-        } else {
-        	listSize = list.getStallAddr() - list.list_addr;
-        }
-
-        listBuffer = new CaptureRAM(list.list_addr & Memory.addressMask, listSize);
+    	int length = CaptureManager.getListCmdsLength(list.list_addr, list.getStallAddr());
+        listBuffer = new CaptureRAM(list.list_addr, length);
     }
 
-    public void write(OutputStream out) throws IOException {
-        DataOutputStream data = new DataOutputStream(out);
-
-        data.writeInt(packetSize);
-        data.writeInt(list.list_addr);
-        data.writeInt(list.getStallAddr());
-        data.writeInt(list.cbid);
-
-        //VideoEngine.log.info("CaptureList write " + (5 * 4));
+    public void write(DataOutputStream out) throws IOException {
+        out.writeInt(packetSize);
+        out.writeInt(list.list_addr);
+        out.writeInt(list.getStallAddr());
+        out.writeInt(list.cbid);
 
         CaptureHeader header = new CaptureHeader(CaptureHeader.PACKET_TYPE_RAM);
         header.write(out);
         listBuffer.write(out);
     }
 
-
-    private CaptureList() {
-    }
-
-    public static CaptureList read(InputStream in) throws IOException {
+    public static CaptureList read(DataInputStream in) throws IOException {
         CaptureList list = new CaptureList();
 
-        DataInputStream data = new DataInputStream(in);
-        int sizeRemaining = data.readInt();
-        if (sizeRemaining >= 16) {
-            int list_addr = data.readInt(); sizeRemaining -= 4;
-            int stall_addr = data.readInt(); sizeRemaining -= 4;
-            int cbid = data.readInt(); sizeRemaining -= 4;
-            data.skipBytes(sizeRemaining);
+        int sizeRemaining = in.readInt();
+        if (sizeRemaining >= packetSize) {
+            int list_addr = in.readInt(); sizeRemaining -= 4;
+            int stall_addr = in.readInt(); sizeRemaining -= 4;
+            int cbid = in.readInt(); sizeRemaining -= 4;
+            in.skipBytes(sizeRemaining);
+
+            if (log.isDebugEnabled()) {
+            	log.debug(String.format("CaptureList list_addr=0x%08X, stall_addr=0x%08X, cbid=0x%X", list_addr, stall_addr, cbid));
+            }
 
             list.list = new PspGeList(0);
-            list.list.init(list_addr, stall_addr, cbid, null);
+            list.list.init(list_addr, 0, 0, null);
 
             CaptureHeader header = CaptureHeader.read(in);
             int packetType = header.getPacketType();
@@ -118,10 +86,6 @@ public class CaptureList {
 
         return list;
     }
-
-    //public PspGeList getPspGeList() {
-    //    return list;
-    //}
 
     public void commit() {
         VideoEngine.getInstance().pushDrawList(list);
