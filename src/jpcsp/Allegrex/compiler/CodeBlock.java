@@ -426,8 +426,8 @@ public class CodeBlock {
     	scanNativeCodeSequences(context);
 
     	if (codeInstructions.size() > methodMaxInstructions) {
-            if (log.isInfoEnabled()) {
-                log.info("Splitting " + getClassName() + " (" + codeInstructions.size() + "/" + methodMaxInstructions + ")");
+            if (log.isDebugEnabled()) {
+                log.debug(String.format("Splitting %s (%d/%d)", getClassName(), codeInstructions.size(), methodMaxInstructions));
             }
             splitCodeSequences(context, methodMaxInstructions);
         }

@@ -72,8 +72,8 @@ public class VertexInfoCompiler {
 	private VertexInfoReaderTemplate compileVertexInfoReader(int key, int vtype, boolean readTexture) {
 		VertexInfo.processType(vinfo, vtype);
 
-		if (log.isInfoEnabled()) {
-			log.info(String.format("Compiling VertexInfoReader for %s", vinfo));
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("Compiling VertexInfoReader for %s", vinfo));
 		}
 
 		HashMap<String, Object> variables = new HashMap<String, Object>();
