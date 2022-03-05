@@ -16,6 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.Allegrex.compiler;
 
+import static jpcsp.Emulator.exitCalled;
 import static jpcsp.Memory.addressMask;
 import static jpcsp.util.Utilities.addAddressHex;
 import static jpcsp.util.Utilities.addHex;
@@ -956,7 +957,7 @@ public class RuntimeContext {
     		// Ignore Exception
     	} catch (Throwable e) {
     		// Do not spam exceptions when exiting...
-        	if (!Modules.ThreadManForUserModule.exitCalled) {
+        	if (!exitCalled()) {
 	    		// Log error in log file and command box
 	    		log.error("Catched Throwable in RuntimeThread:", e);
 	    		e.printStackTrace();
@@ -1129,7 +1130,7 @@ public class RuntimeContext {
     }
 
     public static void run() {
-    	if (Modules.ThreadManForUserModule.exitCalled) {
+    	if (exitCalled()) {
     		return;
     	}
 

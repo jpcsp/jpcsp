@@ -52,6 +52,7 @@ import jpcsp.graphics.textures.TextureCache;
 import jpcsp.hardware.Battery;
 import jpcsp.hardware.Model;
 import jpcsp.hardware.Nand;
+import jpcsp.hardware.Screen;
 import jpcsp.hardware.Wlan;
 import jpcsp.memory.MemorySections;
 import jpcsp.network.proonline.ProOnlineNetworkAdapter;
@@ -81,6 +82,7 @@ public class Emulator implements Runnable {
     private Thread mainThread;
     public static boolean run = false;
     public static boolean pause = false;
+    private static boolean exitCalled = false;
     private static IMainGUI gui;
     private InstructionCounter instructionCounter;
     public static Logger log = Logger.getLogger("emu");
@@ -104,7 +106,20 @@ public class Emulator implements Runnable {
         return mainThread;
     }
 
+    public static boolean exitCalled() {
+    	return exitCalled;
+    }
+
     public static void exit() {
+    	exitCalled = true;
+
+        ProOnlineNetworkAdapter.exit();
+        XLinkKaiWlanAdapter.exit();
+        Modules.ThreadManForUserModule.exit();
+        Modules.sceDisplayModule.exit();
+        Modules.IoFileMgrForUserModule.exit();
+        VideoEngine.exit();
+        Screen.exit();
         if (DurationStatistics.collectStatistics) {
             log.info(TextureCache.getInstance().statistics);
         }

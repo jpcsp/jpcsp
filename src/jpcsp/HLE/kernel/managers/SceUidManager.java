@@ -16,9 +16,13 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.kernel.managers;
 
+import static jpcsp.Emulator.exitCalled;
+
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.ListIterator;
+
+import org.apache.log4j.Logger;
 
 import jpcsp.Emulator;
 import jpcsp.HLE.kernel.types.SceUid;
@@ -28,6 +32,7 @@ import jpcsp.HLE.kernel.types.SceUid;
  * @author hli, gid15
  */
 public class SceUidManager {
+	public static Logger log = Emulator.log;
 	// UID is a unique identifier across all purposes
     private static HashMap<Integer, SceUid> uidMap = new HashMap<Integer, SceUid>();
     private static int uidNext = 0x1; // LocoRoco expects UID to be 8bit
@@ -58,11 +63,15 @@ public class SceUidManager {
 
         if (found == null) {
             if (!allowUnknown) {
-                Emulator.log.warn("Attempt to use unknown SceUID (purpose='" + purpose.toString() + "')");
+            	if (!exitCalled()) {
+            		log.warn("Attempt to use unknown SceUID (purpose='" + purpose.toString() + "')");
+            	}
                 return false;
             }
         } else if (!purpose.equals(found.getPurpose())) {
-            Emulator.log.error("Attempt to use SceUID for different purpose (purpose='" + purpose.toString() + "',original='" + found.getPurpose().toString() + "')");
+        	if (!exitCalled()) {
+        		log.error("Attempt to use SceUID for different purpose (purpose='" + purpose.toString() + "',original='" + found.getPurpose().toString() + "')");
+        	}
             return false;
         }
 
@@ -75,14 +84,18 @@ public class SceUidManager {
         SceUid found = uidMap.get(uid);
 
         if (found == null) {
-            Emulator.log.warn("Attempt to release unknown SceUID (purpose='" + purpose.toString() + "')");
+        	if (!exitCalled()) {
+        		log.warn("Attempt to release unknown SceUID (purpose='" + purpose.toString() + "')");
+        	}
             return false;
         }
 
         if (purpose.equals(found.getPurpose())) {
             uidMap.remove(uid);
         } else {
-            Emulator.log.error("Attempt to release SceUID for different purpose (purpose='" + purpose.toString() + "',original='" + found.getPurpose().toString() + "')");
+        	if (!exitCalled()) {
+        		log.error("Attempt to release SceUID for different purpose (purpose='" + purpose.toString() + "',original='" + found.getPurpose().toString() + "')");
+        	}
             return false;
         }
 
@@ -147,7 +160,9 @@ public class SceUidManager {
     	LinkedList<Integer> freeIds = freeIdsMap.get(purpose);
 
     	if (freeIds == null) {
-    		Emulator.log.warn(String.format("Attempt to release ID=%d with unknown purpose='%s'", id, purpose));
+        	if (!exitCalled()) {
+        		log.warn(String.format("Attempt to release ID=%d with unknown purpose='%s'", id, purpose));
+        	}
     		return false;
     	}
 
@@ -156,7 +171,9 @@ public class SceUidManager {
     	for (ListIterator<Integer> lit = freeIds.listIterator(); lit.hasNext(); ) {
     		int currentId = lit.next();
     		if (currentId == id) {
-        		Emulator.log.warn(String.format("Attempt to release free ID=%d with purpose='%s'", id, purpose));
+            	if (!exitCalled()) {
+            		log.warn(String.format("Attempt to release free ID=%d with purpose='%s'", id, purpose));
+            	}
         		return false;
     		}
     		if (currentId > id) {

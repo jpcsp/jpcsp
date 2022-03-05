@@ -16,6 +16,8 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.sound;
 
+import static jpcsp.Emulator.exitCalled;
+
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 
@@ -108,7 +110,9 @@ public class SoundChannel {
 
     public static void setThreadInitContext() {
     	if (!EXTThreadLocalContext.alcSetThreadContext(initContext)) {
-    		log.error(String.format("setThreadInitContext alcMakeContextCurrent failed with error 0x%X", ALC10.alcGetError(initDevice)));
+    		if (!exitCalled()) {
+    			log.error(String.format("setThreadInitContext alcMakeContextCurrent failed with error 0x%X", ALC10.alcGetError(initDevice)));
+    		}
     	} else if (log.isDebugEnabled()) {
     		log.debug(String.format("setThreadInitContext initContext=0x%X, thread=0x%X", initContext, Thread.currentThread().getId()));
     	}

@@ -20,6 +20,7 @@ import static jpcsp.Allegrex.Common._a0;
 import static jpcsp.Allegrex.Common._s0;
 import static jpcsp.Allegrex.Common._v0;
 import static jpcsp.Allegrex.Common._zr;
+import static jpcsp.Emulator.exitCalled;
 import static jpcsp.HLE.HLEModuleManager.HLESyscallNid;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_ILLEGAL_ARGUMENT;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_ILLEGAL_PRIORITY;
@@ -207,7 +208,6 @@ public class ThreadManForUser extends HLEModule {
     private HashMap<Integer, pspBaseCallback> callbackMap;
     private static final boolean LOG_CONTEXT_SWITCHING = true;
     private static final boolean LOG_INSTRUCTIONS = false;
-    public boolean exitCalled = false;
     private int freeInternalUserMemoryStart;
     private int freeInternalUserMemoryEnd;
 
@@ -868,8 +868,6 @@ public class ThreadManForUser extends HLEModule {
 
     /** to be called when exiting the emulation */
     public void exit() {
-        exitCalled = true;
-
         if (threadMap != null) {
             // Delete all the threads to collect statistics
             deleteAllThreads();
@@ -910,7 +908,7 @@ public class ThreadManForUser extends HLEModule {
 
         if (currentThread != null) {
             currentThread.runClocks++;
-        } else if (!exitCalled) {
+        } else if (!exitCalled()) {
             // We always need to be in a thread! we shouldn't get here.
             log.error("No ready threads!");
         }
@@ -938,7 +936,7 @@ public class ThreadManForUser extends HLEModule {
             }
         } else {
             // When running under compiler mode this gets triggered by exit()
-            if (!exitCalled) {
+            if (!exitCalled()) {
                 DumpDebugState.dumpDebugState();
 
                 log.info("No ready threads - pausing emulator. caller:" + getCallingFunction());
