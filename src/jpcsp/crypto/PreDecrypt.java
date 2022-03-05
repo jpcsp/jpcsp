@@ -22,6 +22,8 @@ import static java.lang.Character.isWhitespace;
 import static java.lang.Integer.parseInt;
 import static jpcsp.util.Constants.charset;
 import static jpcsp.util.Utilities.add;
+import static libkirk.KirkEngine.KIRK_CMD_DECRYPT_SIGN;
+import static libkirk.KirkEngine.KIRK_CMD_ENCRYPT_SIGN;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
@@ -42,6 +44,7 @@ import org.xml.sax.SAXException;
 
 import jpcsp.HLE.Modules;
 import jpcsp.util.Utilities;
+import libkirk.KirkEngine;
 
 /**
  * List of values that can't be decrypted on Jpcsp due to missing keys.
@@ -319,6 +322,11 @@ public class PreDecrypt {
 	}
 
 	private static boolean isUseless(byte[] input, byte[] output, int cmd) {
+		if (cmd == KIRK_CMD_ENCRYPT_SIGN || cmd == KIRK_CMD_DECRYPT_SIGN) {
+			// Kirk commands 2 and 3 are unimplemented, do try to call them
+			return false;
+		}
+
 		ByteBuffer inBuffer = ByteBuffer.wrap(input).order(ByteOrder.LITTLE_ENDIAN);
 		byte[] kirkOutput = new byte[output.length];
 		ByteBuffer outBuffer = ByteBuffer.wrap(kirkOutput).order(ByteOrder.LITTLE_ENDIAN);
