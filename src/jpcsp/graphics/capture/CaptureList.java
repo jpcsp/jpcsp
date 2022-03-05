@@ -22,6 +22,7 @@ import java.io.IOException;
 
 import org.apache.log4j.Logger;
 
+import jpcsp.Memory;
 import jpcsp.HLE.kernel.types.PspGeList;
 import jpcsp.graphics.VideoEngine;
 
@@ -38,12 +39,12 @@ public class CaptureList {
     private CaptureList() {
     }
 
-    public CaptureList(PspGeList list) throws IOException {
+    public CaptureList(Memory mem, PspGeList list) throws IOException {
     	this.list = new PspGeList(list.id);
     	this.list.init(list.list_addr, list.getStallAddr(), list.cbid, list.optParams);
 
     	int length = CaptureManager.getListCmdsLength(list.list_addr, list.getStallAddr());
-        listBuffer = new CaptureRAM(list.list_addr, length);
+        listBuffer = new CaptureRAM(mem, list.list_addr, length);
     }
 
     public void write(DataOutputStream out) throws IOException {
@@ -77,7 +78,7 @@ public class CaptureList {
             CaptureHeader header = CaptureHeader.read(in);
             int packetType = header.getPacketType();
             if (packetType != CaptureHeader.PACKET_TYPE_RAM) {
-                throw new IOException("Expected CaptureRAM(" + CaptureHeader.PACKET_TYPE_RAM + ") packet, found " + packetType);
+                throw new IOException(String.format("Expected CaptureRAM(%d) packet, found %d", CaptureHeader.PACKET_TYPE_RAM, packetType));
             }
             list.listBuffer = CaptureRAM.read(in);
         } else {
@@ -87,8 +88,8 @@ public class CaptureList {
         return list;
     }
 
-    public void commit() {
+    public void commit(Memory mem) {
         VideoEngine.getInstance().pushDrawList(list);
-        listBuffer.commit();
+        listBuffer.commit(mem);
     }
 }

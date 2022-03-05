@@ -72,7 +72,7 @@ public class CaptureManager {
     private static HashSet<Integer> capturedImages;
     private static Map<Integer, Integer> capturedAddresses;
 
-    public static void startReplay(String filename) {
+    public static void startReplay(Memory mem, String filename) {
         if (captureInProgress) {
             log.error("Ignoring startReplay, capture is in progress");
             return;
@@ -105,12 +105,12 @@ public class CaptureManager {
                 switch(packetType) {
                     case CaptureHeader.PACKET_TYPE_LIST:
                         CaptureList list = CaptureList.read(in);
-                        list.commit();
+                        list.commit(mem);
                         break;
 
                     case CaptureHeader.PACKET_TYPE_RAM:
                         CaptureRAM ramFragment = CaptureRAM.read(in);
-                        ramFragment.commit();
+                        ramFragment.commit(mem);
                         break;
 
                     case CaptureHeader.PACKET_TYPE_FRAMEBUF_DETAILS:
@@ -138,7 +138,7 @@ public class CaptureManager {
         Emulator.PauseEmu();
     }
 
-    public static void startCapture(String filename, PspGeList list) {
+    public static void startCapture(Memory mem, String filename, PspGeList list) {
         if (captureInProgress) {
             log.error("Ignoring startCapture, capture is already in progress");
             return;
@@ -161,7 +161,7 @@ public class CaptureManager {
             // write command buffer
             CaptureHeader header = new CaptureHeader(CaptureHeader.PACKET_TYPE_LIST);
             header.write(out);
-            CaptureList commandList = new CaptureList(list);
+            CaptureList commandList = new CaptureList(mem, list);
             commandList.write(out);
 
             captureInProgress = true;
@@ -218,11 +218,11 @@ public class CaptureManager {
     	return length;
     }
 
-    public static void captureList(PspGeList list) {
-    	captureList(list.getPc(), list.getStallAddr());
+    public static void captureList(Memory mem, PspGeList list) {
+    	captureList(mem, list.getPc(), list.getStallAddr());
     }
 
-    public static void captureList(int address, int stall) {
+    public static void captureList(Memory mem, int address, int stall) {
         if (!captureInProgress) {
             log.warn("Ignoring captureList, capture hasn't been started");
             return;
@@ -232,7 +232,7 @@ public class CaptureManager {
         if (log.isDebugEnabled()) {
         	log.debug(String.format("captureList pc=0x%08X, stall=0x%08X, length=0x%X", address, stall, length));
         }
-    	captureRAM(address, length);
+    	captureRAM(mem, address, length);
     }
 
     private static boolean isAlreadyCaptured(int address, int length) {
@@ -240,7 +240,7 @@ public class CaptureManager {
         return capturedLength != null && capturedLength.intValue() >= length;
     }
 
-    public static void captureRAM(int address, int length) {
+    public static void captureRAM(Memory mem, int address, int length) {
         if (!captureInProgress) {
             log.warn("Ignoring captureRAM, capture hasn't been started");
             return;
@@ -266,7 +266,7 @@ public class CaptureManager {
             CaptureHeader header = new CaptureHeader(CaptureHeader.PACKET_TYPE_RAM);
             header.write(out);
 
-            CaptureRAM captureRAM = new CaptureRAM(address, length);
+            CaptureRAM captureRAM = new CaptureRAM(mem, address, length);
             captureRAM.write(out);
 
             capturedAddresses.put(address, length);

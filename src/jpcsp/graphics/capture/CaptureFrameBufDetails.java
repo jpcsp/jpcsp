@@ -26,7 +26,7 @@ import jpcsp.HLE.modules.sceDisplay;
 /** captures sceDisplaySetFrameBuf */
 public class CaptureFrameBufDetails {
 
-    private static final int packetSize = 4 * 4;
+    private static final int packetSize = 16;
     private int topaddrFb;
     private int bufferwidthFb;
     private int pixelformatFb;

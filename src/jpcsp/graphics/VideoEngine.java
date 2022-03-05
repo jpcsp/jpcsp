@@ -193,6 +193,7 @@ public class VideoEngine {
     public static final int maxDrawingWidth = Screen.width;
     public static final int maxDrawingHeight = Screen.height;
     private static VideoEngine instance;
+    private Memory mem;
     private sceDisplay display;
     private IRenderingEngine re;
     private GeContext context;
@@ -495,7 +496,7 @@ public class VideoEngine {
     public void onStallAddrUpdated(PspGeList list, int oldStallAddr) {
         if (State.captureGeNextFrame) {
             log.info("Capture List after update stall address");
-            CaptureManager.captureList(oldStallAddr, list.getStallAddr());
+            CaptureManager.captureList(mem, oldStallAddr, list.getStallAddr());
         }
     }
 
@@ -747,12 +748,12 @@ public class VideoEngine {
         startUpdate();
 
         if (State.captureGeNextFrame) {
-            CaptureManager.startCapture("capture.bin", currentList);
+            CaptureManager.startCapture(mem, "capture.bin", currentList);
         }
 
         if (State.replayGeNextFrame) {
             // Load the replay list into drawListQueue
-            CaptureManager.startReplay("capture.bin");
+            CaptureManager.startReplay(mem, "capture.bin");
 
             // Hijack the current list with the replay list
             // TODO this is assuming there is only 1 list in drawListQueue at this point, only the last list is the replay list
@@ -842,6 +843,7 @@ public class VideoEngine {
 
         statistics.start();
 
+        mem = Memory.getInstance();
         logLevelUpdated();
         isGeProfilerEnabled = GEProfiler.isProfilerEnabled();
         memoryForGEUpdated();
@@ -1002,7 +1004,6 @@ public class VideoEngine {
     }
 
     private void checkCurrentListPc() {
-        Memory mem = Memory.getInstance();
         while (!Memory.isAddressGood(currentList.getPc())) {
             if (!mem.isIgnoreInvalidMemoryAccess()) {
                 error("Reading GE list from invalid address 0x" + Integer.toHexString(currentList.getPc()));
@@ -1330,7 +1331,7 @@ public class VideoEngine {
         if (clutIsDirty) {
             int clutNumEntries = context.tex_clut_num_blocks << 4;
             int clutOffset = context.tex_clut_start << 4;
-            IMemoryReader memoryReader = MemoryReader.getMemoryReader(getClutAddr(level, clutNumEntries, 2), (clutNumEntries - clutOffset) << 1, 2);
+            IMemoryReader memoryReader = MemoryReader.getMemoryReader(mem, getClutAddr(level, clutNumEntries, 2), (clutNumEntries - clutOffset) << 1, 2);
             for (int i = clutOffset; i < clutNumEntries; i++) {
                 clut_buffer16[i] = (short) memoryReader.readNext();
             }
@@ -1339,7 +1340,7 @@ public class VideoEngine {
 
         if (State.captureGeNextFrame) {
             log.info("Capture readClut16");
-            CaptureManager.captureRAM(context.tex_clut_addr, context.tex_clut_num_blocks * 32);
+            CaptureManager.captureRAM(mem, context.tex_clut_addr, context.tex_clut_num_blocks * 32);
         }
 
         return clut_buffer16;
@@ -1351,7 +1352,7 @@ public class VideoEngine {
         if (clutIsDirty) {
             int clutNumEntries = context.tex_clut_num_blocks << 3;
             int clutOffset = context.tex_clut_start << 4;
-            IMemoryReader memoryReader = MemoryReader.getMemoryReader(getClutAddr(level, clutNumEntries, 4), (clutNumEntries - clutOffset) << 2, 4);
+            IMemoryReader memoryReader = MemoryReader.getMemoryReader(mem, getClutAddr(level, clutNumEntries, 4), (clutNumEntries - clutOffset) << 2, 4);
             for (int i = clutOffset; i < clutNumEntries; i++) {
                 clut_buffer32[i] = memoryReader.readNext();
             }
@@ -1360,7 +1361,7 @@ public class VideoEngine {
 
         if (State.captureGeNextFrame) {
             log.info("Capture readClut32");
-            CaptureManager.captureRAM(context.tex_clut_addr, context.tex_clut_num_blocks * 32);
+            CaptureManager.captureRAM(mem, context.tex_clut_addr, context.tex_clut_num_blocks * 32);
         }
 
         return clut_buffer32;
@@ -1379,7 +1380,7 @@ public class VideoEngine {
 
         int ydest = 0;
 
-        IMemoryReader memoryReader = MemoryReader.getMemoryReader(texaddr, 4);
+        IMemoryReader memoryReader = MemoryReader.getMemoryReader(mem, texaddr, 4);
         for (int by = 0; by < byc; by++) {
             if (rowWidth >= 16) {
                 int xdest = ydest;
@@ -1432,7 +1433,7 @@ public class VideoEngine {
 
         if (State.captureGeNextFrame) {
             log.info("Capture unswizzleTextureFromMemory");
-            CaptureManager.captureRAM(texaddr, rowWidth * context.texture_height[level]);
+            CaptureManager.captureRAM(mem, texaddr, rowWidth * context.texture_height[level]);
         }
 
         return IntBuffer.wrap(tmp_texture_buffer32);
@@ -2306,7 +2307,7 @@ public class VideoEngine {
         int indexBufferSize = numberOfVertex * bytesPerIndex;
         boolean sequence = true;
         int previousIndex = -1;
-        IMemoryReader memoryReader = MemoryReader.getMemoryReader(context.vinfo.ptr_index, indexBufferSize, bytesPerIndex);
+        IMemoryReader memoryReader = MemoryReader.getMemoryReader(mem, context.vinfo.ptr_index, indexBufferSize, bytesPerIndex);
         for (int i = 0; i < numberOfVertex; i++) {
             int index = memoryReader.readNext();
             maxIndex = max(maxIndex, index);
@@ -2501,7 +2502,6 @@ public class VideoEngine {
             }
         }
 
-        Memory mem = Memory.getInstance();
         initRendering();
 
         int nTexCoord = 2;
@@ -3182,7 +3182,7 @@ public class VideoEngine {
 
         if (State.captureGeNextFrame) {
             log.info("Capture PRIM");
-            CaptureManager.captureRAM(context.vinfo.ptr_vertex, context.vinfo.vertexSize * numberOfVertex);
+            CaptureManager.captureRAM(mem, context.vinfo.ptr_vertex, context.vinfo.vertexSize * numberOfVertex);
             display.captureGeImage();
             textureChanged = true;
         }
@@ -3206,7 +3206,6 @@ public class VideoEngine {
 
         exporter.startPrimitive(numberOfVertex, type);
 
-        Memory mem = Memory.getInstance();
         final float[] position = new float[4];
         final float[] modelViewMatrix = new float[4 * 4];
         final float[] vertexPosition = new float[4];
@@ -3439,7 +3438,6 @@ public class VideoEngine {
 
             int srcAddress = context.textureTx_sourceAddress + (context.textureTx_sy * context.textureTx_sourceLineWidth + context.textureTx_sx) * bpp;
             int dstAddress = context.textureTx_destinationAddress + (context.textureTx_dy * context.textureTx_destinationLineWidth + context.textureTx_dx) * bpp;
-            Memory memory = Memory.getInstance();
             if (context.textureTx_sourceLineWidth == width && context.textureTx_destinationLineWidth == width) {
                 // All the lines are adjacent in memory,
                 // copy them all in a single memcpy operation.
@@ -3447,7 +3445,7 @@ public class VideoEngine {
                 if (isLogDebugEnabled) {
                     log(String.format("%s memcpy(0x%08X-0x%08X, 0x%08X, 0x%X)", helper.getCommandString(TRXKICK), dstAddress, dstAddress + copyLength, srcAddress, copyLength));
                 }
-                memory.memcpy(dstAddress, srcAddress, copyLength);
+                mem.memcpy(dstAddress, srcAddress, copyLength);
             } else {
                 // The lines are not adjacent in memory: copy line by line.
                 int copyLength = width * bpp;
@@ -3457,7 +3455,7 @@ public class VideoEngine {
                     if (isLogDebugEnabled) {
                         log(String.format("%s memcpy(0x%08X-0x%08X, 0x%08X, 0x%X)", helper.getCommandString(TRXKICK), dstAddress, dstAddress + copyLength, srcAddress, copyLength));
                     }
-                    memory.memcpy(dstAddress, srcAddress, copyLength);
+                    mem.memcpy(dstAddress, srcAddress, copyLength);
                     srcAddress += srcLineLength;
                     dstAddress += dstLineLength;
                 }
@@ -3488,11 +3486,11 @@ public class VideoEngine {
             int bufferHeight = Utilities.makePow2(height);
             int textureSize = lineWidth * bufferHeight * bpp;
             int sourceAddr = context.textureTx_sourceAddress + (context.textureTx_sy * lineWidth + context.textureTx_sx) * bpp;
-            Buffer buffer = Memory.getInstance().getBuffer(sourceAddr, textureSize);
+            Buffer buffer = mem.getBuffer(sourceAddr, textureSize);
 
             if (State.captureGeNextFrame) {
                 log.info("Capture TRXKICK");
-                CaptureManager.captureRAM(context.textureTx_sourceAddress, lineWidth * height * bpp);
+                CaptureManager.captureRAM(mem, context.textureTx_sourceAddress, lineWidth * height * bpp);
             }
 
             //
@@ -3579,7 +3577,6 @@ public class VideoEngine {
     }
 
     private void executeCommandBBOX() {
-        Memory mem = Memory.getInstance();
         int numberOfVertexBoundingBox = normalArgument & 0xFF;
 
         if (context.vinfo.ptr_vertex == 0) {
@@ -3638,7 +3635,7 @@ public class VideoEngine {
 
         if (State.captureGeNextFrame) {
             log.info("Capture BBOX");
-            CaptureManager.captureRAM(context.vinfo.ptr_vertex, context.vinfo.vertexSize * numberOfVertexBoundingBox);
+            CaptureManager.captureRAM(mem, context.vinfo.ptr_vertex, context.vinfo.vertexSize * numberOfVertexBoundingBox);
         }
 
         endRendering(numberOfVertexBoundingBox);
@@ -3670,7 +3667,7 @@ public class VideoEngine {
 
             if (State.captureGeNextFrame) {
                 log.info("Capture List after taking BJUMP");
-                CaptureManager.captureList(currentList);
+                CaptureManager.captureList(mem, currentList);
             }
         } else {
             if (isLogDebugEnabled) {
@@ -3680,7 +3677,7 @@ public class VideoEngine {
             if (State.captureGeNextFrame) {
                 log.info("Capture List after not taking BJUMP");
                 int jumpPc = currentList.getAddressRelOffset(normalArgument);
-                CaptureManager.captureList(jumpPc, currentList.getStallAddr());
+                CaptureManager.captureList(mem, jumpPc, currentList.getStallAddr());
             }
         }
     }
@@ -3811,7 +3808,7 @@ public class VideoEngine {
 
         if (State.captureGeNextFrame) {
             log.info("Capture List after JUMP");
-            CaptureManager.captureList(currentList);
+            CaptureManager.captureList(mem, currentList);
         }
     }
 
@@ -3859,7 +3856,7 @@ public class VideoEngine {
 
         if (State.captureGeNextFrame) {
             log.info("Capture List after CALL");
-            CaptureManager.captureList(currentList);
+            CaptureManager.captureList(mem, currentList);
         }
     }
 
@@ -3886,7 +3883,7 @@ public class VideoEngine {
 
         if (State.captureGeNextFrame) {
             log.info("Capture List after RET");
-            CaptureManager.captureList(currentList);
+            CaptureManager.captureList(mem, currentList);
         }
     }
 
@@ -6159,7 +6156,7 @@ public class VideoEngine {
 
                             if (!context.texture_swizzle) {
                                 int length = Math.max(textureBufferWidthInPixels, context.texture_width[level]) * context.texture_height[level];
-                                IMemoryReader memoryReader = MemoryReader.getMemoryReader(texaddr, length / 2, 1);
+                                IMemoryReader memoryReader = MemoryReader.getMemoryReader(mem, texaddr, length / 2, 1);
                                 for (int i = 0; i < length; i += 2) {
                                     int index = memoryReader.readNext();
 
@@ -6170,7 +6167,7 @@ public class VideoEngine {
 
                                 if (State.captureGeNextFrame) {
                                     log.info("Capture loadTexture clut 4/16 unswizzled");
-                                    CaptureManager.captureRAM(texaddr, length / 2);
+                                    CaptureManager.captureRAM(mem, texaddr, length / 2);
                                 }
                             } else {
                                 unswizzleTextureFromMemory(texaddr, 0, level, textureBufferWidthInPixels);
@@ -6207,7 +6204,7 @@ public class VideoEngine {
 
                             if (!context.texture_swizzle) {
                                 int length = Math.max(textureBufferWidthInPixels, context.texture_width[level]) * context.texture_height[level];
-                                IMemoryReader memoryReader = MemoryReader.getMemoryReader(texaddr, length / 2, 1);
+                                IMemoryReader memoryReader = MemoryReader.getMemoryReader(mem, texaddr, length / 2, 1);
                                 for (int i = 0; i < length; i += 2) {
                                     int index = memoryReader.readNext();
 
@@ -6218,7 +6215,7 @@ public class VideoEngine {
 
                                 if (State.captureGeNextFrame) {
                                     log.info("Capture loadTexture clut 4/32 unswizzled");
-                                    CaptureManager.captureRAM(texaddr, length / 2);
+                                    CaptureManager.captureRAM(mem, texaddr, length / 2);
                                 }
                             } else {
                                 unswizzleTextureFromMemory(texaddr, 0, level, textureBufferWidthInPixels);
@@ -6296,9 +6293,9 @@ public class VideoEngine {
 
                     if (!context.texture_swizzle) {
                         int length = Math.max(textureBufferWidthInPixels, context.texture_width[level]) * context.texture_height[level];
-                        final_buffer = Memory.getInstance().getBuffer(texaddr, length * 2);
+                        final_buffer = mem.getBuffer(texaddr, length * 2);
                         if (final_buffer == null) {
-                            IMemoryReader memoryReader = MemoryReader.getMemoryReader(texaddr, length * 2, 2);
+                            IMemoryReader memoryReader = MemoryReader.getMemoryReader(mem, texaddr, length * 2, 2);
                             for (int i = 0; i < length; i++) {
                                 int pixel = memoryReader.readNext();
                                 tmp_texture_buffer16[i] = (short) pixel;
@@ -6309,7 +6306,7 @@ public class VideoEngine {
 
                         if (State.captureGeNextFrame) {
                             log.info("Capture loadTexture 16 unswizzled");
-                            CaptureManager.captureRAM(texaddr, length * 2);
+                            CaptureManager.captureRAM(mem, texaddr, length * 2);
                         }
                     } else {
                         final_buffer = unswizzleTextureFromMemory(texaddr, 2, level, textureBufferWidthInPixels);
@@ -6329,7 +6326,7 @@ public class VideoEngine {
                     }
                     compressedTexture = true;
                     compressedTextureSize = getCompressedTextureSize(level, 8);
-                    IMemoryReader memoryReader = MemoryReader.getMemoryReader(texaddr, compressedTextureSize, 4);
+                    IMemoryReader memoryReader = MemoryReader.getMemoryReader(mem, texaddr, compressedTextureSize, 4);
                     // PSP DXT1 hardware format reverses the colors and the per-pixel
                     // bits, and encodes the color in RGB 565 format
                     int i = 0;
@@ -6360,7 +6357,7 @@ public class VideoEngine {
                     }
                     compressedTexture = true;
                     compressedTextureSize = getCompressedTextureSize(level, 4);
-                    IMemoryReader memoryReader = MemoryReader.getMemoryReader(texaddr, compressedTextureSize, 4);
+                    IMemoryReader memoryReader = MemoryReader.getMemoryReader(mem, texaddr, compressedTextureSize, 4);
                     // PSP DXT3 format reverses the alpha and color parts of each block,
                     // and reverses the color and per-pixel terms in the color part.
                     int i = 0;
@@ -6397,7 +6394,7 @@ public class VideoEngine {
                     }
                     compressedTexture = true;
                     compressedTextureSize = getCompressedTextureSize(level, 4);
-                    IMemoryReader memoryReader = MemoryReader.getMemoryReader(texaddr, compressedTextureSize, 2);
+                    IMemoryReader memoryReader = MemoryReader.getMemoryReader(mem, texaddr, compressedTextureSize, 2);
                     // PSP DXT5 format reverses the alpha and color parts of each block,
                     // and reverses the color and per-pixel terms in the color part. In
                     // the alpha part, the 2 reference alpha values are swapped with the
@@ -6705,7 +6702,7 @@ public class VideoEngine {
                 short[] clut = readClut16(level);
 
                 if (!context.texture_swizzle) {
-                    IMemoryReader memoryReader = MemoryReader.getMemoryReader(texaddr, length * bytesPerIndex, bytesPerIndex);
+                    IMemoryReader memoryReader = MemoryReader.getMemoryReader(mem, texaddr, length * bytesPerIndex, bytesPerIndex);
                     for (int i = 0; i < length; i++) {
                         int index = memoryReader.readNext();
                         tmp_texture_buffer16[i] = clut[getClutIndex(index)];
@@ -6714,7 +6711,7 @@ public class VideoEngine {
 
                     if (State.captureGeNextFrame) {
                         log.info("Capture loadTexture clut 8/16 unswizzled");
-                        CaptureManager.captureRAM(texaddr, length * bytesPerIndex);
+                        CaptureManager.captureRAM(mem, texaddr, length * bytesPerIndex);
                     }
                 } else {
                     unswizzleTextureFromMemory(texaddr, bytesPerIndex, level, textureBufferWidthInPixels);
@@ -6763,7 +6760,7 @@ public class VideoEngine {
                 int[] clut = readClut32(level);
 
                 if (!context.texture_swizzle) {
-                    IMemoryReader memoryReader = MemoryReader.getMemoryReader(texaddr, length * bytesPerIndex, bytesPerIndex);
+                    IMemoryReader memoryReader = MemoryReader.getMemoryReader(mem, texaddr, length * bytesPerIndex, bytesPerIndex);
                     for (int i = 0; i < length; i++) {
                         int index = memoryReader.readNext();
                         tmp_texture_buffer32[i] = clut[getClutIndex(index)];
@@ -6772,7 +6769,7 @@ public class VideoEngine {
 
                     if (State.captureGeNextFrame) {
                         log.info("Capture loadTexture clut 8/32 unswizzled");
-                        CaptureManager.captureRAM(texaddr, length * bytesPerIndex);
+                        CaptureManager.captureRAM(mem, texaddr, length * bytesPerIndex);
                     }
                 } else {
                     unswizzleTextureFromMemory(texaddr, bytesPerIndex, level, textureBufferWidthInPixels);
@@ -7226,7 +7223,7 @@ public class VideoEngine {
         // (IADDR when indexed and VADDR when not).
         // Some games rely on this and don't reload VADDR/IADDR between 2 PRIM/BBOX calls.
         if (context.vinfo.index == 0) {
-            context.vinfo.ptr_vertex = context.vinfo.getAddress(Memory.getInstance(), numberOfVertex);
+            context.vinfo.ptr_vertex = context.vinfo.getAddress(mem, numberOfVertex);
         } else {
             context.vinfo.ptr_index += numberOfVertex * context.vinfo.index;
         }
@@ -7303,7 +7300,7 @@ public class VideoEngine {
 
         if (State.captureGeNextFrame) {
             log.info("Capture drawSpline");
-            CaptureManager.captureRAM(context.vinfo.ptr_vertex, context.vinfo.vertexSize * ucount * vcount);
+            CaptureManager.captureRAM(mem, context.vinfo.ptr_vertex, context.vinfo.vertexSize * ucount * vcount);
         }
 
         VertexInfo cachedVertexInfo = null;
@@ -7401,7 +7398,7 @@ public class VideoEngine {
 
         if (State.captureGeNextFrame) {
             log.info("Capture drawBezier");
-            CaptureManager.captureRAM(context.vinfo.ptr_vertex, context.vinfo.vertexSize * ucount * vcount);
+            CaptureManager.captureRAM(mem, context.vinfo.ptr_vertex, context.vinfo.vertexSize * ucount * vcount);
         }
 
         VertexInfo cachedVertexInfo = null;
@@ -7642,7 +7639,6 @@ public class VideoEngine {
         VertexState[][] controlPoints = new VertexState[ucount][vcount];
 
         boolean readTexture = context.textureFlag.isEnabled();
-        Memory mem = Memory.getInstance();
         for (int cu = 0; cu < ucount; cu++) {
             for (int cv = 0; cv < vcount; cv++) {
                 int addr = context.vinfo.getAddress(mem, cv * ucount + cu);
@@ -7678,11 +7674,11 @@ public class VideoEngine {
         if (!context.texture_swizzle) {
             // texture_width might be larger than texture_buffer_width
             int bufferlen = Math.max(textureBufferWidthInPixels, context.texture_width[level]) * context.texture_height[level] * bytesPerPixel;
-            final_buffer = Memory.getInstance().getBuffer(texaddr, bufferlen);
+            final_buffer = mem.getBuffer(texaddr, bufferlen);
 
             if (State.captureGeNextFrame) {
                 log.info("Capture getTextureBuffer unswizzled");
-                CaptureManager.captureRAM(texaddr, bufferlen);
+                CaptureManager.captureRAM(mem, texaddr, bufferlen);
             }
         } else {
             final_buffer = unswizzleTextureFromMemory(texaddr, bytesPerPixel, level, textureBufferWidthInPixels);
@@ -7758,7 +7754,7 @@ public class VideoEngine {
         re.setPixelStore(depthWidth, 2);
     	re.readDepth(0, 0, depthWidth, depthHeight, depthBufferSize, tempByteBuffer);
         tempByteBuffer.rewind();
-    	IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(address, depthBufferSize, 2);
+    	IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(mem, address, depthBufferSize, 2);
         for (int y = 0; y < depthHeight; y++) {
             // The depth buffer is stored upside-down by OpenGL
             tempByteBuffer.position((depthHeight - y - 1) * depthWidth * 2);
@@ -7835,11 +7831,11 @@ public class VideoEngine {
     }
 
     private void saveContext(int addr) {
-        context.write(Memory.getInstance(), addr);
+        context.write(mem, addr);
     }
 
     private void restoreContext(int addr) {
-        context.read(Memory.getInstance(), addr);
+        context.read(mem, addr);
         context.setDirty();
 
         projectionMatrixUpload.setChanged(true);
