@@ -59,6 +59,8 @@ public class State extends jpcsp.HLE.Modules {
     public static boolean replayGeNextFrame;
     public static boolean exportGeNextFrame;
     public static boolean exportGeOnlyVisibleElements;
+    public static boolean recordGeFrames;
+    public static boolean stopRecordGeFrames;
 
     static {
         memory = Memory.getInstance();

@@ -138,7 +138,7 @@ public class CaptureManager {
         Emulator.PauseEmu();
     }
 
-    public static void startCapture(Memory mem, String filename, PspGeList list) {
+    public static void startCapture(Memory mem, String filename, PspGeList list, boolean setTraceLevel) {
         if (captureInProgress) {
             log.error("Ignoring startCapture, capture is already in progress");
             return;
@@ -146,17 +146,39 @@ public class CaptureManager {
 
         // Set the VideoEngine log level to TRACE when capturing,
         // the information in the log file is also interesting
-        logLevel = log.getLevel();
-        VideoEngine.getInstance().setLogLevel(Level.TRACE);
+        if (setTraceLevel) {
+	        logLevel = log.getLevel();
+	        VideoEngine.getInstance().setLogLevel(Level.TRACE);
+        } else {
+        	logLevel = null;
+        }
         capturedImages = new HashSet<Integer>();
         capturedAddresses = new HashMap<Integer, Integer>();
 
         try {
-            log.info(String.format("Starting capture... (list=0x%X)", list.id));
+            log.info(String.format("Starting capture to '%s'...", filename));
             out = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(filename)));
 
             out.writeInt(MAGIC);
             out.writeInt(CURRENT_VERSION);
+
+            startListCapture(mem, list);
+
+            captureInProgress = true;
+        } catch(IOException e) {
+            log.error("Failed to start capture", e);
+            Emulator.PauseEmu();
+        }
+    }
+
+    public static void startListCapture(Memory mem, PspGeList list) {
+        capturedImages = new HashSet<Integer>();
+        capturedAddresses = new HashMap<Integer, Integer>();
+
+        try {
+        	if (log.isDebugEnabled()) {
+        		log.debug(String.format("Starting list capture 0x%X", list.id));
+        	}
 
             // write command buffer
             CaptureHeader header = new CaptureHeader(CaptureHeader.PACKET_TYPE_LIST);
@@ -164,18 +186,16 @@ public class CaptureManager {
             CaptureList commandList = new CaptureList(mem, list);
             commandList.write(out);
 
-            captureInProgress = true;
             listExecuted = false;
         } catch(IOException e) {
-            log.error("Failed to start capture", e);
+            log.error("Failed to start list capture", e);
             Emulator.PauseEmu();
         }
     }
 
     public static void endCapture() {
         if (!captureInProgress) {
-            log.warn("Ignoring endCapture, capture hasn't been started");
-            Emulator.PauseEmu();
+            log.error("Ignoring endCapture, capture hasn't been started");
             return;
         }
 
@@ -193,8 +213,10 @@ public class CaptureManager {
         captureInProgress = false;
 
         log.info("Capture completed");
-        log.setLevel(logLevel);
-        Emulator.PauseEmu();
+        if (logLevel != null) {
+        	log.setLevel(logLevel);
+        	logLevel = null;
+        }
     }
 
     protected static int getListCmdsLength(int address, int stall) {
@@ -224,7 +246,6 @@ public class CaptureManager {
 
     public static void captureList(Memory mem, int address, int stall) {
         if (!captureInProgress) {
-            log.warn("Ignoring captureList, capture hasn't been started");
             return;
         }
 
@@ -242,7 +263,6 @@ public class CaptureManager {
 
     public static void captureRAM(Memory mem, int address, int length) {
         if (!captureInProgress) {
-            log.warn("Ignoring captureRAM, capture hasn't been started");
             return;
         }
 
@@ -299,7 +319,6 @@ public class CaptureManager {
 
     public static void captureFrameBufDetails() {
         if (!captureInProgress) {
-            log.warn("Ignoring captureFrameBufDetails, capture hasn't been started");
             return;
         }
 

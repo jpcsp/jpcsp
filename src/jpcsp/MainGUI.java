@@ -401,6 +401,8 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         ClearTextureCache = new javax.swing.JMenuItem();
         ClearVertexCache = new javax.swing.JMenuItem();
         ExportISOFile = new javax.swing.JMenuItem();
+        StartGERecording = new javax.swing.JMenuItem();
+        StopGERecording = new javax.swing.JMenuItem();
         CheatsMenu = new javax.swing.JMenu();
         cwcheat = new javax.swing.JMenuItem();
         LanguageMenu = new javax.swing.JMenu();
@@ -962,6 +964,24 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
             }
         });
         DebugMenu.add(ExportISOFile);
+
+        StartGERecording.setText(bundle.getString("MainGUI.StartGERecording.text")); // NOI18N
+        StartGERecording.setEnabled(true);
+        StartGERecording.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+            	StartGERecordingActionPerformed(evt);
+            }
+        });
+        DebugMenu.add(StartGERecording);
+
+        StopGERecording.setText(bundle.getString("MainGUI.StopGERecording.text")); // NOI18N
+        StopGERecording.setEnabled(false);
+        StopGERecording.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+            	StopGERecordingActionPerformed(evt);
+            }
+        });
+        DebugMenu.add(StopGERecording);
 
         MenuBar.add(DebugMenu);
 
@@ -2583,6 +2603,16 @@ private void ExportISOFileActionPerformed(java.awt.event.ActionEvent evt) {//GEN
 
 }//GEN-LAST:event_ExportISOFileActionPerformed
 
+private void StartGERecordingActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_StartGERecordingActionPerformed
+		State.recordGeFrames = true;
+		RefreshButtons();
+}//GEN-LAST:event_StartGERecordingActionPerformed
+
+private void StopGERecordingActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_StopGERecordingActionPerformed
+		State.stopRecordGeFrames = true;
+		RefreshButtons();
+}//GEN-LAST:event_StopGERecordingActionPerformed
+
 private void ShotItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ShotItemActionPerformed
         if (umdvideoplayer != null) {
             umdvideoplayer.takeScreenshot();
@@ -2890,6 +2920,8 @@ private void threeTimesResizeActionPerformed(java.awt.event.ActionEvent evt) {//
     	RebootButton.setVisible(Modules.rebootModule.isAvailable());
         RunButton.setSelected(Emulator.run && !Emulator.pause);
         PauseButton.setSelected(Emulator.run && Emulator.pause);
+        StartGERecording.setEnabled(!State.recordGeFrames && !State.stopRecordGeFrames);
+    	StopGERecording.setEnabled(State.recordGeFrames && !State.stopRecordGeFrames);
     }
 
     @Override
@@ -3255,6 +3287,8 @@ private void threeTimesResizeActionPerformed(java.awt.event.ActionEvent evt) {//
     private javax.swing.JMenuItem ExitEmu;
     private javax.swing.JMenuItem ExportAllElements;
     private javax.swing.JMenuItem ExportISOFile;
+    private javax.swing.JMenuItem StartGERecording;
+    private javax.swing.JMenuItem StopGERecording;
     private javax.swing.JMenu ExportMenu;
     private javax.swing.JMenuItem ExportVisibleElements;
     private javax.swing.JCheckBoxMenuItem FPS10;

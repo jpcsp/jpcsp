@@ -1987,6 +1987,13 @@ public class sceDisplay extends HLEModule {
             State.captureGeNextFrame = false;
             CaptureManager.captureFrameBufDetails();
             CaptureManager.endCapture();
+            Emulator.PauseEmu();
+        } else if (State.stopRecordGeFrames && State.recordGeFrames && CaptureManager.hasListExecuted()) {
+            State.recordGeFrames = false;
+            State.stopRecordGeFrames = false;
+            CaptureManager.captureFrameBufDetails();
+            CaptureManager.endCapture();
+            Emulator.getMainGUI().RefreshButtons();
         }
 
         VideoEngine.getInstance().hleSetFrameBuf(fb.getTopAddr(), fb.getBufferWidth(), fb.getPixelFormat());
