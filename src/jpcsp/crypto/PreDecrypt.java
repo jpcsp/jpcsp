@@ -44,7 +44,6 @@ import org.xml.sax.SAXException;
 
 import jpcsp.HLE.Modules;
 import jpcsp.util.Utilities;
-import libkirk.KirkEngine;
 
 /**
  * List of values that can't be decrypted on Jpcsp due to missing keys.
