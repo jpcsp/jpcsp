@@ -2141,7 +2141,7 @@ public class Utilities {
     }
 
     public static String getFunctionNameByAddress(int address) {
-    	if ((address & Memory.addressMask) == 0) {
+    	if ((address & Memory.addressMask) == 0 || !Memory.isAddressGood(address)) {
     		return null;
     	}
 
