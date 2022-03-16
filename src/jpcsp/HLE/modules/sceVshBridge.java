@@ -18,8 +18,6 @@ package jpcsp.HLE.modules;
 
 import org.apache.log4j.Logger;
 
-import jpcsp.Emulator;
-import jpcsp.Allegrex.compiler.RuntimeContextLLE;
 import jpcsp.HLE.BufferInfo;
 import jpcsp.HLE.BufferInfo.LengthInfo;
 import jpcsp.HLE.BufferInfo.Usage;
@@ -31,7 +29,6 @@ import jpcsp.HLE.Modules;
 import jpcsp.HLE.PspString;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.TPointer32;
-import jpcsp.HLE.kernel.types.SceModule;
 import jpcsp.util.Utilities;
 
 public class sceVshBridge extends HLEModule {
