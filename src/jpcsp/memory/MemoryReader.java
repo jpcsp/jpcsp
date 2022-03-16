@@ -282,7 +282,7 @@ public class MemoryReader {
 
 		@Override
 		public final void skip(int n) {
-			if (n > 0) {
+			if (n != 0) {
 				index += n;
 				offset += index >> 2;
 				index &= 3;
@@ -330,7 +330,7 @@ public class MemoryReader {
 
 		@Override
 		public final void skip(int n) {
-			if (n > 0) {
+			if (n != 0) {
 				index += n;
 				offset += index >> 1;
 				index &= 1;
@@ -403,7 +403,7 @@ public class MemoryReader {
 
 		@Override
 		public final void skip(int n) {
-			if (n > 0) {
+			if (n != 0) {
 				index += n;
 				buffer.position(buffer.position() + (index >> 2));
 				index &= 3;
@@ -450,7 +450,7 @@ public class MemoryReader {
 
 		@Override
 		public final void skip(int n) {
-			if (n > 0) {
+			if (n != 0) {
 				index += n;
 				buffer.position(buffer.position() + (index >> 1));
 				index &= 1;
@@ -482,7 +482,7 @@ public class MemoryReader {
 
 		@Override
 		public final void skip(int n) {
-			if (n > 0) {
+			if (n != 0) {
 				buffer.position(buffer.position() + n);
 			}
 		}
@@ -509,7 +509,7 @@ public class MemoryReader {
 
 		@Override
 		public final void skip(int n) {
-			if (n > 0) {
+			if (n != 0) {
 				buffer.position(buffer.position() + n);
 			}
 		}
@@ -536,7 +536,7 @@ public class MemoryReader {
 
 		@Override
 		public final void skip(int n) {
-			if (n > 0) {
+			if (n != 0) {
 				buffer.position(buffer.position() + (n << 1));
 			}
 		}
@@ -563,7 +563,7 @@ public class MemoryReader {
 
 		@Override
 		public final void skip(int n) {
-			if (n > 0) {
+			if (n != 0) {
 				buffer.position(buffer.position() + (n << 2));
 			}
 		}

@@ -1145,8 +1145,8 @@ public class sceDisplay extends HLEModule {
         if (loadGEToScreen) {
             VideoEngineUtilities.loadGEToScreen(re);
 
-            if (State.captureGeNextFrame) {
-                captureGeImage();
+            if (State.dumpGeNextFrame) {
+                dumpGeImage();
             }
         }
 
@@ -1344,10 +1344,10 @@ public class sceDisplay extends HLEModule {
     	return temp;
     }
 
-    public void captureGeImage() {
+    public void dumpGeImage() {
         if (isUsingSoftwareRenderer()) {
             Buffer buffer = Memory.getInstance().getBuffer(ge.getTopAddr(), ge.getBufferWidth() * ge.getHeight() * getPixelFormatBytes(ge.getPixelFormat()));
-            CaptureManager.captureImage(ge.getTopAddr(), 0, buffer, ge.getWidth(), ge.getHeight(), ge.getBufferWidth(), ge.getPixelFormat(), false, 0, false, false);
+            CaptureManager.dumpImage(ge.getTopAddr(), 0, buffer, ge.getWidth(), ge.getHeight(), ge.getBufferWidth(), ge.getPixelFormat(), false, 0, false, false);
             return;
         }
 
@@ -1380,7 +1380,7 @@ public class sceDisplay extends HLEModule {
         re.getTexImage(0, texturePixelFormat, texturePixelFormat, temp);
 
         // Capture the GE image
-        CaptureManager.captureImage(ge.getTopAddr(), 0, temp, getResizedWidth(ge.getWidth()), getResizedHeight(ge.getHeight()), getResizedWidthPow2(ge.getBufferWidth()), texturePixelFormat, false, 0, true, false);
+        CaptureManager.dumpImage(ge.getTopAddr(), 0, temp, getResizedWidth(ge.getWidth()), getResizedHeight(ge.getHeight()), getResizedWidthPow2(ge.getBufferWidth()), texturePixelFormat, false, 0, true, false);
 
         // Delete the GE texture
         re.deleteTexture(texGe);
@@ -1492,7 +1492,7 @@ public class sceDisplay extends HLEModule {
         re.getTexImage(0, pixelFormat, pixelFormat, temp);
 
         // Capture the image
-        CaptureManager.captureImage(address, 0, temp, width, height, bufferWidth, pixelFormat, false, 0, true, false);
+        CaptureManager.dumpImage(address, 0, temp, width, height, bufferWidth, pixelFormat, false, 0, true, false);
     }
 
     public TextureSettings getTextureSettings(int textureId, int width, int height, IAction completedAction) {
@@ -1983,10 +1983,9 @@ public class sceDisplay extends HLEModule {
         detailsDirty = true;
         isFbShowing = true;
 
-        if (State.captureGeNextFrame && CaptureManager.hasListExecuted()) {
-            State.captureGeNextFrame = false;
-            CaptureManager.captureFrameBufDetails();
-            CaptureManager.endCapture();
+        if (State.dumpGeNextFrame && CaptureManager.hasListExecuted()) {
+        	VideoEngine.getInstance().endDumpFrame();
+            State.dumpGeNextFrame = false;
             Emulator.PauseEmu();
         } else if (State.stopRecordGeFrames && State.recordGeFrames && CaptureManager.hasListExecuted()) {
             State.recordGeFrames = false;

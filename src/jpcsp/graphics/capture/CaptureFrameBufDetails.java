@@ -25,8 +25,6 @@ import jpcsp.HLE.modules.sceDisplay;
 
 /** captures sceDisplaySetFrameBuf */
 public class CaptureFrameBufDetails {
-
-    private static final int packetSize = 16;
     private int topaddrFb;
     private int bufferwidthFb;
     private int pixelformatFb;
@@ -42,8 +40,7 @@ public class CaptureFrameBufDetails {
     }
 
     public void write(DataOutputStream out) throws IOException {
-    	out.writeInt(packetSize);
-
+    	out.writeInt(CaptureManager.PACKET_TYPE_GE_DETAILS);
     	out.writeInt(topaddrFb);
     	out.writeInt(bufferwidthFb);
     	out.writeInt(pixelformatFb);
@@ -53,17 +50,10 @@ public class CaptureFrameBufDetails {
     public static CaptureFrameBufDetails read(DataInputStream in) throws IOException {
         CaptureFrameBufDetails details = new CaptureFrameBufDetails();
 
-        int sizeRemaining = in.readInt();
-        if (sizeRemaining >= packetSize) {
-            details.topaddrFb = in.readInt(); sizeRemaining -= 4;
-            details.bufferwidthFb = in.readInt(); sizeRemaining -= 4;
-            details.pixelformatFb = in.readInt(); sizeRemaining -= 4;
-            details.sync = in.readInt(); sizeRemaining -= 4;
-
-            in.skipBytes(sizeRemaining);
-        } else {
-            throw new IOException("Not enough bytes remaining in stream");
-        }
+        details.topaddrFb = in.readInt();
+        details.bufferwidthFb = in.readInt();
+        details.pixelformatFb = in.readInt();
+        details.sync = in.readInt();
 
         return details;
     }

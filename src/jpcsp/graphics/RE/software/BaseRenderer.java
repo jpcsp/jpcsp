@@ -448,11 +448,11 @@ public abstract class BaseRenderer implements IRenderer {
 	}
 
 	protected void postRender() {
-        if (captureEachPrimitive && State.captureGeNextFrame) {
+        if (captureEachPrimitive && State.dumpGeNextFrame) {
         	// Capture the GE screen after each primitive
-        	Modules.sceDisplayModule.captureGeImage();
+        	Modules.sceDisplayModule.dumpGeImage();
         }
-        if (captureZbuffer && State.captureGeNextFrame) {
+        if (captureZbuffer && State.dumpGeNextFrame) {
         	captureZbufferImage();
         }
 	}
@@ -463,7 +463,7 @@ public abstract class BaseRenderer implements IRenderer {
 		int height = Modules.sceDisplayModule.getHeightFb();
 		int address = getTextureAddress(zbp, 0, 0, zbw, depthBufferPixelFormat);
 		Buffer buffer = Memory.getInstance().getBuffer(address, width * height * IRenderingEngine.sizeOfTextureType[depthBufferPixelFormat]);
-		CaptureManager.captureImage(address, 0, buffer, width, height, width, depthBufferPixelFormat, false, 0, false, false);
+		CaptureManager.dumpImage(address, 0, buffer, width, height, width, depthBufferPixelFormat, false, 0, false, false);
 	}
 
 	protected void statisticsFilters(int numberPixels) {

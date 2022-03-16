@@ -951,11 +951,9 @@
                           <Component id="txtSearch" alignment="0" max="32767" attributes="1"/>
                           <Component id="lblSearch" alignment="0" min="-2" max="-2" attributes="0"/>
                           <Component id="gpioLabel" alignment="0" min="-2" max="-2" attributes="0"/>
-                          <Component id="lblCaptureReplay" alignment="0" min="-2" max="-2" attributes="0"/>
                           <Component id="lblDumpState" alignment="0" min="-2" max="-2" attributes="0"/>
                           <Component id="btnDumpDebugState" alignment="0" max="32767" attributes="0"/>
-                          <Component id="btnCapture" alignment="0" max="32767" attributes="0"/>
-                          <Component id="btnReplay" max="32767" attributes="0"/>
+                          <Component id="btnDumpFrame" alignment="0" max="32767" attributes="0"/>
                           <Component id="prgBarSearch" max="32767" attributes="0"/>
                           <Component id="btnCancelSearch" max="32767" attributes="0"/>
                       </Group>
@@ -991,15 +989,11 @@
                                   <Component id="gpiButton7" alignment="2" min="-2" max="-2" attributes="0"/>
                                   <Component id="gpiButton8" alignment="2" min="-2" max="-2" attributes="0"/>
                               </Group>
-                              <EmptySpace type="unrelated" max="-2" attributes="0"/>
-                              <Component id="lblCaptureReplay" min="-2" max="-2" attributes="0"/>
                           </Group>
                           <Component id="gpoLabel8" min="-2" max="-2" attributes="0"/>
                       </Group>
                       <EmptySpace max="-2" attributes="0"/>
-                      <Component id="btnCapture" min="-2" max="-2" attributes="0"/>
-                      <EmptySpace max="-2" attributes="0"/>
-                      <Component id="btnReplay" min="-2" max="-2" attributes="0"/>
+                      <Component id="btnDumpFrame" min="-2" max="-2" attributes="0"/>
                       <EmptySpace type="unrelated" max="-2" attributes="0"/>
                       <Component id="lblDumpState" min="-2" max="-2" attributes="0"/>
                       <EmptySpace max="-2" attributes="0"/>
@@ -1201,31 +1195,14 @@
                 </Property>
               </Properties>
             </Component>
-            <Component class="javax.swing.JLabel" name="lblCaptureReplay">
+            <Component class="javax.swing.JToggleButton" name="btnDumpFrame">
               <Properties>
                 <Property name="text" type="java.lang.String" editor="org.netbeans.modules.i18n.form.FormI18nStringEditor">
-                  <ResourceString bundle="jpcsp/languages/jpcsp.properties" key="DisassemblerFrame.lblCaptureReplay.text" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
-                </Property>
-              </Properties>
-            </Component>
-            <Component class="javax.swing.JToggleButton" name="btnCapture">
-              <Properties>
-                <Property name="text" type="java.lang.String" editor="org.netbeans.modules.i18n.form.FormI18nStringEditor">
-                  <ResourceString bundle="jpcsp/languages/jpcsp.properties" key="DisassemblerFrame.btnCapture.text" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
+                  <ResourceString bundle="jpcsp/languages/jpcsp.properties" key="DisassemblerFrame.btnDumpFrame.text" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
                 </Property>
               </Properties>
               <Events>
-                <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="btnCaptureActionPerformed"/>
-              </Events>
-            </Component>
-            <Component class="javax.swing.JToggleButton" name="btnReplay">
-              <Properties>
-                <Property name="text" type="java.lang.String" editor="org.netbeans.modules.i18n.form.FormI18nStringEditor">
-                  <ResourceString bundle="jpcsp/languages/jpcsp.properties" key="DisassemblerFrame.btnReplay.text" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
-                </Property>
-              </Properties>
-              <Events>
-                <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="btnReplayActionPerformed"/>
+                <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="btnDumpFrameActionPerformed"/>
               </Events>
             </Component>
             <Component class="javax.swing.JLabel" name="lblDumpState">

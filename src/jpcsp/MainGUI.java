@@ -20,6 +20,7 @@ import static jpcsp.Allegrex.compiler.RuntimeContext.setLog4jMDC;
 import static jpcsp.graphics.VideoEngineUtilities.getResizedHeight;
 import static jpcsp.graphics.VideoEngineUtilities.getResizedWidth;
 import static jpcsp.graphics.VideoEngineUtilities.getViewportResizeScaleFactor;
+import static jpcsp.graphics.capture.CaptureManager.replayFileName;
 import static jpcsp.util.Utilities.pspifyFilename;
 
 import java.awt.*;
@@ -86,6 +87,7 @@ import jpcsp.format.PSF;
 import jpcsp.graphics.GEProfiler;
 import jpcsp.graphics.VideoEngine;
 import jpcsp.graphics.VideoEngineUtilities;
+import jpcsp.graphics.capture.CaptureManager;
 import jpcsp.hardware.Audio;
 import jpcsp.hardware.MemoryStick;
 import jpcsp.hardware.Screen;
@@ -403,6 +405,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         ExportISOFile = new javax.swing.JMenuItem();
         StartGERecording = new javax.swing.JMenuItem();
         StopGERecording = new javax.swing.JMenuItem();
+        ReplayGERecording = new javax.swing.JMenuItem();
         CheatsMenu = new javax.swing.JMenu();
         cwcheat = new javax.swing.JMenuItem();
         LanguageMenu = new javax.swing.JMenu();
@@ -982,6 +985,15 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
             }
         });
         DebugMenu.add(StopGERecording);
+
+        ReplayGERecording.setText(bundle.getString("MainGUI.ReplayGERecording.text")); // NOI18N
+        ReplayGERecording.setEnabled(false);
+        ReplayGERecording.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+            	ReplayGERecordingActionPerformed(evt);
+            }
+        });
+        DebugMenu.add(ReplayGERecording);
 
         MenuBar.add(DebugMenu);
 
@@ -2613,6 +2625,11 @@ private void StopGERecordingActionPerformed(java.awt.event.ActionEvent evt) {//G
 		RefreshButtons();
 }//GEN-LAST:event_StopGERecordingActionPerformed
 
+private void ReplayGERecordingActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ReplayGERecordingActionPerformed
+	State.replayGeFrames = CaptureManager.startRecordReplay(Memory.getInstance(), replayFileName);
+	RefreshButtons();
+}//GEN-LAST:event_ReplayGERecordingActionPerformed
+
 private void ShotItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ShotItemActionPerformed
         if (umdvideoplayer != null) {
             umdvideoplayer.takeScreenshot();
@@ -2893,8 +2910,13 @@ private void threeTimesResizeActionPerformed(java.awt.event.ActionEvent evt) {//
     }
 
     private void RunEmu() {
-        emulator.RunEmu();
-        Modules.sceDisplayModule.getCanvas().requestFocusInWindow();
+    	if (State.replayGeFrames) {
+    		State.replayGeFrames = CaptureManager.continueRecordReplay(Memory.getInstance());
+    		RefreshButtons();
+    	} else {
+    		emulator.RunEmu();
+            Modules.sceDisplayModule.getCanvas().requestFocusInWindow();
+    	}
     }
 
     private void TogglePauseEmu() {
@@ -2922,6 +2944,7 @@ private void threeTimesResizeActionPerformed(java.awt.event.ActionEvent evt) {//
         PauseButton.setSelected(Emulator.run && Emulator.pause);
         StartGERecording.setEnabled(!State.recordGeFrames && !State.stopRecordGeFrames);
     	StopGERecording.setEnabled(State.recordGeFrames && !State.stopRecordGeFrames);
+    	ReplayGERecording.setEnabled(!State.replayGeFrames && !State.recordGeFrames && !State.stopRecordGeFrames && new File(replayFileName).exists());
     }
 
     @Override
@@ -3289,6 +3312,7 @@ private void threeTimesResizeActionPerformed(java.awt.event.ActionEvent evt) {//
     private javax.swing.JMenuItem ExportISOFile;
     private javax.swing.JMenuItem StartGERecording;
     private javax.swing.JMenuItem StopGERecording;
+    private javax.swing.JMenuItem ReplayGERecording;
     private javax.swing.JMenu ExportMenu;
     private javax.swing.JMenuItem ExportVisibleElements;
     private javax.swing.JCheckBoxMenuItem FPS10;

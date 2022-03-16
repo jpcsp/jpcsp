@@ -143,22 +143,22 @@ public class PspGeList {
     	init();
     }
 
-    public void pushSignalCallback(int listId, int behavior, int signal) {
+    public void pushSignalCallback(int behavior, int signal) {
     	int listPc = getPc();
     	if (!ExternalGE.isActive()) {
     		// PC address after the END command
     		listPc += 4;
     	}
-        Modules.sceGe_userModule.triggerSignalCallback(cbid, listId, listPc, behavior, signal);
+        Modules.sceGe_userModule.triggerSignalCallback(this, listPc, behavior, signal);
     }
 
-    public void pushFinishCallback(int listId, int arg) {
+    public void pushFinishCallback(int arg) {
     	int listPc = getPc();
     	if (!ExternalGE.isActive()) {
     		// PC address after the END command
     		listPc += 4;
     	}
-    	Modules.sceGe_userModule.triggerFinishCallback(cbid, listId, listPc, arg);
+    	Modules.sceGe_userModule.triggerFinishCallback(this, listPc, arg);
     }
 
     private void pushStack(int value) {

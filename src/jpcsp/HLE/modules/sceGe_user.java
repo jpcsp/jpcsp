@@ -172,8 +172,8 @@ public class sceGe_user extends HLEModule {
         }
     }
 
-    private void triggerAsyncCallback(int cbid, int listId, int listPc, int behavior, int signalId, HashMap<Integer, SceKernelCallbackInfo> callbacks) {
-    	SceKernelCallbackInfo callback = callbacks.get(cbid);
+    private void triggerAsyncCallback(PspGeList list, int listPc, int behavior, int signalId, HashMap<Integer, SceKernelCallbackInfo> callbacks) {
+    	SceKernelCallbackInfo callback = callbacks.get(list.cbid);
     	if (callback != null && callback.hasCallbackFunction()) {
     		// Retrieve the value of the $gp register to be used for the GE callback
     		int gp = 0;
@@ -183,13 +183,13 @@ public class sceGe_user extends HLEModule {
     		}
 
     		if (log.isDebugEnabled()) {
-    			log.debug(String.format("Scheduling Async Callback %s, listId=0x%X, listPc=0x%08X, behavior=%d, signalId=0x%X, gp=0x%08X", callback.toString(), listId, listPc, behavior, signalId, gp));
+    			log.debug(String.format("Scheduling Async Callback %s, listId=0x%X, listPc=0x%08X, behavior=%d, signalId=0x%X, gp=0x%08X", callback.toString(), list.id, listPc, behavior, signalId, gp));
     		}
     		GeCallbackInterruptHandler geCallbackInterruptHandler = new GeCallbackInterruptHandler(callback.getCallbackFunction(), callback.getCallbackArgument(), listPc, gp);
-    		GeInterruptHandler geInterruptHandler = new GeInterruptHandler(geCallbackInterruptHandler, listId, behavior, signalId);
+    		GeInterruptHandler geInterruptHandler = new GeInterruptHandler(geCallbackInterruptHandler, list.id, behavior, signalId);
     		Emulator.getScheduler().addAction(geInterruptHandler);
     	} else {
-    		hleGeOnAfterCallback(listId, behavior, false);
+    		hleGeOnAfterCallback(list, behavior, false);
     	}
     }
 
@@ -276,6 +276,10 @@ public class sceGe_user extends HLEModule {
     }
 
     public void hleGeOnAfterCallback(int listId, int behavior, boolean hasCallback) {
+    	hleGeOnAfterCallback(allGeLists[listId], behavior, hasCallback);
+    }
+
+    public void hleGeOnAfterCallback(PspGeList list, int behavior, boolean hasCallback) {
 		// (gid15) I could not make any difference between
 		//    PSP_GE_BEHAVIOR_CONTINUE and PSP_GE_BEHAVIOR_SUSPEND
 		// Both wait for the completion of the callback before continuing
@@ -283,25 +287,22 @@ public class sceGe_user extends HLEModule {
 		if (behavior == PSP_GE_SIGNAL_HANDLER_CONTINUE
                 || behavior == PSP_GE_SIGNAL_HANDLER_SUSPEND
                 || !hasCallback) {
-			if (listId >= 0 && listId < NUMBER_GE_LISTS) {
-				PspGeList list = allGeLists[listId];
-				if (log.isDebugEnabled()) {
-					log.debug("hleGeOnAfterCallback restarting list " + list);
-				}
-
-				list.restartList();
+			if (log.isDebugEnabled()) {
+				log.debug("hleGeOnAfterCallback restarting list " + list);
 			}
+
+			list.restartList();
 		}
     }
 
     /** safe to call from the Async display thread */
-    public void triggerFinishCallback(int cbid, int listId, int listPc, int callbackNotifyArg1) {
-		triggerAsyncCallback(cbid, listId, listPc, PSP_GE_SIGNAL_HANDLER_SUSPEND, callbackNotifyArg1, finishCallbacks);
+    public void triggerFinishCallback(PspGeList list, int listPc, int callbackNotifyArg1) {
+		triggerAsyncCallback(list, listPc, PSP_GE_SIGNAL_HANDLER_SUSPEND, callbackNotifyArg1, finishCallbacks);
     }
 
     /** safe to call from the Async display thread */
-    public void triggerSignalCallback(int cbid, int listId, int listPc, int behavior, int callbackNotifyArg1) {
-		triggerAsyncCallback(cbid, listId, listPc, behavior, callbackNotifyArg1, signalCallbacks);
+    public void triggerSignalCallback(PspGeList list, int listPc, int behavior, int callbackNotifyArg1) {
+		triggerAsyncCallback(list, listPc, behavior, callbackNotifyArg1, signalCallbacks);
     }
 
     public PspGeList getGeList(int id) {

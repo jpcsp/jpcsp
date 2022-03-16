@@ -48,6 +48,7 @@ import static jpcsp.graphics.RE.externalge.NativeUtils.INTR_STAT_FINISH;
 import static jpcsp.graphics.RE.externalge.NativeUtils.INTR_STAT_SIGNAL;
 import static jpcsp.graphics.VideoEngineUtilities.copyGeToMemory;
 import static jpcsp.graphics.VideoEngineUtilities.getPixelFormatBytes;
+import static jpcsp.graphics.capture.CaptureManager.replayFileName;
 import static jpcsp.util.Utilities.clearFlag;
 import static jpcsp.util.Utilities.hasFlag;
 import static jpcsp.util.Utilities.matrixMult;
@@ -293,6 +294,7 @@ public class VideoEngine {
     private VertexState v2 = new VertexState();
     private boolean isBoundingBox;
     private boolean skipThisFrame;
+    private Level logLevel;
     // It is not safe in every application to simply skip the whole list.
     // This could be a compatibility option.
     private boolean skipListWhenSkippingFrame = false;
@@ -494,8 +496,10 @@ public class VideoEngine {
     }
 
     public void onStallAddrUpdated(PspGeList list, int oldStallAddr) {
-        if (State.captureGeNextFrame || State.recordGeFrames) {
-            log.debug("Capture List after update stall address");
+        if (State.recordGeFrames) {
+        	if (log.isDebugEnabled()) {
+        		log.debug(String.format("Capture List after update stall address oldStallAddr=0x%08X, newStallAddr=0x%08X", oldStallAddr, list.getStallAddr()));
+        	}
             CaptureManager.captureList(mem, oldStallAddr, list.getStallAddr());
         }
     }
@@ -747,27 +751,17 @@ public class VideoEngine {
 
         startUpdate();
 
-        if (State.captureGeNextFrame) {
-            CaptureManager.startCapture(mem, "capture.bin", currentList, true);
+        if (State.dumpGeNextFrame) {
+            // Set the VideoEngine log level to TRACE when dumping,
+            // the information in the log file is also interesting
+	        logLevel = log.getLevel();
+	        setLogLevel(Level.TRACE);
         } else if (State.recordGeFrames) {
         	if (!CaptureManager.captureInProgress) {
-        		CaptureManager.startCapture(mem, "record.bin", currentList, false);
+        		CaptureManager.startCapture(mem, replayFileName, currentList);
         	} else {
         		CaptureManager.startListCapture(mem, currentList);
         	}
-        }
-
-        if (State.replayGeNextFrame) {
-            // Load the replay list into drawListQueue
-            CaptureManager.startReplay(mem, "capture.bin");
-
-            // Hijack the current list with the replay list
-            // TODO this is assuming there is only 1 list in drawListQueue at this point, only the last list is the replay list
-            PspGeList replayList = drawListQueue.poll();
-            replayList.id = currentList.id;
-            replayList.blockedThreadIds.clear();
-            replayList.blockedThreadIds.addAll(currentList.blockedThreadIds);
-            currentList = replayList;
         }
 
         // Draw only as many lists as currently available in the drawListQueue.
@@ -785,14 +779,13 @@ public class VideoEngine {
             }
         } while (currentList != null);
 
-        if (State.captureGeNextFrame || State.recordGeFrames) {
+        if (State.dumpGeNextFrame || State.recordGeFrames) {
             // Can't end capture until we get a sceDisplaySetFrameBuf after the list has executed
             CaptureManager.markListExecuted();
         }
 
-        if (State.replayGeNextFrame) {
-            State.replayGeNextFrame = false;
-            CaptureManager.endReplay();
+        if (State.replayGeFrames) {
+            CaptureManager.endListReplay();
         }
 
         endUpdate();
@@ -814,6 +807,13 @@ public class VideoEngine {
     public void setLogLevel(Level level) {
         log.setLevel(level);
         logLevelUpdated();
+    }
+
+    public void endDumpFrame() {
+        if (logLevel != null) {
+        	log.setLevel(logLevel);
+        	logLevel = null;
+        }
     }
 
     /**
@@ -1001,7 +1001,7 @@ public class VideoEngine {
             // Finish this list
             currentList.finishList();
             // Trigger a FINISH callback to avoid hanging the application...
-            currentList.pushFinishCallback(currentList.id, 0);
+            currentList.pushFinishCallback(0);
             listHasEnded = true;
             abort = true;
         }
@@ -1169,7 +1169,7 @@ public class VideoEngine {
         }
 
         waitForSyncCount = 0;
-        while (!listHasEnded && (!Emulator.pause || State.captureGeNextFrame || State.recordGeFrames)) {
+        while (!listHasEnded && (!Emulator.pause || State.dumpGeNextFrame || State.recordGeFrames)) {
             if (currentList.isPaused() || currentList.isEnded()) {
                 if (lleRun || executeListPaused()) {
                     break;
@@ -1344,7 +1344,7 @@ public class VideoEngine {
             clutIsDirty = false;
         }
 
-        if (State.captureGeNextFrame || State.recordGeFrames) {
+        if (State.recordGeFrames) {
             log.debug("Capture readClut16");
             CaptureManager.captureRAM(mem, context.tex_clut_addr, context.tex_clut_num_blocks * 32);
         }
@@ -1365,7 +1365,7 @@ public class VideoEngine {
             clutIsDirty = false;
         }
 
-        if (State.captureGeNextFrame || State.recordGeFrames) {
+        if (State.recordGeFrames) {
             log.debug("Capture readClut32");
             CaptureManager.captureRAM(mem, context.tex_clut_addr, context.tex_clut_num_blocks * 32);
         }
@@ -1437,7 +1437,7 @@ public class VideoEngine {
             }
         }
 
-        if (State.captureGeNextFrame || State.recordGeFrames) {
+        if (State.recordGeFrames) {
             log.debug("Capture unswizzleTextureFromMemory");
             CaptureManager.captureRAM(mem, texaddr, rowWidth * context.texture_height[level]);
         }
@@ -3186,10 +3186,12 @@ public class VideoEngine {
 
         vertexStatistics.end();
 
-        if (State.captureGeNextFrame || State.recordGeFrames) {
+        if (State.recordGeFrames) {
             log.debug("Capture PRIM");
             CaptureManager.captureRAM(mem, context.vinfo.ptr_vertex, context.vinfo.vertexSize * numberOfVertex);
-            display.captureGeImage();
+        }
+        if (State.dumpGeNextFrame) {
+            display.dumpGeImage();
             textureChanged = true;
         }
 
@@ -3467,7 +3469,7 @@ public class VideoEngine {
                 }
             }
 
-            if (State.captureGeNextFrame || State.recordGeFrames) {
+            if (State.recordGeFrames) {
                 log.warn("TRXKICK outside of Ge Address space not supported in capture yet");
             }
         } else if (!skipThisFrame) { // TRXKICK in GE space can be skipped when skipping this frame
@@ -3494,7 +3496,7 @@ public class VideoEngine {
             int sourceAddr = context.textureTx_sourceAddress + (context.textureTx_sy * lineWidth + context.textureTx_sx) * bpp;
             Buffer buffer = mem.getBuffer(sourceAddr, textureSize);
 
-            if (State.captureGeNextFrame || State.recordGeFrames) {
+            if (State.recordGeFrames) {
                 log.debug("Capture TRXKICK");
                 CaptureManager.captureRAM(mem, context.textureTx_sourceAddress, lineWidth * height * bpp);
             }
@@ -3639,7 +3641,7 @@ public class VideoEngine {
         }
         re.endBoundingBox(context.vinfo);
 
-        if (State.captureGeNextFrame || State.recordGeFrames) {
+        if (State.recordGeFrames) {
             log.debug("Capture BBOX");
             CaptureManager.captureRAM(mem, context.vinfo.ptr_vertex, context.vinfo.vertexSize * numberOfVertexBoundingBox);
         }
@@ -3656,7 +3658,7 @@ public class VideoEngine {
             takeConditionalJump = true;
         } else if (export3D && !export3DOnlyVisible) {
             takeConditionalJump = false;
-        } else if (State.captureGeNextFrame || State.recordGeFrames) {
+        } else if (State.recordGeFrames) {
         	takeConditionalJump = false;
         } else {
             takeConditionalJump = !re.isBoundingBoxVisible();
@@ -3671,7 +3673,7 @@ public class VideoEngine {
                 log(String.format("%s old PC: 0x%08X, new PC: 0x%08X", helper.getCommandString(BJUMP), oldPc, newPc));
             }
 
-            if (State.captureGeNextFrame || State.recordGeFrames) {
+            if (State.recordGeFrames) {
                 log.debug("Capture List after taking BJUMP");
                 CaptureManager.captureList(mem, currentList);
             }
@@ -3680,7 +3682,7 @@ public class VideoEngine {
                 log(String.format("%s not taking Conditional Jump", helper.getCommandString(BJUMP)));
             }
 
-            if (State.captureGeNextFrame || State.recordGeFrames) {
+            if (State.recordGeFrames) {
                 log.debug("Capture List after not taking BJUMP");
                 int jumpPc = currentList.getAddressRelOffset(normalArgument);
                 CaptureManager.captureList(mem, jumpPc, currentList.getStallAddr());
@@ -3812,7 +3814,7 @@ public class VideoEngine {
             log(String.format("%s old PC: 0x%08X, new PC: 0x%08X", helper.getCommandString(JUMP), oldPc, newPc));
         }
 
-        if (State.captureGeNextFrame || State.recordGeFrames) {
+        if (State.recordGeFrames) {
             log.debug("Capture List after JUMP");
             CaptureManager.captureList(mem, currentList);
         }
@@ -3860,7 +3862,7 @@ public class VideoEngine {
             log(String.format("%s old PC: 0x%08X, new PC: 0x%08X", helper.getCommandString(CALL), oldPc, newPc));
         }
 
-        if (State.captureGeNextFrame || State.recordGeFrames) {
+        if (State.recordGeFrames) {
             log.debug("Capture List after CALL");
             CaptureManager.captureList(mem, currentList);
         }
@@ -3887,15 +3889,18 @@ public class VideoEngine {
             log(String.format("%s old PC: 0x%08X, new PC: 0x%08X", helper.getCommandString(RET), oldPc, newPc));
         }
 
-        if (State.captureGeNextFrame || State.recordGeFrames) {
+        if (State.recordGeFrames) {
             log.debug("Capture List after RET");
             CaptureManager.captureList(mem, currentList);
         }
     }
 
     private void executeCommandEND() {
-    	if (State.replayGeNextFrame) {
+    	if (State.replayGeFrames) {
 	        int previousCommand = command(currentList.readPreviousInstruction());
+    		if (isLogDebugEnabled) {
+    			log.debug(String.format("%s/%s at pc=0x%08X", helper.getCommandString(previousCommand), helper.getCommandString(END), currentList.getPc() - 4));
+    		}
 	        if (previousCommand == SIGNAL) {
 	    		if (isLogDebugEnabled) {
 	    			log(String.format("%s/%s during replay is ignored", helper.getCommandString(previousCommand), helper.getCommandString(END)));
@@ -3922,9 +3927,13 @@ public class VideoEngine {
 	            currentList.endList();
 	            currentList.pauseList();
 	            if (isLogDebugEnabled) {
-	                log(String.format("%s pc=0x%08X", helper.getCommandString(END), currentList.getPc()));
+	                log(String.format("%s/%s pc=0x%08X", helper.getCommandString(previousCommand), helper.getCommandString(END), currentList.getPc()));
 	            }
 	            updateGeBuf();
+
+	            if (State.recordGeFrames) {
+	            	CaptureManager.captureGEDetails(previousCommand == FINISH);
+	            }
 	        } else if (isLogWarnEnabled) {
 	            log.warn(String.format("Ignoring %s 0x%06X command without %s/%s at pc=0x%08X", helper.getCommandString(END), normalArgument, helper.getCommandString(SIGNAL), helper.getCommandString(FINISH), currentList.getPc() - 4));
 	        }
@@ -4051,7 +4060,7 @@ public class VideoEngine {
             case sceGe_user.PSP_GE_SIGNAL_HANDLER_CONTINUE:
             case sceGe_user.PSP_GE_SIGNAL_HANDLER_PAUSE: {
                 currentList.clearRestart();
-                currentList.pushSignalCallback(currentList.id, behavior, signal);
+                currentList.pushSignalCallback(behavior, signal);
                 break;
             }
             default: {
@@ -4082,7 +4091,7 @@ public class VideoEngine {
 	        // we can generate the FINISH interrupt/callback
 	        currentList.clearRestart();
 	        currentList.finishList();
-	        currentList.pushFinishCallback(currentList.id, normalArgument);
+	        currentList.pushFinishCallback(normalArgument);
         }
     }
 
@@ -6171,7 +6180,7 @@ public class VideoEngine {
                                 }
                                 final_buffer = ShortBuffer.wrap(tmp_texture_buffer16);
 
-                                if (State.captureGeNextFrame || State.recordGeFrames) {
+                                if (State.recordGeFrames) {
                                     log.debug("Capture loadTexture clut 4/16 unswizzled");
                                     CaptureManager.captureRAM(mem, texaddr, length / 2);
                                 }
@@ -6219,7 +6228,7 @@ public class VideoEngine {
                                 }
                                 final_buffer = IntBuffer.wrap(tmp_texture_buffer32);
 
-                                if (State.captureGeNextFrame || State.recordGeFrames) {
+                                if (State.recordGeFrames) {
                                     log.debug("Capture loadTexture clut 4/32 unswizzled");
                                     CaptureManager.captureRAM(mem, texaddr, length / 2);
                                 }
@@ -6310,7 +6319,7 @@ public class VideoEngine {
                             final_buffer = ShortBuffer.wrap(tmp_texture_buffer16);
                         }
 
-                        if (State.captureGeNextFrame || State.recordGeFrames) {
+                        if (State.recordGeFrames) {
                             log.debug("Capture loadTexture 16 unswizzled");
                             CaptureManager.captureRAM(mem, texaddr, length * 2);
                         }
@@ -6487,11 +6496,11 @@ public class VideoEngine {
                     final_buffer);
         }
 
-        if (State.captureGeNextFrame) {
+        if (State.dumpGeNextFrame) {
             boolean vramImage = Memory.isVRAM(texaddr);
             boolean overwriteFile = !vramImage;
             if (vramImage || !CaptureManager.isImageCaptured(texaddr)) {
-                CaptureManager.captureImage(texaddr, level, final_buffer, context.texture_width[level], context.texture_height[level], context.texture_buffer_width[level], buffer_storage, compressedTexture, compressedTextureSize, false, overwriteFile);
+                CaptureManager.dumpImage(texaddr, level, final_buffer, context.texture_width[level], context.texture_height[level], context.texture_buffer_width[level], buffer_storage, compressedTexture, compressedTextureSize, false, overwriteFile);
             }
         }
     }
@@ -6611,7 +6620,7 @@ public class VideoEngine {
         }
 
         // Load the texture if not yet loaded
-        if (texture == null || !texture.isLoaded() || State.captureGeNextFrame || State.recordGeFrames) {
+        if (texture == null || !texture.isLoaded() || State.dumpGeNextFrame || State.recordGeFrames) {
             if (isLogDebugEnabled) {
                 log(String.format("%s 0x%08X, buffer_width=%d (%d,%d)", helper.getCommandString(TFLUSH), context.texture_base_pointer[mipmapIndex], context.texture_buffer_width[mipmapIndex], context.texture_width[mipmapIndex], context.texture_height[mipmapIndex]));
                 log(String.format("%s texture_storage=0x%X(%s), tex_clut_mode=0x%X, tex_clut_addr=0x%08X, texture_swizzle=%b", helper.getCommandString(TFLUSH), context.texture_storage, getPsmName(context.texture_storage), context.tex_clut_mode, context.tex_clut_addr, context.texture_swizzle));
@@ -6715,7 +6724,7 @@ public class VideoEngine {
                     }
                     buffer = ShortBuffer.wrap(tmp_texture_buffer16);
 
-                    if (State.captureGeNextFrame || State.recordGeFrames) {
+                    if (State.recordGeFrames) {
                         log.debug("Capture loadTexture clut 8/16 unswizzled");
                         CaptureManager.captureRAM(mem, texaddr, length * bytesPerIndex);
                     }
@@ -6773,7 +6782,7 @@ public class VideoEngine {
                     }
                     buffer = IntBuffer.wrap(tmp_texture_buffer32);
 
-                    if (State.captureGeNextFrame || State.recordGeFrames) {
+                    if (State.recordGeFrames) {
                         log.debug("Capture loadTexture clut 8/32 unswizzled");
                         CaptureManager.captureRAM(mem, texaddr, length * bytesPerIndex);
                     }
@@ -7304,7 +7313,7 @@ public class VideoEngine {
         boolean useTexture = context.vinfo.texture != 0 || context.textureFlag.isEnabled();
         boolean useNormal = context.lightingFlag.isEnabled();
 
-        if (State.captureGeNextFrame || State.recordGeFrames) {
+        if (State.recordGeFrames) {
             log.debug("Capture drawSpline");
             CaptureManager.captureRAM(mem, context.vinfo.ptr_vertex, context.vinfo.vertexSize * ucount * vcount);
         }
@@ -7402,7 +7411,7 @@ public class VideoEngine {
         boolean useTexture = context.vinfo.texture != 0 || context.textureFlag.isEnabled();
         boolean useNormal = context.lightingFlag.isEnabled();
 
-        if (State.captureGeNextFrame || State.recordGeFrames) {
+        if (State.recordGeFrames) {
             log.debug("Capture drawBezier");
             CaptureManager.captureRAM(mem, context.vinfo.ptr_vertex, context.vinfo.vertexSize * ucount * vcount);
         }
@@ -7633,8 +7642,8 @@ public class VideoEngine {
             drawArraysStatistics.end();
         }
 
-        if (State.captureGeNextFrame) {
-            display.captureGeImage();
+        if (State.dumpGeNextFrame) {
+            display.dumpGeImage();
             textureChanged = true;
         }
 
@@ -7682,7 +7691,7 @@ public class VideoEngine {
             int bufferlen = Math.max(textureBufferWidthInPixels, context.texture_width[level]) * context.texture_height[level] * bytesPerPixel;
             final_buffer = mem.getBuffer(texaddr, bufferlen);
 
-            if (State.captureGeNextFrame || State.recordGeFrames) {
+            if (State.recordGeFrames) {
                 log.debug("Capture getTextureBuffer unswizzled");
                 CaptureManager.captureRAM(mem, texaddr, bufferlen);
             }

@@ -523,9 +523,7 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
         gpoLabel7 = new javax.swing.JLabel();
         gpoLabel8 = new javax.swing.JLabel();
         gpioLabel = new javax.swing.JLabel();
-        lblCaptureReplay = new javax.swing.JLabel();
-        btnCapture = new javax.swing.JToggleButton();
-        btnReplay = new javax.swing.JToggleButton();
+        btnDumpFrame = new javax.swing.JToggleButton();
         lblDumpState = new javax.swing.JLabel();
         btnDumpDebugState = new javax.swing.JButton();
         txtSearch = new javax.swing.JTextField();
@@ -1014,19 +1012,10 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
 
         gpioLabel.setText(bundle.getString("DisassemblerFrame.gpioLabel.text")); // NOI18N
 
-        lblCaptureReplay.setText(bundle.getString("DisassemblerFrame.lblCaptureReplay.text")); // NOI18N
-
-        btnCapture.setText(bundle.getString("DisassemblerFrame.btnCapture.text")); // NOI18N
-        btnCapture.addActionListener(new java.awt.event.ActionListener() {
+        btnDumpFrame.setText(bundle.getString("DisassemblerFrame.btnDumpFrame.text")); // NOI18N
+        btnDumpFrame.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                btnCaptureActionPerformed(evt);
-            }
-        });
-
-        btnReplay.setText(bundle.getString("DisassemblerFrame.btnReplay.text")); // NOI18N
-        btnReplay.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                btnReplayActionPerformed(evt);
+                btnDumpFrameActionPerformed(evt);
             }
         });
 
@@ -1102,11 +1091,9 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
                     .addComponent(txtSearch)
                     .addComponent(lblSearch)
                     .addComponent(gpioLabel)
-                    .addComponent(lblCaptureReplay)
                     .addComponent(lblDumpState)
                     .addComponent(btnDumpDebugState, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(btnCapture, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(btnReplay, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(btnDumpFrame, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addComponent(prgBarSearch, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addComponent(btnCancelSearch, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                 .addContainerGap())
@@ -1136,14 +1123,10 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
                             .addComponent(gpiButton5, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                             .addComponent(gpiButton6, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                             .addComponent(gpiButton7, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(gpiButton8, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                        .addComponent(lblCaptureReplay))
+                            .addComponent(gpiButton8, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
                     .addComponent(gpoLabel8))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(btnCapture)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(btnReplay)
+                .addComponent(btnDumpFrame)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addComponent(lblDumpState)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
@@ -1811,8 +1794,7 @@ private void PauseDebuggerActionPerformed(java.awt.event.ActionEvent evt) {//GEN
         RunDebugger.setSelected(Emulator.run && !Emulator.pause);
         PauseDebugger.setSelected(Emulator.run && Emulator.pause);
 
-        btnCapture.setSelected(State.captureGeNextFrame);
-        btnReplay.setSelected(State.replayGeNextFrame);
+        btnDumpFrame.setSelected(State.dumpGeNextFrame);
 
         java.util.ResourceBundle bundle = java.util.ResourceBundle.getBundle("jpcsp/languages/jpcsp");
         if (Emulator.run && !Emulator.pause) {
@@ -2167,13 +2149,9 @@ private void ImportBreaksActionPerformed(java.awt.event.ActionEvent evt) {//GEN-
         RefreshDebuggerDisassembly(false);
     }//GEN-LAST:event_disasmListComponentResized
 
-    private void btnCaptureActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnCaptureActionPerformed
-        State.captureGeNextFrame = btnCapture.isSelected();
+    private void btnDumpFrameActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnCaptureActionPerformed
+        State.dumpGeNextFrame = btnDumpFrame.isSelected();
     }//GEN-LAST:event_btnCaptureActionPerformed
-
-    private void btnReplayActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnReplayActionPerformed
-        State.replayGeNextFrame = btnReplay.isSelected();
-    }//GEN-LAST:event_btnReplayActionPerformed
 
     private void btnCancelSearchActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnCancelSearchActionPerformed
         // request cancellation of the search thread
@@ -2212,9 +2190,8 @@ private void ImportBreaksActionPerformed(java.awt.event.ActionEvent evt) {//GEN-
     private javax.swing.JToggleButton RunDebugger;
     private javax.swing.JMenuItem SetPCToCursor;
     private javax.swing.JButton btnCancelSearch;
-    private javax.swing.JToggleButton btnCapture;
+    private javax.swing.JToggleButton btnDumpFrame;
     private javax.swing.JButton btnDumpDebugState;
-    private javax.swing.JToggleButton btnReplay;
     private javax.swing.JButton btnStepInto;
     private javax.swing.JButton btnStepOut;
     private javax.swing.JButton btnStepOver;
@@ -2248,7 +2225,6 @@ private void ImportBreaksActionPerformed(java.awt.event.ActionEvent evt) {//GEN-
     private javax.swing.JToolBar.Separator jSeparator4;
     private javax.swing.JToolBar.Separator jSeparator7;
     private javax.swing.JPopupMenu.Separator jSeparator9;
-    private javax.swing.JLabel lblCaptureReplay;
     private javax.swing.JLabel lblDumpState;
     private javax.swing.JLabel lblSearch;
     private javax.swing.JMenu mBreakpoints;

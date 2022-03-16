@@ -32,9 +32,7 @@ import jpcsp.graphics.VideoEngine;
 public class CaptureList {
 	public static Logger log = CaptureManager.log;
 
-    private static final int packetSize = 12;
     private PspGeList list;
-    private CaptureRAM listBuffer;
 
     private CaptureList() {
     }
@@ -42,54 +40,33 @@ public class CaptureList {
     public CaptureList(Memory mem, PspGeList list) throws IOException {
     	this.list = new PspGeList(list.id);
     	this.list.init(list.list_addr, list.getStallAddr(), list.cbid, list.optParams);
-
-    	int length = CaptureManager.getListCmdsLength(list.list_addr, list.getStallAddr());
-        listBuffer = new CaptureRAM(mem, list.list_addr, length);
     }
 
     public void write(DataOutputStream out) throws IOException {
-        out.writeInt(packetSize);
+    	out.writeInt(CaptureManager.PACKET_TYPE_START_LIST);
         out.writeInt(list.list_addr);
         out.writeInt(list.getStallAddr());
         out.writeInt(list.cbid);
-
-        CaptureHeader header = new CaptureHeader(CaptureHeader.PACKET_TYPE_RAM);
-        header.write(out);
-        listBuffer.write(out);
     }
 
     public static CaptureList read(DataInputStream in) throws IOException {
         CaptureList list = new CaptureList();
 
-        int sizeRemaining = in.readInt();
-        if (sizeRemaining >= packetSize) {
-            int list_addr = in.readInt(); sizeRemaining -= 4;
-            int stall_addr = in.readInt(); sizeRemaining -= 4;
-            int cbid = in.readInt(); sizeRemaining -= 4;
-            in.skipBytes(sizeRemaining);
+        int list_addr = in.readInt();
+        int stall_addr = in.readInt();
+        int cbid = in.readInt();
 
-            if (log.isDebugEnabled()) {
-            	log.debug(String.format("CaptureList list_addr=0x%08X, stall_addr=0x%08X, cbid=0x%X", list_addr, stall_addr, cbid));
-            }
-
-            list.list = new PspGeList(0);
-            list.list.init(list_addr, 0, 0, null);
-
-            CaptureHeader header = CaptureHeader.read(in);
-            int packetType = header.getPacketType();
-            if (packetType != CaptureHeader.PACKET_TYPE_RAM) {
-                throw new IOException(String.format("Expected CaptureRAM(%d) packet, found %d", CaptureHeader.PACKET_TYPE_RAM, packetType));
-            }
-            list.listBuffer = CaptureRAM.read(in);
-        } else {
-            throw new IOException("Not enough bytes remaining in stream");
+        if (log.isDebugEnabled()) {
+        	log.debug(String.format("CaptureList list_addr=0x%08X, stall_addr=0x%08X, cbid=0x%X", list_addr, stall_addr, cbid));
         }
+
+        list.list = new PspGeList(-1);
+        list.list.init(list_addr, 0, 0, null);
 
         return list;
     }
 
     public void commit(Memory mem) {
         VideoEngine.getInstance().pushDrawList(list);
-        listBuffer.commit(mem);
     }
 }

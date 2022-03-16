@@ -443,7 +443,7 @@ public class GETexture {
         re.setPixelStore(bufferWidth, getPixelFormatBytes(pixelFormat));
         re.getTexImage(0, pixelFormat, pixelFormat, buffer);
 
-        CaptureManager.captureImage(address, 0, buffer, width, height, bufferWidth, pixelFormat, false, 0, true, false);
+        CaptureManager.dumpImage(address, 0, buffer, width, height, bufferWidth, pixelFormat, false, 0, true, false);
 	}
 
 	@Override

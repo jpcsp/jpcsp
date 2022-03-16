@@ -227,8 +227,8 @@ public class ExternalGE {
 
 		synchronized (drawListQueue) {
 			if (currentList == null) {
-				if (State.captureGeNextFrame) {
-					State.captureGeNextFrame = false;
+				if (State.dumpGeNextFrame) {
+					State.dumpGeNextFrame = false;
 					CaptureManager.captureInProgress = true;
 					NativeUtils.setDumpFrames(true);
 					NativeUtils.setDumpTextures(true);

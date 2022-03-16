@@ -55,19 +55,16 @@ public class State extends jpcsp.HLE.Modules {
     public static final String DISCID_UNKNOWN_NOTHING_LOADED = "[unknown, nothing loaded]";
     public static final String DISCID_UNKNOWN_FILE = "[unknown, file]";
     public static final String DISCID_UNKNOWN_UMD = "[unknown, umd]";
-    public static boolean captureGeNextFrame;
-    public static boolean replayGeNextFrame;
+    public static boolean dumpGeNextFrame;
     public static boolean exportGeNextFrame;
     public static boolean exportGeOnlyVisibleElements;
     public static boolean recordGeFrames;
     public static boolean stopRecordGeFrames;
+    public static boolean replayGeFrames;
 
     static {
         memory = Memory.getInstance();
         controller = Controller.getInstance();
         discId = DISCID_UNKNOWN_NOTHING_LOADED;
-        captureGeNextFrame = false;
-        replayGeNextFrame = false;
-        exportGeNextFrame = false;
     }
 }

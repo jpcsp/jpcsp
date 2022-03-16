@@ -169,7 +169,7 @@ public class CoreThread extends Thread {
 
 		list.clearRestart();
 		list.finishList();
-		list.pushFinishCallback(list.id, NativeUtils.getCoreCmdArray(GeCommands.FINISH) & 0x00FFFFFF);
+		list.pushFinishCallback(NativeUtils.getCoreCmdArray(GeCommands.FINISH) & 0x00FFFFFF);
 		list.endList();
 		list.status = sceGe_user.PSP_GE_LIST_DONE;
 		ExternalGE.finishList(list);
@@ -270,7 +270,7 @@ public class CoreThread extends Thread {
             case sceGe_user.PSP_GE_SIGNAL_HANDLER_CONTINUE:
             case sceGe_user.PSP_GE_SIGNAL_HANDLER_PAUSE: {
             	list.clearRestart();
-            	list.pushSignalCallback(list.id, behavior, signal);
+            	list.pushSignalCallback(behavior, signal);
             	list.endList();
         		list.status = sceGe_user.PSP_GE_LIST_END_REACHED;
                 break;
