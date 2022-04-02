@@ -88,6 +88,7 @@ public class VideoEngineThread extends Thread {
 			} else {
 				displayModule.lockDisplay();
 				renderTexture.bind(re, false);
+				re.startDisplay();
 
 				videoEngine.update();
 
