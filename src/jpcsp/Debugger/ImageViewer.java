@@ -16,6 +16,8 @@
  */
 package jpcsp.Debugger;
 
+import static jpcsp.graphics.VideoEngineUtilities.getPixelFormatBytes;
+
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Graphics;
@@ -203,15 +205,22 @@ public class ImageViewer extends javax.swing.JFrame {
 
         				g.fillRect(insets.left, insets.top, imageWidth, imageHeight);
 
+        				int pixelFormatBytes = getPixelFormatBytes(textureSettings.getPixelFormat());
+
 	                    for (int y = 0; y < imageHeight; y++) {
 		                    for (int x = 0; x < imageWidth; x++) {
-		                    	int colorABGR;
+		                    	int colorABGR = 0;
 		                    	if (textureBuffer instanceof IntBuffer) {
 		                    		colorABGR = ((IntBuffer) textureBuffer).get();
 		                    	} else if (textureBuffer instanceof ByteBuffer) {
-		                    		colorABGR = ((ByteBuffer) textureBuffer).getInt();
-		                    	} else {
-		                    		colorABGR = 0;
+		                    		if (pixelFormatBytes == 4) {
+		                    			colorABGR = ((ByteBuffer) textureBuffer).getInt();
+		                    		} else if (pixelFormatBytes == 2) {
+			                    		// Probably a depth texture
+		                    			int value16 = ((ByteBuffer) textureBuffer).getShort() & 0xFFFF;
+		                    			// Store the 16-bit depth value only into the 8-bit red component
+		                    			colorABGR = value16 >> 8;
+		                    		}
 		                    	}
 		                        int colorARGB = ImageReader.colorABGRtoARGB(colorABGR);
 		                        g.setColor(new Color(colorARGB, useAlpha));

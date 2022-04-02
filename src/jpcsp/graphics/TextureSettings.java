@@ -27,6 +27,7 @@ import java.nio.Buffer;
 public class TextureSettings {
 	private int width;
 	private int height;
+	private int pixelFormat;
 	private Buffer buffer;
 
 	public int getWidth() {
@@ -51,6 +52,14 @@ public class TextureSettings {
 
 	public void setHeight(int height) {
 		this.height = height;
+	}
+
+	public int getPixelFormat() {
+		return pixelFormat;
+	}
+
+	public void setPixelFormat(int pixelFormat) {
+		this.pixelFormat = pixelFormat;
 	}
 
 	public Buffer getBuffer() {

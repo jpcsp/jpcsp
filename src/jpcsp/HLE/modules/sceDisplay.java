@@ -2263,6 +2263,12 @@ public class sceDisplay extends HLEModule {
 	        textureSettings.setWidth(re.getTextureLevelParameter(textureId, 0, IRenderingEngine.RE_TEXTURE_WIDTH));
 	        textureSettings.setHeight(re.getTextureLevelParameter(textureId, 0, IRenderingEngine.RE_TEXTURE_HEIGHT));
 
+	        int pixelFormat = re.getTextureLevelParameter(textureId, 0, IRenderingEngine.RE_TEXTURE_INTERNAL_FORMAT);
+	        if (pixelFormat < TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888) {
+	        	pixelFormat = internalTextureFormat;
+	        }
+	        textureSettings.setPixelFormat(pixelFormat);
+
 	        if (textureSettings.hasWidth()) {
 	        	width = textureSettings.getWidth();
 	        } else {
@@ -2274,7 +2280,6 @@ public class sceDisplay extends HLEModule {
 	        	textureSettings.setHeight(height);
 	        }
 
-	        int pixelFormat = internalTextureFormat;
 	    	int bytesPerPixel = getPixelFormatBytes(pixelFormat);
 	        int sizeInBytes = width * height * bytesPerPixel;
 	        Buffer buffer = ByteBuffer.allocateDirect(sizeInBytes).order(ByteOrder.LITTLE_ENDIAN);

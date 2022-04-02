@@ -297,7 +297,7 @@ public class RenderingEngineLwjgl extends NullRenderingEngine {
         GL11.GL_RGBA, // RE_PIXEL_STORAGE_16BIT_INDEXED_ABGR5551
         GL11.GL_RGBA, // RE_PIXEL_STORAGE_16BIT_INDEXED_ABGR4444
         GL11.GL_RGBA, // RE_PIXEL_STORAGE_32BIT_INDEXED_ABGR8888
-        GL11.GL_DEPTH_COMPONENT, // RE_DEPTH_COMPONENT
+        GL14.GL_DEPTH_COMPONENT16, // RE_DEPTH_COMPONENT
         GL30.GL_DEPTH_STENCIL, // RE_STENCIL_INDEX
         GL30.GL_DEPTH_STENCIL // RE_DEPTH_STENCIL
     };
@@ -317,7 +317,7 @@ public class RenderingEngineLwjgl extends NullRenderingEngine {
         GL12.GL_UNSIGNED_SHORT_1_5_5_5_REV, // RE_PIXEL_STORAGE_16BIT_INDEXED_ABGR5551
         GL12.GL_UNSIGNED_SHORT_4_4_4_4_REV, // RE_PIXEL_STORAGE_16BIT_INDEXED_ABGR4444
         GL11.GL_UNSIGNED_BYTE, // RE_PIXEL_STORAGE_32BIT_INDEXED_ABGR8888
-        GL11.GL_UNSIGNED_BYTE, // RE_DEPTH_COMPONENT
+        GL11.GL_UNSIGNED_SHORT, // RE_DEPTH_COMPONENT
         GL30.GL_UNSIGNED_INT_24_8, // RE_STENCIL_INDEX
         GL30.GL_UNSIGNED_INT_24_8 // RE_DEPTH_STENCIL
     };
@@ -1663,13 +1663,27 @@ public class RenderingEngineLwjgl extends NullRenderingEngine {
 
 	@Override
 	public int getTextureLevelParameter(int texture, int level, int parameter) {
+		int value = 0;
 		if (GL.getCapabilities().OpenGL45) {
-			return GL45.glGetTextureLevelParameteri(texture, level, textureLevelParameterToGL[parameter]);
+			value = GL45.glGetTextureLevelParameteri(texture, level, textureLevelParameterToGL[parameter]);
 		} else if (GL.getCapabilities().GL_ARB_direct_state_access) {
-			return ARBDirectStateAccess.glGetTextureLevelParameteri(texture, level, textureLevelParameterToGL[parameter]);
+			value = ARBDirectStateAccess.glGetTextureLevelParameteri(texture, level, textureLevelParameterToGL[parameter]);
 		} else if (GL.getCapabilities().GL_EXT_direct_state_access) {
-			return EXTDirectStateAccess.glGetTextureLevelParameteriEXT(texture, GL11.GL_TEXTURE_2D, level, textureLevelParameterToGL[parameter]);
+			value = EXTDirectStateAccess.glGetTextureLevelParameteriEXT(texture, GL11.GL_TEXTURE_2D, level, textureLevelParameterToGL[parameter]);
 		}
-		return 0;
+
+		// For some parameters, map back the GL value to the RE equivalent value
+		switch (parameter) {
+			case RE_TEXTURE_INTERNAL_FORMAT:
+				for (int pixelFormat = 0; pixelFormat < textureInternalFormatToGL.length; pixelFormat++) {
+					if (textureInternalFormatToGL[pixelFormat] == value) {
+						value = pixelFormat;
+						break;
+					}
+				}
+				break;
+		}
+
+		return value;
 	}
 }

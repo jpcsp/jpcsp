@@ -45,7 +45,7 @@ public interface IRenderingEngine {
         2, // RE_PIXEL_STORAGE_16BIT_INDEXED_ABGR5651
         2, // RE_PIXEL_STORAGE_16BIT_INDEXED_ABGR4444
         4, // RE_PIXEL_STORAGE_32BIT_INDEXED_ABGR8888
-        4, // RE_DEPTH_COMPONENT
+        2, // RE_DEPTH_COMPONENT
         4, // RE_STENCIL_INDEX
         4  // RE_DEPTH_STENCIL
 	};
