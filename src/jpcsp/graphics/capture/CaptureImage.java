@@ -25,6 +25,7 @@ import static jpcsp.graphics.GeCommands.TPSM_PIXEL_STORAGE_MODE_4BIT_INDEXED;
 import static jpcsp.graphics.GeCommands.TPSM_PIXEL_STORAGE_MODE_DXT1;
 import static jpcsp.graphics.GeCommands.TPSM_PIXEL_STORAGE_MODE_DXT3;
 import static jpcsp.graphics.GeCommands.TPSM_PIXEL_STORAGE_MODE_DXT5;
+import static jpcsp.graphics.RE.IRenderingEngine.RE_DEPTH_COMPONENT;
 import static jpcsp.graphics.RE.IRenderingEngine.RE_DEPTH_STENCIL;
 import static jpcsp.graphics.RE.software.BaseRenderer.depthBufferPixelFormat;
 import static jpcsp.memory.ImageReader.colorABGRtoARGB;
@@ -389,6 +390,36 @@ public class CaptureImage {
 		this.fileNameSuffix = fileNameSuffix;
 	}
 
+	private ShortBuffer getShortBuffer() {
+		if (buffer instanceof ShortBuffer) {
+			return (ShortBuffer) buffer;
+		}
+		if (buffer instanceof ByteBuffer) {
+			return ((ByteBuffer) buffer).asShortBuffer();
+		}
+
+		return null;
+	}
+
+	private IntBuffer getIntBuffer() {
+		if (buffer instanceof IntBuffer) {
+			return (IntBuffer) buffer;
+		}
+		if (buffer instanceof ByteBuffer) {
+			return ((ByteBuffer) buffer).asIntBuffer();
+		}
+
+		return null;
+	}
+
+	private boolean isShortBuffer() {
+		return getShortBuffer() != null;
+	}
+
+	private boolean isIntBuffer() {
+		return getIntBuffer() != null;
+	}
+
 	public void write() throws IOException {
     	if (bufferStorage >= TPSM_PIXEL_STORAGE_MODE_4BIT_INDEXED && bufferStorage <= TPSM_PIXEL_STORAGE_MODE_32BIT_INDEXED && bufferStorage != depthBufferPixelFormat) {
     		// Writing of indexed images not supported
@@ -432,8 +463,8 @@ public class CaptureImage {
 				captureImage.endLine();
 			}
 			captureImage.writeEnd();
-		} else if (buffer instanceof IntBuffer && imageType32Bit) {
-    		IntBuffer intBuffer = (IntBuffer) buffer;
+		} else if (isIntBuffer() && imageType32Bit) {
+    		IntBuffer intBuffer = getIntBuffer();
 			for (int y = 0; y < height; y++) {
 				intBuffer.position((imageInvert ? (height - y - 1) : y) * bufferWidth);
 				captureImage.startLine(imageInvert ? (height - y - 1) : y);
@@ -447,8 +478,20 @@ public class CaptureImage {
 				}
 				captureImage.endLine();
 			}
-    	} else if (buffer instanceof IntBuffer && !imageType32Bit) {
-    		IntBuffer intBuffer = (IntBuffer) buffer;
+    	} else if (isShortBuffer() && !imageType32Bit) {
+    		ShortBuffer shortBuffer = getShortBuffer();
+			for (int y = 0; y < height; y++) {
+				shortBuffer.position((imageInvert ? (height - y - 1) : y) * bufferWidth);
+				captureImage.startLine(imageInvert ? (height - y - 1) : y);
+				for (int x = 0; x < readWidth; x++) {
+					short pixel = shortBuffer.get();
+					getPixelBytes(pixel, bufferStorage, pixelBytes);
+					captureImage.writePixel(pixelBytes);
+				}
+				captureImage.endLine();
+			}
+    	} else if (isIntBuffer() && !imageType32Bit) {
+    		IntBuffer intBuffer = getIntBuffer();
 			for (int y = 0; y < height; y++) {
 				intBuffer.position((imageInvert ? (height - y - 1) : y) * bufferWidth / 2);
 				captureImage.startLine(imageInvert ? (height - y - 1) : y);
@@ -465,18 +508,6 @@ public class CaptureImage {
 						captureImage.writePixel(blackPixelBytes);
 						captureImage.writePixel(blackPixelBytes);
 					}
-				}
-				captureImage.endLine();
-			}
-    	} else if (buffer instanceof ShortBuffer && !imageType32Bit) {
-    		ShortBuffer shortBuffer = (ShortBuffer) buffer;
-			for (int y = 0; y < height; y++) {
-				shortBuffer.position((imageInvert ? (height - y - 1) : y) * bufferWidth);
-				captureImage.startLine(imageInvert ? (height - y - 1) : y);
-				for (int x = 0; x < readWidth; x++) {
-					short pixel = shortBuffer.get();
-					getPixelBytes(pixel, bufferStorage, pixelBytes);
-					captureImage.writePixel(pixelBytes);
 				}
 				captureImage.endLine();
 			}
@@ -565,6 +596,7 @@ public class CaptureImage {
 	    		pixelBytes[2] = (byte) ((pixel << 4) & 0xF0); // R
 	    		pixelBytes[3] = (byte) ((pixel >> 8) & 0xF0); // A
 	    		break;
+	    	case RE_DEPTH_COMPONENT:
 	    	case depthBufferPixelFormat:
 	    		// Gray color value based on depth value
 	    		pixelBytes[0] = (byte) (pixel >> 8);

@@ -19,7 +19,6 @@ package jpcsp.graphics.RE.software;
 import static jpcsp.graphics.RE.software.PixelColor.getColor;
 import static jpcsp.graphics.RE.software.PixelColor.getColorBGR;
 
-import java.nio.Buffer;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -35,7 +34,6 @@ import jpcsp.graphics.GeCommands;
 import jpcsp.graphics.GeContext;
 import jpcsp.graphics.VideoEngine;
 import jpcsp.graphics.RE.IRenderingEngine;
-import jpcsp.graphics.capture.CaptureManager;
 import jpcsp.memory.IMemoryReader;
 import jpcsp.memory.ImageReader;
 import jpcsp.util.DurationStatistics;
@@ -58,7 +56,6 @@ public abstract class BaseRenderer implements IRenderer {
     protected final boolean isLogInfoEnabled;
 
     protected static final boolean captureEachPrimitive = false;
-	protected static final boolean captureZbuffer = false;
     public static final int depthBufferPixelFormat = GeCommands.TPSM_PIXEL_STORAGE_MODE_16BIT_INDEXED;
     protected static final int MAX_NUMBER_FILTERS = 15;
 	public int imageWriterSkipEOL;
@@ -452,18 +449,6 @@ public abstract class BaseRenderer implements IRenderer {
         	// Capture the GE screen after each primitive
         	Modules.sceDisplayModule.dumpGeImage();
         }
-        if (captureZbuffer && State.dumpGeNextFrame) {
-        	captureZbufferImage();
-        }
-	}
-
-	protected void captureZbufferImage() {
-		GeContext context = VideoEngine.getInstance().getContext();
-		int width = context.zbw;
-		int height = Modules.sceDisplayModule.getHeightFb();
-		int address = getTextureAddress(zbp, 0, 0, zbw, depthBufferPixelFormat);
-		Buffer buffer = Memory.getInstance().getBuffer(address, width * height * IRenderingEngine.sizeOfTextureType[depthBufferPixelFormat]);
-		CaptureManager.dumpImage(address, 0, buffer, width, height, width, depthBufferPixelFormat, false, 0, false, false);
 	}
 
 	protected void statisticsFilters(int numberPixels) {
