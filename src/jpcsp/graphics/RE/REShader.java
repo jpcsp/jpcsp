@@ -1096,16 +1096,23 @@ public class REShader extends BaseRenderingEngineFunction {
 			shaderContext.setUniforms(re, currentShaderProgram.getProgramId());
 		}
 
+		loadFbTexture();
+		loadIntegerTexture();
+
 		if (useShaderStencilTest && useShaderDepthTest) {
 			// When the stencil and depth tests are implemented
 			// in the shader, we need to disable the depth test
 			// performed by OpenGL. I.e. we have to make it always pass.
 			super.enableFlag(IRenderingEngine.GU_DEPTH_TEST);
 			super.setDepthFunc(GeCommands.ZTST_FUNCTION_ALWAYS_PASS_PIXEL);
-		}
 
-		loadFbTexture();
-		loadIntegerTexture();
+			// As we have now enabled the RE depth test, we have to make sure
+			// that the depth values are not written
+			// when the PSP depth test was actually disabled.
+			// Depth values are only written when both the depth write
+			// and the depth test are enabled.
+			super.setDepthMask(shaderContext.isDepthWriteEnabled() && shaderContext.getDepthTestEnable() != 0);
+		}
 
 		return primitive;
 	}

@@ -920,11 +920,10 @@ void main()
 
    	bool depthTestPassed = true;
    	#if USE_SHADER_DEPTH_TEST || USE_SHADER_STENCIL_TEST
+   		float fbDepth = getFbDepth();
 	    #if !USE_DYNAMIC_DEFINES
-    		float fbDepth = getFbDepth();
     		if (depthTestEnable) depthTestPassed = passDepthTest(fbDepth);
 	    #elif DEPTH_TEST_ENABLE
-    		float fbDepth = getFbDepth();
 		    depthTestPassed = passDepthTest(fbDepth);
     	#endif
     #endif
@@ -1012,6 +1011,10 @@ void main()
 					discard;
 				}
 			}
+			else if (!depthWriteEnabled)
+			{
+				gl_FragDepth = fbDepth;
+			}
 		#elif DEPTH_TEST_ENABLE
 			if (!depthTestPassed)
 			{
@@ -1022,6 +1025,14 @@ void main()
 					discard;
 				#endif
 			}
+			else
+			{
+				#if !DEPTH_WRITE_ENABLE
+					gl_FragDepth = fbDepth;
+				#endif
+			}
+		#else
+			gl_FragDepth = fbDepth;
 		#endif
 	#endif
 

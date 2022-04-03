@@ -16,6 +16,8 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.graphics.RE;
 
+import org.apache.log4j.Logger;
+
 import jpcsp.graphics.VideoEngine;
 
 /**
@@ -23,6 +25,7 @@ import jpcsp.graphics.VideoEngine;
  *
  */
 public class ShaderProgram {
+	public static Logger log = VideoEngine.log;
 	private int programId = -1;
 	private ShaderProgramKey key;
 	private int shaderAttribPosition;
@@ -63,6 +66,7 @@ public class ShaderProgram {
 	private int stencilOpZPass; // values: [0..5]
 	private int depthTestEnable; // values: [0..1]
 	private int depthFunc; // values: [0..7]
+	private boolean depthWriteEnable; // values: [0..1]
 	private int blendTestEnable; // values: [0..1]
 	private int blendEquation; // values: [0..5]
 	private int blendSrc; // values: [0..10];
@@ -144,6 +148,7 @@ public class ShaderProgram {
 		stencilOpZPass = shaderContext.getStencilOpZPass();
 		depthTestEnable = shaderContext.getDepthTestEnable();
 		depthFunc = shaderContext.getDepthFunc();
+		depthWriteEnable = shaderContext.isDepthWriteEnabled();
 		blendTestEnable = shaderContext.getBlendTestEnable();
 		blendEquation = shaderContext.getBlendEquation();
 		blendSrc = shaderContext.getBlendSrc();
@@ -197,6 +202,7 @@ public class ShaderProgram {
 		REShader.addDefine(defines, "STENCIL_OP_ZPASS", dummyValue);
 		REShader.addDefine(defines, "DEPTH_TEST_ENABLE", dummyValue);
 		REShader.addDefine(defines, "DEPTH_FUNC", dummyValue);
+		REShader.addDefine(defines, "DEPTH_WRITE_ENABLE", dummyValue);
 		REShader.addDefine(defines, "BLEND_TEST_ENABLE", dummyValue);
 		REShader.addDefine(defines, "BLEND_EQUATION", dummyValue);
 		REShader.addDefine(defines, "BLEND_SRC", dummyValue);
@@ -249,6 +255,7 @@ public class ShaderProgram {
 		REShader.addDefine(defines, "STENCIL_OP_ZPASS", stencilOpZPass);
 		REShader.addDefine(defines, "DEPTH_TEST_ENABLE", depthTestEnable);
 		REShader.addDefine(defines, "DEPTH_FUNC", depthFunc);
+		REShader.addDefine(defines, "DEPTH_WRITE_ENABLE", depthWriteEnable);
 		REShader.addDefine(defines, "BLEND_TEST_ENABLE", blendTestEnable);
 		REShader.addDefine(defines, "BLEND_EQUATION", blendEquation);
 		REShader.addDefine(defines, "BLEND_SRC", blendSrc);
@@ -337,7 +344,7 @@ public class ShaderProgram {
 		shift += 3;
 
 		if (shift > Long.SIZE) {
-			VideoEngine.log.error(String.format("ShaderProgram: too long key1: %d bits", shift));
+			log.error(String.format("ShaderProgram: too long key1: %d bits", shift));
 		}
 		key1 = key;
 		key = 0;
@@ -346,9 +353,11 @@ public class ShaderProgram {
 		key += ((long) shaderContext.getStencilOpZPass()) << shift;
 		shift += 3;                
 		key += ((long) shaderContext.getDepthTestEnable()) << shift;
-		shift += 3;
+		shift++;
 		key += ((long) shaderContext.getDepthFunc()) << shift;
 		shift += 3;                
+		key += (shaderContext.isDepthWriteEnabled() ? 1L : 0L) << shift;
+		shift++;
 		key += ((long) shaderContext.getBlendTestEnable()) << shift;
 		shift++;
 		key += ((long) shaderContext.getBlendEquation()) << shift;
@@ -365,7 +374,7 @@ public class ShaderProgram {
 		shift++;
 
 		if (shift > Long.SIZE) {
-			VideoEngine.log.error(String.format("ShaderProgram: too long key2: %d bits", shift));
+			log.error(String.format("ShaderProgram: too long key2: %d bits", shift));
 		}
 		key2 = key;
 
