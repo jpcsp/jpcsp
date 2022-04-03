@@ -59,6 +59,7 @@ public class REShader extends BaseRenderingEngineFunction {
 	protected final static int ACTIVE_TEXTURE_CLUT = 1;
 	protected final static int ACTIVE_TEXTURE_FRAMEBUFFER = 2;
 	protected final static int ACTIVE_TEXTURE_INTEGER = 3;
+	protected final static int ACTIVE_TEXTURE_DEPTHBUFFER = 4;
 	protected final static float[] positionScale = new float[] { 1, 0x7F, 0x7FFF, 1 };
 	protected final static float[] normalScale   = new float[] { 1, 0x7F, 0x7FFF, 1 };
 	protected final static float[] textureScale  = new float[] { 1, 0x80, 0x8000, 1 };
@@ -193,6 +194,7 @@ public class REShader extends BaseRenderingEngineFunction {
 
 		shaderContext.setTex(ACTIVE_TEXTURE_NORMAL);
 		shaderContext.setFbTex(ACTIVE_TEXTURE_FRAMEBUFFER);
+		shaderContext.setDepthTex(ACTIVE_TEXTURE_DEPTHBUFFER);
 		if (useNativeClut) {
 			shaderContext.setClut(ACTIVE_TEXTURE_CLUT);
 			shaderContext.setUtex(ACTIVE_TEXTURE_INTEGER);
@@ -313,6 +315,11 @@ public class REShader extends BaseRenderingEngineFunction {
 			useDynamicDefines = false;
 		}
 		addDefine(defines, "USE_DYNAMIC_DEFINES", useDynamicDefines);
+		addDefine(defines, "USE_SHADER_DEPTH_TEST", useShaderDepthTest);
+		addDefine(defines, "USE_SHADER_STENCIL_TEST", useShaderStencilTest);
+		addDefine(defines, "USE_SHADER_COLOR_MASK", useShaderColorMask);
+		addDefine(defines, "USE_SHADER_ALPHA_TEST", useShaderAlphaTest);
+		addDefine(defines, "USE_SHADER_BLEND_TEST", useShaderBlendTest);
 
 		replace(src, "// INSERT VERSION", String.format("#version %d", shaderVersion));
 		replace(src, "// INSERT DEFINES", defines.toString());
@@ -364,6 +371,7 @@ public class REShader extends BaseRenderingEngineFunction {
         re.useProgram(program);
         re.setUniform(re.getUniformLocation(program, Uniforms.tex.getUniformString()), ACTIVE_TEXTURE_NORMAL);
         re.setUniform(re.getUniformLocation(program, Uniforms.fbTex.getUniformString()), ACTIVE_TEXTURE_FRAMEBUFFER);
+        re.setUniform(re.getUniformLocation(program, Uniforms.depthTex.getUniformString()), ACTIVE_TEXTURE_DEPTHBUFFER);
         if (useNativeClut) {
         	re.setUniform(re.getUniformLocation(program, Uniforms.clut.getUniformString()), ACTIVE_TEXTURE_CLUT);
         	re.setUniform(re.getUniformLocation(program, Uniforms.utex.getUniformString()), ACTIVE_TEXTURE_INTEGER);
@@ -578,6 +586,7 @@ public class REShader extends BaseRenderingEngineFunction {
 			case IRenderingEngine.GU_DEPTH_TEST:
 				if (useShaderDepthTest) {
 					shaderContext.setDepthTestEnable(value);
+					setFlag = false;
 				}
 				break;
 			case IRenderingEngine.GU_STENCIL_TEST:
@@ -749,7 +758,7 @@ public class REShader extends BaseRenderingEngineFunction {
 			if (renderTexture == null) {
 				renderTexture = new FBTexture(display.getTopAddrFb(), bufferWidth, width, height, getTexturePixelFormat(pixelFormat));
 				renderTexture.bind(re, false);
-				re.bindActiveTexture(ACTIVE_TEXTURE_FRAMEBUFFER, renderTexture.getTextureId());
+				bindActiveTexture(renderTexture);
 			} else {
 				renderTexture.bind(re, false);
 			}
@@ -970,6 +979,13 @@ public class REShader extends BaseRenderingEngineFunction {
 		return false;
 	}
 
+	private void bindActiveTexture(FBTexture renderTexture) {
+		// Tell the shader which texture has to be used for the fbTex sampler.
+		re.bindActiveTexture(ACTIVE_TEXTURE_FRAMEBUFFER, renderTexture.getTextureId());
+		// Tell the shader which texture has to be used for the depthTex sampler.
+		re.bindActiveTexture(ACTIVE_TEXTURE_DEPTHBUFFER, renderTexture.getDepthTextureId());
+	}
+
 	/**
 	 * If necessary, load the frame buffer texture with the current screen
 	 * content so that it can be used by the fragment shader (fbTex sampler).
@@ -992,8 +1008,7 @@ public class REShader extends BaseRenderingEngineFunction {
 					// For this feature, the texture barrier extension is required.
 					renderTexture.bind(re, false);
 
-					// Tell the shader which texture has to be used for the fbTex sampler.
-					re.bindActiveTexture(ACTIVE_TEXTURE_FRAMEBUFFER, renderTexture.getTextureId());
+					bindActiveTexture(renderTexture);
 
 					re.textureBarrier();
 				} else {
@@ -1005,8 +1020,7 @@ public class REShader extends BaseRenderingEngineFunction {
 					}
 					copyOfRenderTexture.blitFrom(re, renderTexture);
 
-					// Tell the shader which texture has to be used for the fbTex sampler.
-					re.bindActiveTexture(ACTIVE_TEXTURE_FRAMEBUFFER, copyOfRenderTexture.getTextureId());
+					bindActiveTexture(copyOfRenderTexture);
 				}
 				return;
 			}
@@ -1081,6 +1095,15 @@ public class REShader extends BaseRenderingEngineFunction {
 			// update the uniform values after switching the active shader program.
 			shaderContext.setUniforms(re, currentShaderProgram.getProgramId());
 		}
+
+		if (useShaderStencilTest && useShaderDepthTest) {
+			// When the stencil and depth tests are implemented
+			// in the shader, we need to disable the depth test
+			// performed by OpenGL. I.e. we have to make it always pass.
+			super.enableFlag(IRenderingEngine.GU_DEPTH_TEST);
+			super.setDepthFunc(GeCommands.ZTST_FUNCTION_ALWAYS_PASS_PIXEL);
+		}
+
 		loadFbTexture();
 		loadIntegerTexture();
 
@@ -1330,7 +1353,7 @@ public class REShader extends BaseRenderingEngineFunction {
 	@Override
 	public void setDepthMask(boolean depthWriteEnabled) {
 		if (useShaderDepthTest) {
-			shaderContext.setDepthMask(depthWriteEnabled ? 0xFF : 0x00);
+			shaderContext.setDepthWriteEnabled(depthWriteEnabled);
 		}
 		super.setDepthMask(depthWriteEnabled);
 	}

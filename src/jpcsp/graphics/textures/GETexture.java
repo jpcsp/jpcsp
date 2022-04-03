@@ -387,7 +387,7 @@ public class GETexture {
             re.setTextureMipmapMaxLevel(0);
             re.setTextureWrapMode(TWRAP_WRAP_MODE_CLAMP, TWRAP_WRAP_MODE_CLAMP);
 			re.setFramebufferTexture(IRenderingEngine.RE_DRAW_FRAMEBUFFER, IRenderingEngine.RE_DEPTH_STENCIL_ATTACHMENT, stencilTextureId, 0);
-    		if (re.checkAndLogErrors("setFramebufferTexture RE_STENCIL_ATTACHMENT")) {
+    		if (re.checkAndLogErrors("setFramebufferTexture RE_DEPTH_STENCIL_ATTACHMENT")) {
     			return false;
     		}
 

@@ -78,8 +78,9 @@ public class ShaderContext {
 	private int stencilOpZPass;
 	private int depthTestEnable;
 	private int depthFunc;
-	private int depthMask;
+	private boolean depthWriteEnabled;
 	private int fbTex = -1;
+	private int udepthTex = -1;
 	private int colorMaskEnable;
 	private int[] colorMask = new int[4];
 	private int[] notColorMask = new int[4];
@@ -149,7 +150,7 @@ public class ShaderContext {
 		re.setUniform(Uniforms.stencilOpZPass.getId(shaderProgram), stencilOpZPass);
 		re.setUniform(Uniforms.depthTestEnable.getId(shaderProgram), depthTestEnable);
 		re.setUniform(Uniforms.depthFunc.getId(shaderProgram), depthFunc);
-		re.setUniform(Uniforms.depthMask.getId(shaderProgram), depthMask);
+		re.setUniform(Uniforms.depthWriteEnabled.getId(shaderProgram), depthWriteEnabled ? 1 : 0);
 		re.setUniform(Uniforms.colorMaskEnable.getId(shaderProgram), colorMaskEnable);
 		re.setUniform4(Uniforms.colorMask.getId(shaderProgram), colorMask);
 		re.setUniform4(Uniforms.notColorMask.getId(shaderProgram), notColorMask);
@@ -182,6 +183,7 @@ public class ShaderContext {
 		re.setUniform(Uniforms.tex.getId(shaderProgram), tex);
 		re.setUniform(Uniforms.utex.getId(shaderProgram), utex);
 		re.setUniform(Uniforms.fbTex.getId(shaderProgram), fbTex);
+		re.setUniform(Uniforms.depthTex.getId(shaderProgram), udepthTex);
 	}
 
 	public void initShaderProgram(IRenderingEngine re, int shaderProgram) {
@@ -585,12 +587,12 @@ public class ShaderContext {
 		this.depthFunc = depthFunc;
 	}
 
-	public int getDepthMask() {
-		return depthMask;
+	public boolean isDepthWriteEnabled() {
+		return depthWriteEnabled;
 	}
 
-	public void setDepthMask(int depthMask) {
-		this.depthMask = depthMask;
+	public void setDepthWriteEnabled(boolean depthWriteEnabled) {
+		this.depthWriteEnabled = depthWriteEnabled;
 	}
 
 	public int getFbTex() {
@@ -599,6 +601,14 @@ public class ShaderContext {
 
 	public void setFbTex(int fbTex) {
 		this.fbTex = fbTex;
+	}
+
+	public int getDepthTex() {
+		return udepthTex;
+	}
+
+	public void setDepthTex(int depthTex) {
+		this.udepthTex = depthTex;
 	}
 
 	public int getColorMaskEnable() {

@@ -45,7 +45,7 @@
     uniform int   stencilOpZPass;
     uniform bool  depthTestEnable;
     uniform int   depthFunc;
-    uniform int   depthMask;
+    uniform bool  depthWriteEnabled;
     uniform bool  colorMaskEnable;
     uniform ivec4 colorMask;
     uniform ivec4 notColorMask;
@@ -71,6 +71,7 @@
 #endif
 uniform sampler2D tex;   // The active texture
 uniform sampler2D fbTex; // The texture containing the current screen (FrameBuffer)
+uniform sampler2D depthTex; // The texture containing the current depth buffer (depth FrameBuffer)
 noperspective in float discarded;
 
 #if USE_NATIVE_CLUT
@@ -489,19 +490,25 @@ void ApplyColorTest(in vec3 Cf)
 
 
 ///////////////////////////////////////////////////////////////
-// Depth test (disabled)
+// Depth test
 ///////////////////////////////////////////////////////////////
 
-
-// Convert the depth value from float to int and apply the depth mask
-#if 0
-int getDepthInt(float depth)
+#if USE_SHADER_DEPTH_TEST || USE_SHADER_STENCIL_TEST
+// Convert a float depth value [0..1] to a 16-bit integer value [0..65535]
+uint getDepthInt(float depth)
 {
-    #if USE_BIT_OPERATORS
-        return int(ROUND(depth * 255.0)) & depthMask;
-    #else
-        return depthMask == 0 ? 0 : int(ROUND(depth * 255.0));
-    #endif
+    return uint(ROUND(depth * 65535.0));
+}
+
+
+float getFbDepth()
+{
+    // texelFetch is only available in v1.30 or later
+    #if __VERSION__ >= 130
+		return texelFetch(depthTex, getFragCoord(), 0).r;
+	#else
+		return 0.0;
+	#endif
 }
 
 
@@ -515,17 +522,17 @@ bool passDepthTest(float depth)
         case 1: // ZTST_FUNCTION_ALWAYS_PASS_PIXEL
             return true;
         case 2: // ZTST_FUNCTION_PASS_PX_WHEN_DEPTH_IS_EQUAL
-            return getDepthInt(depth) == gl_FragCoord.z;
+            return getDepthInt(gl_FragCoord.z) == getDepthInt(depth);
         case 3: // ZTST_FUNCTION_PASS_PX_WHEN_DEPTH_ISNOT_EQUAL
-            return getDepthInt(depth) != gl_FragCoord.z;
+            return getDepthInt(gl_FragCoord.z) != getDepthInt(depth);
         case 4: // ZTST_FUNCTION_PASS_PX_WHEN_DEPTH_IS_LESS
-            return getDepthInt(depth) < gl_FragCoord.z;
+            return getDepthInt(gl_FragCoord.z) < getDepthInt(depth);
         case 5: // ZTST_FUNCTION_PASS_PX_WHEN_DEPTH_IS_LESS_OR_EQUAL
-            return getDepthInt(depth) <= gl_FragCoord.z;
+            return getDepthInt(gl_FragCoord.z) <= getDepthInt(depth);
         case 6: // ZTST_FUNCTION_PASS_PX_WHEN_DEPTH_IS_GREATER
-            return getDepthInt(depth) > gl_FragCoord.z;
+            return getDepthInt(gl_FragCoord.z) > getDepthInt(depth);
         case 7: // ZTST_FUNCTION_PASS_PX_WHEN_DEPTH_IS_GREATER_OR_EQUAL
-            return getDepthInt(depth) >= gl_FragCoord.z;
+            return getDepthInt(gl_FragCoord.z) >= getDepthInt(depth);
         }
 
         return true;
@@ -537,22 +544,22 @@ bool passDepthTest(float depth)
         return true;
     #elif DEPTH_FUNC == 2
         // ZTST_FUNCTION_PASS_PX_WHEN_DEPTH_IS_EQUAL
-        return getDepthInt(depth) == gl_FragCoord.z;
+        return getDepthInt(gl_FragCoord.z) == getDepthInt(depth);
     #elif DEPTH_FUNC == 3
         // ZTST_FUNCTION_PASS_PX_WHEN_DEPTH_ISNOT_EQUAL
-        return getDepthInt(depth) != gl_FragCoord.z;
+        return getDepthInt(gl_FragCoord.z) != getDepthInt(depth);
     #elif DEPTH_FUNC == 4
         // ZTST_FUNCTION_PASS_PX_WHEN_DEPTH_IS_LESS
-        return getDepthInt(depth) < gl_FragCoord.z;
+        return getDepthInt(gl_FragCoord.z) < getDepthInt(depth);
     #elif DEPTH_FUNC == 5
         // ZTST_FUNCTION_PASS_PX_WHEN_DEPTH_IS_LESS_OR_EQUAL
-        return getDepthInt(depth) <= gl_FragCoord.z;
+        return getDepthInt(gl_FragCoord.z) <= getDepthInt(depth);
     #elif DEPTH_FUNC == 6
         // ZTST_FUNCTION_PASS_PX_WHEN_DEPTH_IS_GREATER
-        return getDepthInt(depth) > gl_FragCoord.z;
+        return getDepthInt(gl_FragCoord.z) > getDepthInt(depth);
     #elif DEPTH_FUNC == 7
         // ZTST_FUNCTION_PASS_PX_WHEN_DEPTH_IS_GREATER_OR_EQUAL
-        return getDepthInt(depth) >= gl_FragCoord.z;
+        return getDepthInt(gl_FragCoord.z) >= getDepthInt(depth);
     #else
         return true;
     #endif
@@ -563,7 +570,7 @@ bool passDepthTest(float depth)
 // Stencil Test
 ///////////////////////////////////////////////////////////////
 
-
+#if USE_SHADER_STENCIL_TEST
 // Apply the selected stencil operation to the fragment color Cf
 void applyStencilOp(inout vec4 Cf, float fbAlpha, int stencilOp)
 {
@@ -664,7 +671,7 @@ bool passStencilTest(float fbAlpha)
 
 
 // Apply the stencil test function to the fragment color Cf
-bool ApplyStencilTest(inout vec4 Cf, in vec4 Cdst)
+bool ApplyStencilTest(inout vec4 Cf, in vec4 Cdst, in bool depthTestPassed)
 {
     int stencilOp;
     bool stencilTestPassed;
@@ -673,8 +680,9 @@ bool ApplyStencilTest(inout vec4 Cf, in vec4 Cdst)
     {
         // The stencil did pass, the RGB will be updated
         // and update the Alpha according to the stencil operation.
-        // FAKING: Always pass the Z test, for now.
-        stencilOp = stencilOpZPass;
+        // The selected stencil operation depends on the result
+   	    // of the depth test.
+	    stencilOp = depthTestPassed ? stencilOpZPass : stencilOpZFail;
         stencilTestPassed = true;
     }
     else
@@ -691,12 +699,14 @@ bool ApplyStencilTest(inout vec4 Cf, in vec4 Cdst)
 
     return stencilTestPassed;
 }
+#endif
 
 
 ///////////////////////////////////////////////////////////////
 // Color masking
 ///////////////////////////////////////////////////////////////
 
+#if USE_SHADER_COLOR_MASK
 // The Color masking function is mixing the color
 // from the already rendered buffer with the current fragment color.
 void ApplyColorMask(inout vec4 Cf, in vec4 Cdst)
@@ -714,12 +724,14 @@ void ApplyColorMask(inout vec4 Cf, in vec4 Cdst)
         // Color mask not available when not using bit operators...
     #endif
 }
+#endif
 
 
 ///////////////////////////////////////////////////////////////
 // Alpha Test
 ///////////////////////////////////////////////////////////////
 
+#if USE_SHADER_ALPHA_TEST
 // Convert the alpha value from float to int and apply the alpha mask
 int getAlphaInt(float alpha)
 {
@@ -786,12 +798,14 @@ void ApplyAlphaTest(inout vec4 Cf)
         if (getAlphaInt(Cf.a) < alphaTestRef) discard;
     #endif
 }
+#endif
 
 
 ///////////////////////////////////////////////////////////////
 // Blend Test
 ///////////////////////////////////////////////////////////////
 
+#if USE_SHADER_BLEND_TEST
 vec3 getBlendParameter(int parameter, in vec3 color, float srcAlpha, float dstAlpha, in vec3 fix)
 {
     switch (parameter)
@@ -872,6 +886,11 @@ void ApplyBlendTest(inout vec4 Cf, in vec4 Csrc, in vec4 Cdst)
         Cf.rgb = abs(Csrc.rgb - Cdst.rgb);
     #endif
 }
+#endif
+
+///////////////////////////////////////////////////////////////
+// Fog
+///////////////////////////////////////////////////////////////
 
 void ApplyFog(inout vec4 Cf)
 {
@@ -899,6 +918,17 @@ void main()
         ApplyColorTest(Cf.rgb);
     #endif
 
+   	bool depthTestPassed = true;
+   	#if USE_SHADER_DEPTH_TEST || USE_SHADER_STENCIL_TEST
+	    #if !USE_DYNAMIC_DEFINES
+    		float fbDepth = getFbDepth();
+    		if (depthTestEnable) depthTestPassed = passDepthTest(fbDepth);
+	    #elif DEPTH_TEST_ENABLE
+    		float fbDepth = getFbDepth();
+		    depthTestPassed = passDepthTest(fbDepth);
+    	#endif
+    #endif
+
     #if !USE_DYNAMIC_DEFINES
         vec4 Cdst = vec4(0.0);
         // texelFetch is only available in v1.30 or later
@@ -912,36 +942,44 @@ void main()
                 Cdst = texelFetch(fbTex, getFragCoord(), 0);
             }
         #endif
-    #elif STENCIL_TEST_ENABLE || BLEND_TEST_ENABLE || COLOR_MASK_ENABLE
+    #elif STENCIL_TEST_ENABLE || BLEND_TEST_ENABLE || COLOR_MASK_ENABLE || DEPTH_TEST_ENABLE
         vec4 Cdst = texelFetch(fbTex, getFragCoord(), 0);
     #endif
 
-    #if !USE_DYNAMIC_DEFINES
-        if (alphaTestEnable) ApplyAlphaTest(Cf);
-    #elif ALPHA_TEST_ENABLE
-        ApplyAlphaTest(Cf);
+	#if USE_SHADER_ALPHA_TEST
+	    #if !USE_DYNAMIC_DEFINES
+    	    if (alphaTestEnable) ApplyAlphaTest(Cf);
+    	#elif ALPHA_TEST_ENABLE
+        	ApplyAlphaTest(Cf);
+    	#endif
     #endif
 
     bool stencilTestPassed = true;
-    #if !USE_DYNAMIC_DEFINES
-        if (stencilTestEnable) stencilTestPassed = ApplyStencilTest(Cf, Cdst);
-    #elif STENCIL_TEST_ENABLE
-        stencilTestPassed = ApplyStencilTest(Cf, Cdst);
+    #if USE_SHADER_STENCIL_TEST
+	    #if !USE_DYNAMIC_DEFINES
+    	    if (stencilTestEnable) stencilTestPassed = ApplyStencilTest(Cf, Cdst, depthTestPassed);
+    	#elif STENCIL_TEST_ENABLE
+	        stencilTestPassed = ApplyStencilTest(Cf, Cdst, depthTestPassed);
+    	#endif
     #endif
 
     if (stencilTestPassed)
     {
-        #if !USE_DYNAMIC_DEFINES
-            if (blendTestEnable) ApplyBlendTest(Cf, Csrc, Cdst);
-        #elif BLEND_TEST_ENABLE
-            ApplyBlendTest(Cf, Csrc, Cdst);
+    	#if USE_SHADER_BLEND_TEST
+	        #if !USE_DYNAMIC_DEFINES
+    	        if (blendTestEnable) ApplyBlendTest(Cf, Csrc, Cdst);
+        	#elif BLEND_TEST_ENABLE
+            	ApplyBlendTest(Cf, Csrc, Cdst);
+        	#endif
         #endif
 
-        #if !USE_DYNAMIC_DEFINES
-            if (colorMaskEnable) ApplyColorMask(Cf, Cdst);
-        #elif COLOR_MASK_ENABLE
-            ApplyColorMask(Cf, Cdst);
-        #endif
+		#if USE_SHADER_COLOR_MASK
+	        #if !USE_DYNAMIC_DEFINES
+    	        if (colorMaskEnable) ApplyColorMask(Cf, Cdst);
+        	#elif COLOR_MASK_ENABLE
+	            ApplyColorMask(Cf, Cdst);
+    	    #endif
+    	#endif
     }
 
 	#if !USE_DYNAMIC_DEFINES
@@ -957,6 +995,34 @@ void main()
 		if (fogEnable) ApplyFog(Cf);
 	#elif FOG_ENABLE
 		ApplyFog(Cf);
+	#endif
+
+	#if USE_SHADER_DEPTH_TEST
+		gl_FragDepth = gl_FragCoord.z;
+		#if !USE_DYNAMIC_DEFINES
+			if (!depthTestPassed)
+			{
+				if (stencilTestEnable)
+				{
+					Cf.rgb = Cdst.rgb;
+					gl_FragDepth = fbDepth;
+				}
+				else
+				{
+					discard;
+				}
+			}
+		#elif DEPTH_TEST_ENABLE
+			if (!depthTestPassed)
+			{
+				#if STENCIL_TEST_ENABLE
+					Cf.rgb = Cdst.rgb;
+					gl_FragDepth = fbDepth;
+				#else
+					discard;
+				#endif
+			}
+		#endif
 	#endif
 
     gl_FragColor = Cf;

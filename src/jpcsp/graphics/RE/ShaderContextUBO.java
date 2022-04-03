@@ -74,7 +74,7 @@ public class ShaderContextUBO extends ShaderContext {
 	private ShaderUniformInfo stencilOpZPass;
 	private ShaderUniformInfo depthTestEnable;
 	private ShaderUniformInfo depthFunc;
-	private ShaderUniformInfo depthMask;
+	private ShaderUniformInfo depthWriteEnabled;
 	private ShaderUniformInfo alphaTestEnable;
 	private ShaderUniformInfo alphaTestFunc;
 	private ShaderUniformInfo alphaTestRef;
@@ -229,7 +229,7 @@ public class ShaderContextUBO extends ShaderContext {
 		stencilOpZPass = addShaderUniform(Uniforms.stencilOpZPass, "int");
 		depthTestEnable = addShaderUniform(Uniforms.depthTestEnable, "bool");
 		depthFunc = addShaderUniform(Uniforms.depthFunc, "int");
-		depthMask = addShaderUniform(Uniforms.depthMask, "int");
+		depthWriteEnabled = addShaderUniform(Uniforms.depthWriteEnabled, "bool");
 		alphaTestEnable = addShaderUniform(Uniforms.alphaTestEnable, "bool");
 		alphaTestFunc = addShaderUniform(Uniforms.alphaTestFunc, "int");
 		alphaTestRef = addShaderUniform(Uniforms.alphaTestRef, "int");
@@ -795,10 +795,10 @@ public class ShaderContextUBO extends ShaderContext {
 	}
 
 	@Override
-	public void setDepthMask(int depthMask) {
-		if (depthMask != getDepthMask()) {
-			copy(depthMask, this.depthMask);
-			super.setDepthMask(depthMask);
+	public void setDepthWriteEnabled(boolean depthWriteEnabled) {
+		if (depthWriteEnabled != isDepthWriteEnabled()) {
+			copy(depthWriteEnabled, this.depthWriteEnabled);
+			super.setDepthWriteEnabled(depthWriteEnabled);
 		}
 	}
 

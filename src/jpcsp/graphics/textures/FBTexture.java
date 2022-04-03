@@ -16,6 +16,9 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.graphics.textures;
 
+import static jpcsp.graphics.GeCommands.TFLT_NEAREST;
+import static jpcsp.graphics.GeCommands.TWRAP_WRAP_MODE_CLAMP;
+
 import jpcsp.graphics.GeCommands;
 import jpcsp.graphics.VideoEngine;
 import jpcsp.graphics.RE.IRenderingEngine;
@@ -28,7 +31,8 @@ import jpcsp.graphics.RE.IRenderingEngine;
  */
 public class FBTexture extends GETexture {
 	private int fboId = -1;
-	private int depthRenderBufferId = -1;
+	private int depthTextureId = -1;
+	private static final int depthPixelFormat = IRenderingEngine.RE_DEPTH_COMPONENT;
 
 	public FBTexture(int address, int bufferWidth, int width, int height, int pixelFormat) {
 		super(address, bufferWidth, width, height, pixelFormat, true);
@@ -62,27 +66,36 @@ public class FBTexture extends GETexture {
 			re.deleteFramebuffer(fboId);
 			fboId = -1;
 		}
-		if (depthRenderBufferId != -1) {
-			re.deleteRenderbuffer(depthRenderBufferId);
-			depthRenderBufferId = -1;
+		if (depthTextureId != -1) {
+			re.deleteTexture(depthTextureId);
+			depthTextureId = -1;
 		}
 
 		// Create the FBO and associate it to the texture
 		fboId = re.genFramebuffer();
 		re.bindFramebuffer(IRenderingEngine.RE_FRAMEBUFFER, fboId);
 
-		// Create a render buffer for the depth buffer
-		depthRenderBufferId = re.genRenderbuffer();
-		re.bindRenderbuffer(depthRenderBufferId);
-		re.setRenderbufferStorage(IRenderingEngine.RE_DEPTH_COMPONENT, getTexImageWidth(), getTexImageHeight());
+		// Create a texture for the depth buffer
+		depthTextureId = re.genTexture();
+		re.bindTexture(depthTextureId);
+		re.setTexImage(0, depthPixelFormat, getTexImageWidth(), getTexImageHeight(), depthPixelFormat, depthPixelFormat, 0, null);
+        re.setTextureMipmapMinFilter(TFLT_NEAREST);
+        re.setTextureMipmapMagFilter(TFLT_NEAREST);
+        re.setTextureMipmapMinLevel(0);
+        re.setTextureMipmapMaxLevel(0);
+        re.setTextureWrapMode(TWRAP_WRAP_MODE_CLAMP, TWRAP_WRAP_MODE_CLAMP);
 
 		// Create the texture
 		super.bind(re, forDrawing);
 
 		// Attach the texture to the FBO
 		re.setFramebufferTexture(IRenderingEngine.RE_FRAMEBUFFER, IRenderingEngine.RE_COLOR_ATTACHMENT0, textureId, 0);
-		// Attach the depth buffer to the FBO
-		re.setFramebufferRenderbuffer(IRenderingEngine.RE_FRAMEBUFFER, IRenderingEngine.RE_DEPTH_ATTACHMENT, depthRenderBufferId);
+		// Attach the depth texture to the FBO
+		re.setFramebufferTexture(IRenderingEngine.RE_FRAMEBUFFER, IRenderingEngine.RE_DEPTH_ATTACHMENT, depthTextureId, 0);
+	}
+
+	public int getDepthTextureId() {
+		return depthTextureId;
 	}
 
 	@Override
@@ -91,9 +104,9 @@ public class FBTexture extends GETexture {
 			re.deleteFramebuffer(fboId);
 			fboId = -1;
 		}
-		if (depthRenderBufferId != -1) {
-			re.deleteRenderbuffer(depthRenderBufferId);
-			depthRenderBufferId = -1;
+		if (depthTextureId != -1) {
+			re.deleteTexture(depthTextureId);
+			depthTextureId = -1;
 		}
 		super.delete(re);
 	}
