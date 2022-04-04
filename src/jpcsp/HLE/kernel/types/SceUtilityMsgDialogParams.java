@@ -18,6 +18,9 @@ package jpcsp.HLE.kernel.types;
 
 
 public class SceUtilityMsgDialogParams extends pspUtilityBaseDialog {
+	public final static int PSP_UTILITY_MSGDIALOG_SIZE_V1 = 572;
+	public final static int PSP_UTILITY_MSGDIALOG_SIZE_V2 = 580;
+	public final static int PSP_UTILITY_MSGDIALOG_SIZE_V3 = 708;
     public int result;
     public int mode;
         public final static int PSP_UTILITY_MSGDIALOG_MODE_ERROR = 0;
