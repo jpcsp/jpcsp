@@ -1562,6 +1562,9 @@ public class RenderingEngineLwjgl extends NullRenderingEngine {
                     case GL11.GL_INVALID_VALUE:
                         errorComment = "GL_INVALID_VALUE";
                         break;
+                    case ARBFramebufferObject.GL_INVALID_FRAMEBUFFER_OPERATION:
+                        errorComment = "GL_INVALID_FRAMEBUFFER_OPERATION";
+                        break;
                     default:
                         errorComment = String.format("0x%X", error);
                         break;

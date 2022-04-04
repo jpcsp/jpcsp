@@ -960,7 +960,12 @@ public class REShader extends BaseRenderingEngineFunction {
 	 *          false if the shader will not use the fbTex sampler
 	 */
 	private boolean isFbTextureNeeded() {
-		if (useShaderDepthTest && shaderContext.getDepthTestEnable() != 0) {
+		// No need for the frame buffer texture in direct or clear mode
+		if (directMode || isClearMode()) {
+			return false;
+		}
+
+		if (useShaderDepthTest && (shaderContext.getDepthTestEnable() != 0 || !shaderContext.isDepthWriteEnabled())) {
 			return true;
 		}
 
@@ -1099,7 +1104,8 @@ public class REShader extends BaseRenderingEngineFunction {
 		loadFbTexture();
 		loadIntegerTexture();
 
-		if (useShaderStencilTest && useShaderDepthTest) {
+		// Exclude the direct and clear modes as they do not need the frame buffer texture
+		if (useShaderStencilTest && useShaderDepthTest && !directMode && !isClearMode()) {
 			// When the stencil and depth tests are implemented
 			// in the shader, we need to disable the depth test
 			// performed by OpenGL. I.e. we have to make it always pass.
