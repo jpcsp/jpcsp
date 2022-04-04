@@ -344,8 +344,20 @@ public class scePspNpDrm_user extends HLEModule {
     }
 
     @HLEUnimplemented
+    @HLEFunction(nid = 0x4478C033, version = 150)
+    public int sceNpDrmVerifyRifById(int id) {
+        return 0;
+    }
+
+    @HLEUnimplemented
     @HLEFunction(nid = 0x9A34AC9F, version = 150)
-    public int sceNpDrm_9A34AC9F(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=152, usage=Usage.in) TPointer rifAddr) {
+    public int sceNpDrmCheckRifTimeLimit(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=152, usage=Usage.in) TPointer rifAddr) {
+        return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xD19E6E28, version = 150)
+    public int sceNpDrmCheckRifTimeLimitById(int id) {
         return 0;
     }
 
@@ -367,7 +379,19 @@ public class scePspNpDrm_user extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x2D88879A, version = 150)
-    public int sceNpDrm_2D88879A() {
+    public int sceNpDrmSetDebugMode(int debugMode) {
+        return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x3554E328, version = 150)
+    public int sceNpDrmSetRifDevice(int rifDevice) {
+        return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xD36B4E6D, version = 150)
+    public int sceNpDrmGetModuleKey() {
         return 0;
     }
 }
