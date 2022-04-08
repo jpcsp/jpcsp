@@ -74,7 +74,7 @@ public class sceChkreg extends HLEModule {
 
 	@HLEUnimplemented
 	@HLEFunction(nid = 0x7939C851, version = 150)
-	public int  sceChkreg_driver_7939C851() {
+	public int sceChkregGetPspModel() {
 		// Has no parameters
 		return 1;
 	}
