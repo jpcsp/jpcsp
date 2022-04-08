@@ -104,6 +104,7 @@ public class ShaderContext {
 	private int clipPlaneEnable;
 	private float[] viewportPos = new float[3];
 	private float[] viewportScale = new float[3];
+	private int shadeModel;
 
 	public void setUniforms(IRenderingEngine re, int shaderProgram) {
 		re.setUniform(Uniforms.zPos.getId(shaderProgram), zPos);
@@ -174,6 +175,7 @@ public class ShaderContext {
 		re.setUniform(Uniforms.clipPlaneEnable.getId(shaderProgram), clipPlaneEnable);
 		re.setUniform3(Uniforms.viewportPos.getId(shaderProgram), viewportPos);
 		re.setUniform3(Uniforms.viewportScale.getId(shaderProgram), viewportScale);
+		re.setUniform(Uniforms.shadeModel.getId(shaderProgram), shadeModel);
 
 		setUniformsSamplers(re, shaderProgram);
 	}
@@ -809,5 +811,13 @@ public class ShaderContext {
 		this.viewportScale[0] = sx;
 		this.viewportScale[1] = sy;
 		this.viewportScale[2] = sz;
+	}
+
+	public int getShadeModel() {
+		return shadeModel;
+	}
+
+	public void setShadeModel(int shadeModel) {
+		this.shadeModel = shadeModel;
 	}
 }

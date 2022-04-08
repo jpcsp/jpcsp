@@ -16,18 +16,28 @@
 
 // Use attributes instead of gl_Vertex, gl_Normal...: attributes support all the
 // data types used by the PSP (signed/unsigned, bytes/shorts/floats).
-#if __VERSION__ >= 130
-    #define ATTRIBUTE in
-#else
-    #define ATTRIBUTE attribute
-#endif
-ATTRIBUTE vec4 pspTexture;
-ATTRIBUTE vec4 pspColor;
-ATTRIBUTE vec3 pspNormal;
-ATTRIBUTE vec4 pspPosition;
-ATTRIBUTE vec4 pspWeights1;
-ATTRIBUTE vec4 pspWeights2;
+in vec4 pspTexture;
+in vec4 pspColor;
+in vec3 pspNormal;
+in vec4 pspPosition;
+in vec4 pspWeights1;
+in vec4 pspWeights2;
 noperspective out float discarded;
+#if !USE_DYNAMIC_DEFINES
+	// When not using dynamic defines, we need to generate the primary and secondary
+	// colors in both the smooth and flat variants as the use of one or the other
+	// will be decided dynamically in the fragment shader based on the value of the shadeModel.
+	smooth out vec4 pspPrimaryColorSmooth;
+	smooth out vec4 pspSecondaryColorSmooth;
+	flat out vec4 pspPrimaryColorFlat;
+	flat out vec4 pspSecondaryColorFlat;
+#elif SHADE_MODEL == 0
+	flat out vec4 pspPrimaryColor;
+	flat out vec4 pspSecondaryColor;
+#else
+	smooth out vec4 pspPrimaryColor;
+	smooth out vec4 pspSecondaryColor;
+#endif
 
 #if USE_UBO
 	UBO_STRUCTURE
@@ -613,10 +623,17 @@ void main()
         ApplyTexture(T, V, N, Ne);
     #endif
 
-    gl_Position            = gl_ModelViewProjectionMatrix * V;
-    gl_FogFragCoord        = Ve.z;
-    gl_TexCoord[0]         = T;
-    gl_FrontColor          = Cp;
-    gl_FrontSecondaryColor = Cs;
-    discarded              = getDiscarded(gl_Position);
+    gl_Position                 = gl_ModelViewProjectionMatrix * V;
+    gl_FogFragCoord             = Ve.z;
+    gl_TexCoord[0]              = T;
+    #if !USE_DYNAMIC_DEFINES
+		pspPrimaryColorFlat     = Cp;
+		pspSecondaryColorFlat   = Cs;
+		pspPrimaryColorSmooth   = Cp;
+		pspSecondaryColorSmooth = Cs;
+	#else
+		pspPrimaryColor         = Cp;
+		pspSecondaryColor       = Cs;
+	#endif
+    discarded                   = getDiscarded(gl_Position);
 }

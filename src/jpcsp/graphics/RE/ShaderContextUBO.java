@@ -88,6 +88,7 @@ public class ShaderContextUBO extends ShaderContext {
 	private ShaderUniformInfo colorMaskEnable;
 	private ShaderUniformInfo wrapModeS;
 	private ShaderUniformInfo wrapModeT;
+	private ShaderUniformInfo shadeModel;
 	private ShaderUniformInfo copyRedToAlpha;
 	private ShaderUniformInfo fogEnable;
 	private ShaderUniformInfo fogColor;
@@ -241,6 +242,7 @@ public class ShaderContextUBO extends ShaderContext {
 		colorMaskEnable = addShaderUniform(Uniforms.colorMaskEnable, "bool");
 		wrapModeS = addShaderUniform(Uniforms.wrapModeS, "int");
 		wrapModeT = addShaderUniform(Uniforms.wrapModeT, "int");
+		shadeModel = addShaderUniform(Uniforms.shadeModel, "int");
 		copyRedToAlpha = addShaderUniform(Uniforms.copyRedToAlpha, "bool");
 		fogEnable = addShaderUniform(Uniforms.fogEnable, "bool");
 		fogColor = addShaderUniform(Uniforms.fogColor, "vec3");
@@ -998,6 +1000,14 @@ public class ShaderContextUBO extends ShaderContext {
 		if (sx != currentViewportScale[0] || sy != currentViewportScale[1] || sz != currentViewportScale[2]) {
 			copy(new float[] { sx, sy, sz }, this.viewportScale, 0, 3);
 			super.setViewportScale(sx, sy, sz);
+		}
+	}
+
+	@Override
+	public void setShadeModel(int shadeModel) {
+		if (shadeModel != getShadeModel()) {
+			copy(shadeModel, this.shadeModel);
+			super.setShadeModel(shadeModel);
 		}
 	}
 }

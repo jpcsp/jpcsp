@@ -68,11 +68,29 @@
     uniform vec3  fogColor;
     uniform float fogEnd;
     uniform float fogScale;
+    uniform int   shadeModel;
 #endif
+
 uniform sampler2D tex;   // The active texture
 uniform sampler2D fbTex; // The texture containing the current screen (FrameBuffer)
 uniform sampler2D depthTex; // The texture containing the current depth buffer (depth FrameBuffer)
 noperspective in float discarded;
+
+#if !USE_DYNAMIC_DEFINES
+	// When not using dynamic defines, we need the primary and secondary
+	// colors in both the smooth and flat variants as the use of one or the other
+	// will be decided dynamically based on the value of the shadeModel.
+	smooth in vec4 pspPrimaryColorSmooth;
+	smooth in vec4 pspSecondaryColorSmooth;
+	flat in vec4 pspPrimaryColorFlat;
+	flat in vec4 pspSecondaryColorFlat;
+#elif SHADE_MODEL == 0
+	flat in vec4 pspPrimaryColor;
+	flat in vec4 pspSecondaryColor;
+#else
+	smooth in vec4 pspPrimaryColor;
+	smooth in vec4 pspSecondaryColor;
+#endif
 
 #if USE_NATIVE_CLUT
     uniform usampler2D utex;
@@ -428,18 +446,20 @@ vec4 getTextureColor(in vec4 Cp, in vec4 Cs)
 vec4 getFragColor()
 {
     #if !USE_DYNAMIC_DEFINES
+    	vec4 pspPrimaryColor = shadeModel == 0 ? pspPrimaryColorFlat : pspPrimaryColorSmooth;
+    	vec4 pspSecondaryColor = shadeModel == 0 ? pspSecondaryColorFlat : pspSecondaryColorSmooth;
         if (texEnable)
         {
-            return getTextureColor(gl_Color, gl_SecondaryColor);
+            return getTextureColor(pspPrimaryColor, pspSecondaryColor);
         }
         else
         {
-            return clamp(gl_Color + gl_SecondaryColor, 0.0, 1.0);
+            return clamp(pspPrimaryColor + pspSecondaryColor, 0.0, 1.0);
         }
     #elif TEX_ENABLE
-        return getTextureColor(gl_Color, gl_SecondaryColor);
+        return getTextureColor(pspPrimaryColor, pspSecondaryColor);
     #else
-        return clamp(gl_Color + gl_SecondaryColor, 0.0, 1.0);
+        return clamp(pspPrimaryColor + pspSecondaryColor, 0.0, 1.0);
     #endif
 }
 

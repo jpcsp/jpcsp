@@ -1513,4 +1513,10 @@ public class REShader extends BaseRenderingEngineFunction {
 		shaderContext.setViewportScale(sx, sy, sz);
 		super.setViewportScale(sx, sy, sz);
 	}
+
+	@Override
+	public void setShadeModel(int model) {
+		shaderContext.setShadeModel(model);
+		super.setShadeModel(model);
+	}
 }
