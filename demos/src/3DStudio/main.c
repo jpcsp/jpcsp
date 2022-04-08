@@ -260,7 +260,7 @@ int states[] = {
 	GU_FACE_NORMAL_REVERSE,
 	GU_FOG,
 	GU_CLIP_PLANES,
-	GU_SCISSOR_TEST,
+/*	GU_SCISSOR_TEST, */
 	GU_DITHER,
 	GU_LINE_SMOOTH,
 	GU_COLOR_TEST,
@@ -570,10 +570,10 @@ int regionX = 0;
 int regionY = 0;
 int regionWidth = SCR_WIDTH;
 int regionHeight = SCR_HEIGHT;
-int scissorX = 0;
-int scissorY = 0;
-int scissorWidth = SCR_WIDTH;
-int scissorHeight = SCR_HEIGHT;
+int scissorX1 = 0;
+int scissorY1 = 0;
+int scissorX2 = SCR_WIDTH - 1;
+int scissorY2 = SCR_HEIGHT - 1;
 int displayMode = 0;
 int displayWidth = SCR_WIDTH;
 int displayHeight = SCR_HEIGHT;
@@ -1265,7 +1265,8 @@ void drawRectangles()
 	sceGuViewport(viewportX, viewportY, viewportWidth, viewportHeight);
 	sendCommandi(21, (regionY << 10) | regionX); // REGION1 command
 	sendCommandi(22, (((regionY + regionHeight - 1) << 10) | (regionX + regionWidth - 1))); // REGION2 command
-	sceGuScissor(scissorX, scissorY, scissorWidth, scissorHeight);
+	sendCommandi(212, (scissorY1 << 10) | scissorX1); // SCISSOR1 command
+	sendCommandi(213, (scissorY2 << 10) | scissorX2); // SCISSOR2 command
 	int materialFlags = 0;
 	if (materialAmbientFlag ) materialFlags |= GU_AMBIENT;
 	if (materialDiffuseFlag ) materialFlags |= GU_DIFFUSE;
@@ -1800,11 +1801,11 @@ void init()
 	addAttribute("         Width", &regionWidth, NULL, x, y, -4096, 4095, 10, NULL);
 	addAttribute(", Height", &regionHeight, NULL, x + 19, y, -4096, 4095, 10, NULL);
 	y++;
-	addAttribute("Scissor  X", &scissorX, NULL, x, y, 0, 4095, 10, NULL);
-	addAttribute(", Y", &scissorY, NULL, x + 16, y, 0, 4095, 10, NULL);
+	addAttribute("Scissor  X1", &scissorX1, NULL, x, y, 0, 1023, 10, NULL);
+	addAttribute(", Y1", &scissorY1, NULL, x + 17, y, 0, 1023, 10, NULL);
 	y++;
-	addAttribute("         Width", &scissorWidth, NULL, x, y, -4096, 4095, 10, NULL);
-	addAttribute(", Height", &scissorHeight, NULL, x + 19, y, -4096, 4095, 10, NULL);
+	addAttribute("         X2", &scissorX2, NULL, x, y, 0, 1023, 10, NULL);
+	addAttribute(", Y2", &scissorY2, NULL, x + 17, y, 0, 1023, 10, NULL);
 	y++;
 	addAttribute("Display Width", &displayWidth, NULL, x, y, 0, 512, 1, NULL);
 	addAttribute(", Height", &displayHeight, NULL, x + 18, y, 0, 512, 1, NULL);

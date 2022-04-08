@@ -6835,22 +6835,37 @@ public class VideoEngine {
     }
 
     private void setScissor() {
-        if (context.scissor_x1 >= 0 && context.scissor_y1 >= 0
-                && context.scissor_width <= context.region_width
-                && context.scissor_height <= context.region_height) {
-            int scissorX = context.scissor_x1;
-            int scissorY = context.scissor_y1;
-            int scissorWidth = context.scissor_width;
-            int scissorHeight = context.scissor_height;
+        int scissorX = context.scissor_x1;
+        int scissorY = context.scissor_y1;
+        int scissorWidth = context.scissor_width;
+        int scissorHeight = context.scissor_height;
 
-            if (scissorHeight < Screen.height) {
-                scissorY = Screen.height - scissorHeight - scissorY;
-            }
+        if (scissorX == 0 && scissorY == 0 && scissorWidth >= Screen.width && scissorHeight >= Screen.height) {
+        	// As the scissor test cannot be actually disabled on the PSP,
+        	// it is usually set to (0,0)-(480,272)
+        	// to disable any scissor test on the PSP.
+        	// OpenGL is however able to disable the scissor test,
+        	// so that we can disable it completely in this case.
+            context.scissorTestFlag.setEnabled(re, false);
+        } else if (scissorWidth > 0 && scissorHeight > 0 && scissorX < Screen.width && scissorY < Screen.height) {
+        	// A valid scissor is enabled on the PSP, map it to OpenGL.
+
+        	// Only provide a valid scissor width and height to OpenGL
+            scissorWidth = Math.min(scissorWidth, Screen.width - scissorX);
+            scissorHeight = Math.min(scissorHeight, Screen.height - scissorY);
+
+            // The Y-Axis is upside-down in OpenGL
+            scissorY = Screen.height - scissorHeight - scissorY;
 
             re.setScissor(scissorX, scissorY, scissorWidth, scissorHeight);
             context.scissorTestFlag.setEnabled(re, true);
         } else {
-            context.scissorTestFlag.setEnabled(re, false);
+        	// Nothing should be rendered
+        	//    if the scissor x1 >= 480 or y1 >= 272,
+        	// or if the scissor width <= 0 (i.e. if x1 > x2)
+        	// or if the scissor height <= 0 (i.e. if y1 > y2)
+        	re.setScissor(0, 0, 0, 0);
+            context.scissorTestFlag.setEnabled(re, true);
         }
     }
 
