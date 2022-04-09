@@ -58,7 +58,7 @@ public class sceOpenPSID extends HLEModule {
      * 
      * @param pSrcData Pointer to data to encrypt. The encrypted data will be written 
      *                 back into this buffer.
-     * @param size The size of the data to encrypt. The size needs to be a multiple of ::KIRK_AES_BLOCK_LEN. \n
+     * @param size The size of the data to encrypt. The size needs to be a multiple of ::KIRK_AES_BLOCK_LEN.
                    Max size: ::SCE_DNAS_USER_DATA_MAX_LEN.
      *
      * @return 0 on success, otherwise < 0.
@@ -102,7 +102,7 @@ public class sceOpenPSID extends HLEModule {
      *
      * @note The ECDSA algorithm is used to generate a signature.
      *
-     * @param pPrivKey Pointer to the private key used to generate the signature. \n
+     * @param pPrivKey Pointer to the private key used to generate the signature.
      *                 CONFIRM: The key has to be AES encrypted before.
      * @param pData Pointer to data a signature has to be computed for. Data length: ::KIRK_ECDSA_SRC_DATA_LEN
      * @param pSig Pointer to a buffer receiving the signature. Signature length: ::KIRK_ECDSA_SIG_LEN
@@ -120,9 +120,9 @@ public class sceOpenPSID extends HLEModule {
      *
      * @note The used key is provided by the PSP.
      * 
-     * @param pSrcData Pointer to data to decrypt. The decrypted data will be written \n
+     * @param pSrcData Pointer to data to decrypt. The decrypted data will be written
      *                 back into this buffer.
-     * @param size The size of the data to decrypt. The size needs to be a multiple of ::KIRK_AES_BLOCK_LEN. \n
+     * @param size The size of the data to decrypt. The size needs to be a multiple of ::KIRK_AES_BLOCK_LEN.
                    Max size: ::SCE_DNAS_USER_DATA_MAX_LEN.
      *
      * @return 0 on success, otherwise < 0.
@@ -153,10 +153,10 @@ public class sceOpenPSID extends HLEModule {
      *
      * @note The ECDSA algorithm is used to verify a signature.
      *
-     * @param pPubKey The public key used for validating the (data,signature) pair. \n
+     * @param pPubKey The public key used for validating the (data,signature) pair.
      *                Size has to be ::KIRK_ECDSA_PUBLIC_KEY_LEN.
-     * @param pData Pointer to data the signature has to be verified for. \n
-                    Data length: ::KIRK_ECDSA_SRC_DATA_LEN \n
+     * @param pData Pointer to data the signature has to be verified for.
+                    Data length: ::KIRK_ECDSA_SRC_DATA_LEN
      * @param pSig Pointer to the signature to verify. Signature length: ::KIRK_ECDSA_SIG_LEN
      *
      * @return 0 on success, otherwise < 0.
@@ -169,7 +169,7 @@ public class sceOpenPSID extends HLEModule {
 
     /**
     *
-    * Compute a new elliptic curve point by multiplying the provided private key with the \n
+    * Compute a new elliptic curve point by multiplying the provided private key with the
     * provided base point of the elliptic curve.
     *
     * @param pPrivKey Pointer to the private key of a (public,private) key pair usable for ECDSA.
@@ -188,9 +188,9 @@ public class sceOpenPSID extends HLEModule {
     /**
      * Generate a new (public,private) key pair to use with ECDSA.
      *
-     * @param pKeyData Pointer to buffer receiving the computed key pair. \n
-     *                 The first ::KIRK_ECDSA_PRIVATE_KEY_LEN byte will contain the private key. \n
-     *                 The rest of the bytes will contain the public key (elliptic curve) point p = (x,y), \n
+     * @param pKeyData Pointer to buffer receiving the computed key pair.
+     *                 The first ::KIRK_ECDSA_PRIVATE_KEY_LEN byte will contain the private key.
+     *                 The rest of the bytes will contain the public key (elliptic curve) point p = (x,y),
      *                 with the x-value being first. Both coordinates have size ::KIRK_ECDSA_POINT_LEN / 2.
      *
      * @return 0 on success, otherwise < 0.
@@ -202,12 +202,12 @@ public class sceOpenPSID extends HLEModule {
     }
 
     /**
-     * Verify if the provided signature is valid for the specified data. The public key\n
+     * Verify if the provided signature is valid for the specified data. The public key
      * is provided by the system software.
      *
      * @note The ECDSA algorithm is used to verify a signature.
      *
-     * @param pData Pointer to data the signature has to be verified for. \n
+     * @param pData Pointer to data the signature has to be verified for.
      *              Data length: ::KIRK_ECDSA_SRC_DATA_LEN.
      * @param pSig Pointer to the signature to verify. Signature length: ::KIRK_ECDSA_SIG_LEN.
      *
