@@ -1216,4 +1216,16 @@ public class StateProxy extends BaseRenderingEngineProxy {
 				break;
 		}
 	}
+
+	@Override
+	public void deleteFramebuffer(int framebuffer) {
+		// When deleting the current buffer, the current binding is reset to 0
+		if (bindFramebufferDraw == framebuffer) {
+			bindFramebufferDraw = 0;
+		}
+		if (bindFramebufferRead == framebuffer) {
+			bindFramebufferRead = 0;
+		}
+		super.deleteFramebuffer(framebuffer);
+	}
 }

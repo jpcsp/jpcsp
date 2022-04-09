@@ -112,6 +112,10 @@ public abstract class BaseBufferManager implements IREBufferManager {
 
 	@Override
 	public ByteBuffer getBuffer(int buffer) {
-		return buffers.get(buffer).byteBuffer;
+		BufferInfo bufferInfo = buffers.get(buffer);
+		if (bufferInfo == null) {
+			return null;
+		}
+		return bufferInfo.byteBuffer;
 	}
 }

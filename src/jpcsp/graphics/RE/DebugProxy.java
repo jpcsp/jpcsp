@@ -983,4 +983,20 @@ public class DebugProxy extends BaseRenderingEngineProxy {
 		}
 		super.deleteBuffer(buffer);
 	}
+
+	@Override
+	public void deleteFramebuffer(int framebuffer) {
+		if (isLogDebugEnabled) {
+			log.debug(String.format("deleteFramebuffer %d", framebuffer));
+		}
+		super.deleteFramebuffer(framebuffer);
+	}
+
+	@Override
+	public void deleteRenderbuffer(int renderbuffer) {
+		if (isLogDebugEnabled) {
+			log.debug(String.format("deleteRenderbuffer %d", renderbuffer));
+		}
+		super.deleteRenderbuffer(renderbuffer);
+	}
 }

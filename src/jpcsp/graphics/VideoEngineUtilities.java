@@ -179,6 +179,9 @@ public class VideoEngineUtilities {
 
         IREBufferManager bufferManager = re.getBufferManager();
         ByteBuffer drawByteBuffer = bufferManager.getBuffer(drawBufferId);
+        if (drawByteBuffer == null) {
+        	return;
+        }
         drawByteBuffer.clear();
         FloatBuffer drawFloatBuffer = drawByteBuffer.asFloatBuffer();
         drawFloatBuffer.clear();
