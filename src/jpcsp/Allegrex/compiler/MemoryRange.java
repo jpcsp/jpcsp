@@ -83,6 +83,10 @@ public class MemoryRange {
 	}
 
 	public boolean areValuesChanged() {
+		if (values == null) {
+			return false;
+		}
+
 		if (RuntimeContext.hasMemoryInt(address)) {
 			// Optimized for the most common case (i.e. using memoryInt)
 			int[] memoryInt = RuntimeContext.getMemoryInt();
