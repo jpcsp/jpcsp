@@ -1123,10 +1123,61 @@ public class REShader extends BaseRenderingEngineFunction {
 		return primitive;
 	}
 
+	private boolean requiresTextureBarrierPerPrimitive(int primitive, int count) {
+		if (!useTextureBarrier) {
+			return false;
+		}
+
+		int numberVertexPerPrimitive = IRenderingEngine.numberVertexPerPrimitive[primitive];
+		if (numberVertexPerPrimitive == 0 || count <= numberVertexPerPrimitive) {
+			return false;
+		}
+
+		if (useShaderStencilTest && shaderContext.getStencilTestEnable() != 0) {
+			return true;
+		}
+		if (useShaderBlendTest && shaderContext.getBlendTestEnable() != 0) {
+			return true;
+		}
+		if (useShaderColorMask && shaderContext.getColorMaskEnable() != 0) {
+			return true;
+		}
+
+		return false;
+	}
+
 	@Override
 	public void drawArrays(int primitive, int first, int count) {
 		primitive = prepareDraw(primitive, false);
-		super.drawArrays(primitive, first, count);
+
+		//
+		// The PSP has no issue rendering overlapping primitives in a single PRIM command
+		// At least this is confirmed for PRIM_SPRITES, but not verified for triangles.
+		// The result looks like each primitive is rendered one after the other.
+		// This is specially visible when alpha blending is enabled: the destination
+		// colour behind a primitive is already including the results of the rendering
+		// from the previous primitive(s), even when rendered in a single PRIM command.
+		//
+		// To mimic this behaviour on OpenGL, we have to make sure that when our shader
+		// is using fbTex to evaluate the destination colour, we do insert a texture
+		// barrier when a primitive is overlapping with previous ones.
+		// As we do not really know here if the rendered primitives are overlapping or not,
+		// we simply do insert a texture barrier between each primitive, which is not
+		// the most efficient approach.
+		// This is only done for PRIM_SPRITES.
+		//
+		if (requiresTextureBarrierPerPrimitive(primitive, count)) {
+			int numberVertexPerPrimitive = IRenderingEngine.numberVertexPerPrimitive[primitive];
+			for (int i = 0; i < count; i += numberVertexPerPrimitive) {
+				if (i > 0) {
+					// Insert a textureBarrier between each PRIM_SPRITES rectangle
+					re.textureBarrier();
+				}
+				super.drawArrays(primitive, first + i, Math.min(numberVertexPerPrimitive, count - i));
+			}
+		} else {
+			super.drawArrays(primitive, first, count);
+		}
 	}
 
 	@Override
@@ -1135,7 +1186,19 @@ public class REShader extends BaseRenderingEngineFunction {
 		// but without the need to set the uniforms (they are unchanged
 		// since the last call to drawArrays).
 		primitive = prepareDraw(primitive, true);
-		super.drawArraysBurstMode(primitive, first, count);
+
+		if (requiresTextureBarrierPerPrimitive(primitive, count)) {
+			int numberVertexPerPrimitive = IRenderingEngine.numberVertexPerPrimitive[primitive];
+			for (int i = 0; i < count; i += numberVertexPerPrimitive) {
+				if (i > 0) {
+					// Insert a textureBarrier between each PRIM_SPRITES rectangle
+					re.textureBarrier();
+				}
+				super.drawArraysBurstMode(primitive, first + i, Math.min(numberVertexPerPrimitive, count - i));
+			}
+		} else {
+			super.drawArraysBurstMode(primitive, first, count);
+		}
 	}
 
 	@Override

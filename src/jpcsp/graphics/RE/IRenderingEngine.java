@@ -139,6 +139,19 @@ public interface IRenderingEngine {
 	public static final int RE_LINES_ADJACENCY     = 8;
 	public static final int RE_TRIANGLES_ADJACENCY = 9;
 	public static final int RE_TRIANGLE_STRIP_ADJACENCY = 10;
+	public static final int[] numberVertexPerPrimitive = {
+			1, // GU_POINTS
+			2, // GU_LINES
+			0, // GU_LINE_STRIP
+			3, // GU_TRIANGLES
+			0, // GU_TRIANGLE_STRIP
+			0, // GU_TRIANGLE_FAN
+			2, // GU_SPRITES
+			4, // RE_QUADS
+			4, // RE_LINES_ADJACENCY
+			6, // RE_TRIANGLES_ADJACENCY
+			6  // RE_TRIANGLE_STRIP_ADJACENCY
+	};
 
 	// Matrix modes:
 	public static final int GU_PROJECTION          = 0;
