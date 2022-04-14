@@ -70,7 +70,7 @@ public class VertexBuffer {
 
 		@Override
 		public String toString() {
-			return String.format("AddressRange[0x%08X-0x%08X, length %d]", address, address + length, length);
+			return String.format("AddressRange[0x%08X-0x%08X, length 0x%X]", address, address + length, length);
 		}
 	}
 
@@ -229,14 +229,14 @@ public class VertexBuffer {
 		for (int i = 0; i < n; i++) {
 			if (cachedMemory[offset + i] != memoryReader.readNext()) {
 				if (log.isTraceEnabled()) {
-					log.trace(String.format("VertexBuffer.cachedMemoryEquals(0x%08X, %d): are not equal", address, length));
+					log.trace(String.format("VertexBuffer.cachedMemoryEquals(0x%08X, 0x%X): are not equal", address, length));
 				}
 				return false;
 			}
 		}
 
 		if (log.isTraceEnabled()) {
-			log.trace(String.format("VertexBuffer.cachedMemoryEquals(0x%08X, %d): are equal", address, length));
+			log.trace(String.format("VertexBuffer.cachedMemoryEquals(0x%08X, 0x%X): are equal", address, length));
 		}
 		return true;
 	}
@@ -273,22 +273,25 @@ public class VertexBuffer {
 		address = Memory.normalizeAddress(address);
 
 		if (log.isTraceEnabled()) {
-			log.trace(String.format("VertexBuffer.load address=0x%08X, length=%d in %s", address, length, toString()));
+			log.trace(String.format("VertexBuffer.load address=0x%08X, length=0x%X in %s", address, length, toString()));
 		}
 		if (!addressAlreadyChecked(address, length)) {
 			boolean extended = extend(buffer, address, length);
 			// Check if the memory content has changed
 			if (extended || !cachedMemoryEquals(address, length)) {
-				position(alignDown(address, 3));
+				int startLength = address & 3;
+				int startAddress = address - startLength;
+				int totalLength = length4(length + startLength);
+				position(startAddress);
 				if (log.isTraceEnabled()) {
-					log.trace(String.format("copy buffer from 0x%08X(buffer offset=%d) to VertexBuffer at 0x%08X(buffer offset=%d), length=%d", alignDown(address, 3), buffer.position(), bufferAddress - cachedBufferOffset + cachedBuffer.position(), cachedBuffer.position(), length4(length)));
+					log.trace(String.format("copy buffer from 0x%08X(buffer offset=0x%X) to VertexBuffer at 0x%08X(buffer offset=0x%X), length=0x%X", startAddress, buffer.position(), bufferAddress - cachedBufferOffset + cachedBuffer.position(), cachedBuffer.position(), totalLength));
 				}
-				Utilities.putBuffer(cachedBuffer, buffer, ByteOrder.LITTLE_ENDIAN, length4(length));
+				Utilities.putBuffer(cachedBuffer, buffer, ByteOrder.LITTLE_ENDIAN, totalLength);
 				buffer.rewind();
 
 				if (re != null) {
 					if (log.isTraceEnabled()) {
-						log.trace(String.format("VertexBuffer reload buffer address=0x%08X, length=%d, extended=%b", address, length, extended));
+						log.trace(String.format("VertexBuffer reload buffer address=0x%08X(0x%08X), length=0x%X(0x%X), extended=%b", address, startAddress, length, totalLength, extended));
 					}
 
 					// No need to update the sub data if the complete buffer has been reloaded...
@@ -299,7 +302,7 @@ public class VertexBuffer {
 					if (updateSubData) {
 						position(address);
 						bind(re);
-						re.setBufferSubData(bufferTarget, cachedBuffer.position(), length, cachedBuffer);
+						re.setBufferSubData(bufferTarget, cachedBuffer.position(), startLength + length, cachedBuffer);
 					}
 				} else {
 					addDirtyRange(address, length);
@@ -327,7 +330,7 @@ public class VertexBuffer {
 			setAddressAlreadyChecked(address, length);
 		} else if (re != null) {
 			if (log.isTraceEnabled()) {
-				log.trace(String.format("VertexBuffer address already checked address=0x%08X, length=%d", address, length));
+				log.trace(String.format("VertexBuffer address already checked address=0x%08X, length=0x%X", address, length));
 			}
 			checkDirty(re);
 		}
@@ -399,6 +402,6 @@ public class VertexBuffer {
 
 	@Override
 	public String toString() {
-		return String.format("VertexBuffer[0x%08X-0x%08X, length %d, stride %d, id %d]", bufferAddress, bufferAddress + bufferLength, bufferLength, stride, bufferId);
+		return String.format("VertexBuffer[0x%08X-0x%08X, length 0x%X, stride %d, id %d]", bufferAddress, bufferAddress + bufferLength, bufferLength, stride, bufferId);
 	}
 }
