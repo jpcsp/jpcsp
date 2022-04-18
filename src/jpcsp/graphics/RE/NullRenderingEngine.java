@@ -176,7 +176,7 @@ public class NullRenderingEngine implements IRenderingEngine {
 	}
 
 	@Override
-	public void setLightSpotCutoff(int light, float cutoff) {
+	public void setLightSpotCutoff(int light, float cutoff, float pspCutoff) {
 	}
 
 	@Override
@@ -280,6 +280,10 @@ public class NullRenderingEngine implements IRenderingEngine {
 	}
 
 	@Override
+	public void setUniform1v(int id, float[] values) {
+	}
+
+	@Override
 	public void setUniform2(int id, int[] values) {
 	}
 
@@ -289,6 +293,10 @@ public class NullRenderingEngine implements IRenderingEngine {
 
 	@Override
 	public void setUniform3(int id, float[] values) {
+	}
+
+	@Override
+	public void setUniform3v(int id, float[] values) {
 	}
 
 	@Override
@@ -682,6 +690,11 @@ public class NullRenderingEngine implements IRenderingEngine {
 
 	@Override
 	public int getActiveUniformOffset(int program, int uniformIndex) {
+		return 0;
+	}
+
+	@Override
+	public int getActiveUniformArrayStride(int program, int uniformIndex) {
 		return 0;
 	}
 

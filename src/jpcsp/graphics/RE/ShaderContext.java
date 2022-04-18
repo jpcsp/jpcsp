@@ -16,6 +16,8 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.graphics.RE;
 
+import static jpcsp.graphics.VideoEngine.NUM_LIGHTS;
+
 import org.apache.log4j.Logger;
 
 import jpcsp.graphics.Uniforms;
@@ -35,9 +37,17 @@ public class ShaderContext {
 	private int[] matFlags = new int[3];
 	private int lightingEnable;
 	private int lightMode;
-	private int[] lightType = new int[4];
-	private int[] lightKind = new int[4];
-	private int[] lightEnabled = new int[4];
+	private int[] lightType = new int[NUM_LIGHTS];
+	private int[] lightKind = new int[NUM_LIGHTS];
+	private int[] lightEnabled = new int[NUM_LIGHTS];
+	private float[] lightPosition = new float[NUM_LIGHTS * 3];
+	private float[] lightDirection = new float[NUM_LIGHTS * 3];
+	private float[] lightAmbientColor = new float[NUM_LIGHTS * 3];
+	private float[] lightDiffuseColor = new float[NUM_LIGHTS * 3];
+	private float[] lightSpecularColor = new float[NUM_LIGHTS * 3];
+	private float[] lightSpotLightExponent = new float[NUM_LIGHTS];
+	private float[] lightSpotLightCutoff = new float[NUM_LIGHTS];
+	private float[] lightAttenuation = new float[NUM_LIGHTS * 3];
 	private float[] boneMatrix = new float[8 * 16];
 	private int numberBones;
 	private int texEnable;
@@ -114,6 +124,14 @@ public class ShaderContext {
 		re.setUniform(Uniforms.lightMode.getId(shaderProgram), lightMode);
 		re.setUniform4(Uniforms.lightType.getId(shaderProgram), lightType);
 		re.setUniform4(Uniforms.lightKind.getId(shaderProgram), lightKind);
+		re.setUniform3v(Uniforms.lightPosition.getId(shaderProgram), lightPosition);
+		re.setUniform3v(Uniforms.lightDirection.getId(shaderProgram), lightDirection);
+		re.setUniform3v(Uniforms.lightAmbientColor.getId(shaderProgram), lightAmbientColor);
+		re.setUniform3v(Uniforms.lightDiffuseColor.getId(shaderProgram), lightDiffuseColor);
+		re.setUniform3v(Uniforms.lightSpecularColor.getId(shaderProgram), lightSpecularColor);
+		re.setUniform1v(Uniforms.lightSpotLightExponent.getId(shaderProgram), lightSpotLightExponent);
+		re.setUniform1v(Uniforms.lightSpotLightCutoff.getId(shaderProgram), lightSpotLightCutoff);
+		re.setUniform3v(Uniforms.lightAttenuation.getId(shaderProgram), lightAttenuation);
 		re.setUniform(Uniforms.lightingEnable.getId(shaderProgram), lightingEnable);
 		re.setUniformMatrix4(Uniforms.boneMatrix.getId(shaderProgram), numberBones, boneMatrix);
 		re.setUniform(Uniforms.numberBones.getId(shaderProgram), numberBones);
@@ -258,6 +276,86 @@ public class ShaderContext {
 
 	public void setLightEnabled(int light, int lightEnabled) {
 		this.lightEnabled[light] = lightEnabled;
+	}
+
+	public float getLightPosition(int light, int n) {
+		return lightPosition[light * 3 + n];
+	}
+
+	public void setLightPosition(int light, float[] lightPosition) {
+		System.arraycopy(lightPosition, 0, this.lightPosition, light * 3, 3);
+	}
+
+	public float getLightDirection(int light, int n) {
+		return lightDirection[light * 3 + n];
+	}
+
+	public void setLightDirection(int light, float[] lightDirection) {
+		System.arraycopy(lightDirection, 0, this.lightDirection, light * 3, 3);
+	}
+
+	public float getLightAmbientColor(int light, int n) {
+		return lightAmbientColor[light * 3 + n];
+	}
+
+	public void setLightAmbientColor(int light, float[] lightAmbientColor) {
+		System.arraycopy(lightAmbientColor, 0, this.lightAmbientColor, light * 3, 3);
+	}
+
+	public float getLightDiffuseColor(int light, int n) {
+		return lightDiffuseColor[light * 3 + n];
+	}
+
+	public void setLightDiffuseColor(int light, float[] lightDiffuseColor) {
+		System.arraycopy(lightDiffuseColor, 0, this.lightDiffuseColor, light * 3, 3);
+	}
+
+	public float getLightSpecularColor(int light, int n) {
+		return lightSpecularColor[light * 3 + n];
+	}
+
+	public void setLightSpecularColor(int light, float[] lightSpecularColor) {
+		System.arraycopy(lightSpecularColor, 0, this.lightSpecularColor, light * 3, 3);
+	}
+
+	public float getLightSpotLightExponent(int light) {
+		return lightSpotLightExponent[light];
+	}
+
+	public void setLightSpotLightExponent(int light, float lightSpotLightExponent) {
+		this.lightSpotLightExponent[light] = lightSpotLightExponent;
+	}
+
+	public float getLightSpotLightCutoff(int light) {
+		return lightSpotLightCutoff[light];
+	}
+
+	public void setLightSpotLightCutoff(int light, float lightSpotLightCutoff) {
+		this.lightSpotLightCutoff[light] = lightSpotLightCutoff;
+	}
+
+	public float getLightConstantAttenuation(int light) {
+		return lightAttenuation[light * 3 + 0];
+	}
+
+	public void setLightConstantAttenuation(int light, float lightAttenuation) {
+		this.lightAttenuation[light * 3 + 0] = lightAttenuation;
+	}
+
+	public float getLightLinearAttenuation(int light) {
+		return lightAttenuation[light * 3 + 1];
+	}
+
+	public void setLightLinearAttenuation(int light, float lightAttenuation) {
+		this.lightAttenuation[light * 3 + 1] = lightAttenuation;
+	}
+
+	public float getLightQuadraticAttenuation(int light) {
+		return lightAttenuation[light * 3 + 2];
+	}
+
+	public void setLightQuadraticAttenuation(int light, float lightAttenuation) {
+		this.lightAttenuation[light * 3 + 2] = lightAttenuation;
 	}
 
 	public int getBoneMatrixLength() {

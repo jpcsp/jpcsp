@@ -205,8 +205,8 @@ public class CheckErrorsProxy extends BaseRenderingEngineProxy {
 	}
 
 	@Override
-	public void setLightSpotCutoff(int light, float cutoff) {
-		super.setLightSpotCutoff(light, cutoff);
+	public void setLightSpotCutoff(int light, float cutoff, float pspCutoff) {
+		super.setLightSpotCutoff(light, cutoff, pspCutoff);
 		re.checkAndLogErrors("setLightSpotCutoff");
 	}
 
@@ -397,6 +397,12 @@ public class CheckErrorsProxy extends BaseRenderingEngineProxy {
 	}
 
 	@Override
+	public void setUniform1v(int id, float[] values) {
+		super.setUniform1v(id, values);
+		re.checkAndLogErrors("setUniform1v");
+	}
+
+	@Override
 	public void setUniform2(int id, int[] values) {
 		super.setUniform2(id, values);
 		re.checkAndLogErrors("setUniform2");
@@ -412,6 +418,12 @@ public class CheckErrorsProxy extends BaseRenderingEngineProxy {
 	public void setUniform3(int id, float[] values) {
 		super.setUniform3(id, values);
 		re.checkAndLogErrors("setUniform3");
+	}
+
+	@Override
+	public void setUniform3v(int id, float[] values) {
+		super.setUniform3v(id, values);
+		re.checkAndLogErrors("setUniform3v");
 	}
 
 	@Override

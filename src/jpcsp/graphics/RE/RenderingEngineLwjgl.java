@@ -617,7 +617,7 @@ public class RenderingEngineLwjgl extends NullRenderingEngine {
     }
 
     @Override
-    public void setLightSpotCutoff(int light, float cutoff) {
+    public void setLightSpotCutoff(int light, float cutoff, float pspCutoff) {
         GL11.glLightf(GL11.GL_LIGHT0 + light, GL11.GL_SPOT_CUTOFF, cutoff);
     }
 
@@ -718,6 +718,11 @@ public class RenderingEngineLwjgl extends NullRenderingEngine {
     }
 
     @Override
+    public void setUniform1v(int id, float[] values) {
+        GL20.glUniform1fv(id, values);
+    }
+
+    @Override
     public void setUniform2(int id, int[] values) {
         GL20.glUniform2i(id, values[0], values[1]);
     }
@@ -730,6 +735,11 @@ public class RenderingEngineLwjgl extends NullRenderingEngine {
     @Override
     public void setUniform3(int id, float[] values) {
         GL20.glUniform3f(id, values[0], values[1], values[2]);
+    }
+
+    @Override
+    public void setUniform3v(int id, float[] values) {
+        GL20.glUniform3fv(id, values);
     }
 
     @Override
@@ -1284,6 +1294,11 @@ public class RenderingEngineLwjgl extends NullRenderingEngine {
     @Override
     public int getActiveUniformOffset(int program, int uniformIndex) {
         return ARBUniformBufferObject.glGetActiveUniformsi(program, uniformIndex, ARBUniformBufferObject.GL_UNIFORM_OFFSET);
+    }
+
+    @Override
+    public int getActiveUniformArrayStride(int program, int uniformIndex) {
+        return ARBUniformBufferObject.glGetActiveUniformsi(program, uniformIndex, ARBUniformBufferObject.GL_UNIFORM_ARRAY_STRIDE);
     }
 
     @Override

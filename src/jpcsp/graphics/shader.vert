@@ -43,9 +43,17 @@ noperspective out float discarded;
 	UBO_STRUCTURE
 #else
     uniform ivec3 psp_matFlags; // Ambient, Diffuse, Specular
-    uniform ivec4 psp_lightType;
-    uniform ivec4 psp_lightKind;
-    uniform ivec4 psp_lightEnabled;
+    uniform ivec4 pspLightType;
+    uniform ivec4 pspLightKind;
+    uniform ivec4 pspLightEnabled;
+    uniform vec3  pspLightPosition[NUM_LIGHTS];
+    uniform vec3  pspLightDirection[NUM_LIGHTS];
+    uniform vec3  pspLightAmbientColor[NUM_LIGHTS];
+    uniform vec3  pspLightDiffuseColor[NUM_LIGHTS];
+    uniform vec3  pspLightSpecularColor[NUM_LIGHTS];
+    uniform float pspLightSpotLightExponent[NUM_LIGHTS];
+    uniform float pspLightSpotLightCutoff[NUM_LIGHTS];
+    uniform vec3  pspLightAttenuation[NUM_LIGHTS];
     uniform mat4  psp_boneMatrix[8];
     uniform int   psp_numberBones;
     uniform bool  texEnable;
@@ -75,31 +83,35 @@ noperspective out float discarded;
 ///////////////////////////////////////////////////////////////
 
 #if !USE_DYNAMIC_DEFINES || LIGHTING_ENABLE
+vec3 getLightVector(in int i, in vec3 V)
+{
+	return (pspLightType[i] != 0) ? pspLightPosition[i] - V : pspLightPosition[i];
+}
+
 void ComputeLight(in int i, in vec3 N, in vec3 V, inout vec3 A, inout vec3 D, inout vec3 S)
 {
-    float w     = gl_LightSource[i].position.w;
-    vec3  L     = gl_LightSource[i].position.xyz - V * w;
+	vec3  L     = getLightVector(i, V);
     vec3  H     = L + vec3(0.0, 0.0, 1.0);
     float att   = 1.0;
     float NdotL = max(dot(normalize(L), N), 0.0);
     float NdotH = max(dot(normalize(H), N), 0.0);
     float k     = gl_FrontMaterial.shininess;
-    float Dk    = (psp_lightKind[i] == 2) ? max(pow(NdotL, k), 0.0) : NdotL;
-    float Sk    = (psp_lightKind[i] != 0) ? max(pow(NdotH, k), 0.0) : 0.0;
+    float Dk    = (pspLightKind[i] == 2) ? max(pow(NdotL, k), 0.0) : NdotL;
+    float Sk    = (pspLightKind[i] != 0) ? max(pow(NdotH, k), 0.0) : 0.0;
 
-    if (w != 0.0)
+    if (pspLightType[i] != 0) // Not directional type
     {
         float d = length(L);
-        att = clamp(1.0 / (gl_LightSource[i].constantAttenuation + (gl_LightSource[i].linearAttenuation + gl_LightSource[i].quadraticAttenuation * d) * d), 0.0, 1.0);
-        if (gl_LightSource[i].spotCutoff < 180.0)
+        att = clamp(1.0 / dot(pspLightAttenuation[i], vec3(1.0, d, d * d)), 0.0, 1.0);
+        if (pspLightSpotLightCutoff[i] > -1.0f)
         {
-            float spot = dot(normalize(gl_LightSource[i].spotDirection.xyz), -L);
-            att *= (spot < gl_LightSource[i].spotCosCutoff) ? 0.0 : pow(spot, gl_LightSource[i].spotExponent);
+            float spot = dot(normalize(pspLightDirection[i]), -L);
+            att *= (spot < pspLightSpotLightCutoff[i]) ? 0.0 : pow(spot, pspLightSpotLightExponent[i]);
         }
     }
-    A += gl_LightSource[i].ambient.rgb  * att;
-    D += gl_LightSource[i].diffuse.rgb  * att * Dk;
-    S += gl_LightSource[i].specular.rgb * att * Sk;
+    A += pspLightAmbientColor[i]  * att;
+    D += pspLightDiffuseColor[i]  * att * Dk;
+    S += pspLightSpecularColor[i] * att * Sk;
 }
 
 void ApplyLighting(inout vec4 Cp, inout vec4 Cs, in vec3 V, in vec3 N)
@@ -132,10 +144,10 @@ void ApplyLighting(inout vec4 Cp, inout vec4 Cs, in vec3 V, in vec3 N)
     vec3 Sl = vec3(0.0);
 
     #if !USE_DYNAMIC_DEFINES
-        if (psp_lightEnabled[0] != 0) ComputeLight(0, N, V, Al.rgb, Dl, Sl);
-        if (psp_lightEnabled[1] != 0) ComputeLight(1, N, V, Al.rgb, Dl, Sl);
-        if (psp_lightEnabled[2] != 0) ComputeLight(2, N, V, Al.rgb, Dl, Sl);
-        if (psp_lightEnabled[3] != 0) ComputeLight(3, N, V, Al.rgb, Dl, Sl);
+        if (pspLightEnabled[0] != 0) ComputeLight(0, N, V, Al.rgb, Dl, Sl);
+        if (pspLightEnabled[1] != 0) ComputeLight(1, N, V, Al.rgb, Dl, Sl);
+        if (pspLightEnabled[2] != 0) ComputeLight(2, N, V, Al.rgb, Dl, Sl);
+        if (pspLightEnabled[3] != 0) ComputeLight(3, N, V, Al.rgb, Dl, Sl);
     #else
         #if LIGHT_ENABLED0 != 0
             ComputeLight(0, N, V, Al.rgb, Dl, Sl);
@@ -155,7 +167,7 @@ void ApplyLighting(inout vec4 Cp, inout vec4 Cs, in vec3 V, in vec3 N)
             // is producing incorrect code (light incorrectly computed).
             // This code is actually doing nothing...
             vec3 dummy = vec3(0.0);
-            if (psp_lightEnabled[0] == 123456) {
+            if (pspLightEnabled[0] == 123456) {
                 ComputeLight(0, N, dummy, dummy, dummy, dummy);
             }
             if (dummy.r == 123456.0) {
@@ -223,10 +235,10 @@ void ApplyTexture(inout vec4 T, in vec4 V, in vec3 N, in vec3 Ne)
             vec3  Nn = normalize(Ne);
             vec3  Ve = vec3(gl_ModelViewMatrix * V);
             float k  = gl_FrontMaterial.shininess;
-            vec3  Lu = gl_LightSource[texShade.x].position.xyz - Ve.xyz * gl_LightSource[texShade.x].position.w;
-            vec3  Lv = gl_LightSource[texShade.y].position.xyz - Ve.xyz * gl_LightSource[texShade.y].position.w;
-            float Pu = psp_lightKind[texShade.x] == 0 ? dot(Nn, normalize(Lu)) : pow(dot(Nn, normalize(Lu + vec3(0.0, 0.0, 1.0))), k);
-            float Pv = psp_lightKind[texShade.y] == 0 ? dot(Nn, normalize(Lv)) : pow(dot(Nn, normalize(Lv + vec3(0.0, 0.0, 1.0))), k);
+            vec3  Lu = getLightVector(texShade.x, Ve);
+            vec3  Lv = getLightVector(texShade.y, Ve);
+            float Pu = pspLightKind[texShade.x] == 0 ? dot(Nn, normalize(Lu)) : pow(dot(Nn, normalize(Lu + vec3(0.0, 0.0, 1.0))), k);
+            float Pv = pspLightKind[texShade.y] == 0 ? dot(Nn, normalize(Lv)) : pow(dot(Nn, normalize(Lv + vec3(0.0, 0.0, 1.0))), k);
             T.xyz = vec3(0.5*vec2(1.0 + Pu, 1.0 + Pv), 1.0);
             break;
         }
@@ -250,10 +262,10 @@ void ApplyTexture(inout vec4 T, in vec4 V, in vec3 N, in vec3 Ne)
         vec3  Nn = normalize(Ne);
         vec3  Ve = vec3(gl_ModelViewMatrix * V);
         float k  = gl_FrontMaterial.shininess;
-        vec3  Lu = gl_LightSource[TEX_SHADE0].position.xyz - Ve.xyz * gl_LightSource[TEX_SHADE0].position.w;
-        vec3  Lv = gl_LightSource[TEX_SHADE1].position.xyz - Ve.xyz * gl_LightSource[TEX_SHADE1].position.w;
-        float Pu = psp_lightKind[TEX_SHADE0] == 0 ? dot(Nn, normalize(Lu)) : pow(dot(Nn, normalize(Lu + vec3(0.0, 0.0, 1.0))), k);
-        float Pv = psp_lightKind[TEX_SHADE1] == 0 ? dot(Nn, normalize(Lv)) : pow(dot(Nn, normalize(Lv + vec3(0.0, 0.0, 1.0))), k);
+        vec3  Lu = getLightVector(TEX_SHADE0, Ve);
+        vec3  Lv = getLightVector(TEX_SHADE1, Ve);
+        float Pu = pspLightKind[TEX_SHADE0] == 0 ? dot(Nn, normalize(Lu)) : pow(dot(Nn, normalize(Lu + vec3(0.0, 0.0, 1.0))), k);
+        float Pv = pspLightKind[TEX_SHADE1] == 0 ? dot(Nn, normalize(Lv)) : pow(dot(Nn, normalize(Lv + vec3(0.0, 0.0, 1.0))), k);
         T.xyz = vec3(0.5*vec2(1.0 + Pu, 1.0 + Pv), 1.0);
     #endif
 }

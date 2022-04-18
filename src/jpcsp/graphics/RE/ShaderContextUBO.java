@@ -16,7 +16,9 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.graphics.RE;
 
+import static jpcsp.graphics.VideoEngine.NUM_LIGHTS;
 import static jpcsp.graphics.VideoEngine.SIZEOF_FLOAT;
+import static jpcsp.graphics.VideoEngine.SIZEOF_INT;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -35,6 +37,14 @@ public class ShaderContextUBO extends ShaderContext {
 	private ShaderUniformInfo lightType;
 	private ShaderUniformInfo lightKind;
 	private ShaderUniformInfo lightEnabled;
+	private ShaderUniformInfo lightPosition;
+	private ShaderUniformInfo lightDirection;
+	private ShaderUniformInfo lightAmbientColor;
+	private ShaderUniformInfo lightDiffuseColor;
+	private ShaderUniformInfo lightSpecularColor;
+	private ShaderUniformInfo lightSpotLightExponent;
+	private ShaderUniformInfo lightSpotLightCutoff;
+	private ShaderUniformInfo lightAttenuation;
 	private ShaderUniformInfo vertexColor;
 	private ShaderUniformInfo colorMask;
 	private ShaderUniformInfo notColorMask;
@@ -116,7 +126,8 @@ public class ShaderContextUBO extends ShaderContext {
 		private String structureName;
 		private String type;
 		private int offset;
-		private int matrixSize;
+		private int arraySize;
+		private int arrayStride;
 		private boolean used;
 
 		public ShaderUniformInfo(Uniforms uniform, String type) {
@@ -124,14 +135,14 @@ public class ShaderContextUBO extends ShaderContext {
 			structureName = this.name;
 			this.type = type;
 			used = true;
-			matrixSize = 0;
+			arraySize = 0;
 		}
 
-		public ShaderUniformInfo(Uniforms uniform, String type, int matrixSize) {
+		public ShaderUniformInfo(Uniforms uniform, String type, int arraySize) {
 			name = uniform.getUniformString();
-			structureName = String.format("%s[%d]", name, matrixSize);
+			structureName = String.format("%s[%d]", name, arraySize);
 			this.type = type;
-			this.matrixSize = matrixSize;
+			this.arraySize = arraySize;
 			used = true;
 		}
 
@@ -163,8 +174,20 @@ public class ShaderContextUBO extends ShaderContext {
 			used = false;
 		}
 
-		public int getMatrixSize() {
-			return matrixSize;
+		public int getArraySize() {
+			return arraySize;
+		}
+
+		public boolean isArray() {
+			return arraySize > 0;
+		}
+
+		public int getArrayStride() {
+			return arrayStride;
+		}
+
+		public void setArrayStride(int arrayStride) {
+			this.arrayStride = arrayStride;
 		}
 
 		@Override
@@ -172,7 +195,10 @@ public class ShaderContextUBO extends ShaderContext {
 			if (!isUsed()) {
 				return String.format("%s(unused)", getName());
 			}
-			return String.format("%s(offset=%d)", getName(), getOffset());
+			if (isArray()) {
+				return String.format("%s(offset=0x%X, arraySize=0x%X, arrayStride=0x%X)", getName(), getOffset(), getArraySize(), getArrayStride());
+			}
+			return String.format("%s(offset=0x%X)", getName(), getOffset());
 		}
 	}
 
@@ -189,6 +215,14 @@ public class ShaderContextUBO extends ShaderContext {
 		lightType = addShaderUniform(Uniforms.lightType, "ivec4");
 		lightKind = addShaderUniform(Uniforms.lightKind, "ivec4");
 		lightEnabled = addShaderUniform(Uniforms.lightEnabled, "ivec4");
+		lightPosition = addShaderUniform(Uniforms.lightPosition, "vec3", NUM_LIGHTS);
+		lightDirection = addShaderUniform(Uniforms.lightDirection, "vec3", NUM_LIGHTS);
+		lightAmbientColor = addShaderUniform(Uniforms.lightAmbientColor, "vec3", NUM_LIGHTS);
+		lightDiffuseColor = addShaderUniform(Uniforms.lightDiffuseColor, "vec3", NUM_LIGHTS);
+		lightSpecularColor = addShaderUniform(Uniforms.lightSpecularColor, "vec3", NUM_LIGHTS);
+		lightSpotLightExponent = addShaderUniform(Uniforms.lightSpotLightExponent, "float", NUM_LIGHTS);
+		lightSpotLightCutoff = addShaderUniform(Uniforms.lightSpotLightCutoff, "float", NUM_LIGHTS);
+		lightAttenuation = addShaderUniform(Uniforms.lightAttenuation, "vec3", NUM_LIGHTS);
 		vertexColor = addShaderUniform(Uniforms.vertexColor, "vec4");
 		colorMask = addShaderUniform(Uniforms.colorMask, "ivec4");
 		notColorMask = addShaderUniform(Uniforms.notColorMask, "ivec4");
@@ -274,8 +308,8 @@ public class ShaderContextUBO extends ShaderContext {
 		return shaderUniformInfo;
 	}
 
-	protected ShaderUniformInfo addShaderUniform(Uniforms uniform, String type, int matrixSize) {
-		ShaderUniformInfo shaderUniformInfo = new ShaderUniformInfo(uniform, type, matrixSize);
+	protected ShaderUniformInfo addShaderUniform(Uniforms uniform, String type, int arraySize) {
+		ShaderUniformInfo shaderUniformInfo = new ShaderUniformInfo(uniform, type, arraySize);
 		shaderUniformInfos.add(shaderUniformInfo);
 
 		return shaderUniformInfo;
@@ -312,6 +346,9 @@ public class ShaderContextUBO extends ShaderContext {
 				// otherwise it would overwrite the previous uniform value.
 				if (offset < 0 || offset == previousOffset) {
 					shaderUniformInfo.setUnused();
+				} else if (shaderUniformInfo.isArray()) {
+					int arrayStride = re.getActiveUniformArrayStride(shaderProgram, index);
+					shaderUniformInfo.setArrayStride(arrayStride);
 				}
 
 				if (log.isDebugEnabled()) {
@@ -330,7 +367,7 @@ public class ShaderContextUBO extends ShaderContext {
 			if (endOfUBO.getOffset() <= 0 || !endOfUBO.isUsed()) {
 				// If the endOfUBO uniform has been eliminated by the shader compiler,
 				// estimate the end of the buffer by using the offset of the boneMatrix uniform.
-				lastOffset = boneMatrix.getOffset() + boneMatrix.getMatrixSize() * 4 * 4 * SIZEOF_FLOAT;
+				lastOffset = boneMatrix.getOffset() + boneMatrix.getArraySize() * 4 * 4 * SIZEOF_FLOAT;
 			} else {
 				lastOffset = endOfUBO.getOffset();
 			}
@@ -395,37 +432,41 @@ public class ShaderContextUBO extends ShaderContext {
 	protected void copy(int value, ShaderUniformInfo shaderUniformInfo) {
 		// Do not copy unused uniform, to avoid overwriting other used uniforms
 		if (shaderUniformInfo.isUsed()) {
-			prepareCopy(shaderUniformInfo.getOffset(), 4);
+			prepareCopy(shaderUniformInfo.getOffset(), SIZEOF_INT);
 			data.putInt(value);
 		}
 	}
 
 	protected void copy(int value, ShaderUniformInfo shaderUniformInfo, int index) {
 		if (shaderUniformInfo.isUsed()) {
-			prepareCopy(shaderUniformInfo.getOffset() + index * 4, 4);
+			prepareCopy(shaderUniformInfo.getOffset() + index * SIZEOF_INT, SIZEOF_INT);
 			data.putInt(value);
 		}
 	}
 
 	protected void copy(float value, ShaderUniformInfo shaderUniformInfo) {
 		if (shaderUniformInfo.isUsed()) {
-			prepareCopy(shaderUniformInfo.getOffset(), 4);
+			prepareCopy(shaderUniformInfo.getOffset(), SIZEOF_FLOAT);
 			data.putFloat(value);
 		}
 	}
 
 	protected void copy(float value, ShaderUniformInfo shaderUniformInfo, int index) {
 		if (shaderUniformInfo.isUsed()) {
-			prepareCopy(shaderUniformInfo.getOffset() + index * 4, 4);
+			prepareCopy(shaderUniformInfo.getOffset() + index * SIZEOF_FLOAT, SIZEOF_FLOAT);
 			data.putFloat(value);
 		}
 	}
 
-	protected void copy(float[] values, ShaderUniformInfo shaderUniformInfo, int start, int end) {
+	protected void copyArrayIndex(float value, ShaderUniformInfo shaderUniformInfo, int arrayIndex, int index) {
+		copy(value, shaderUniformInfo, arrayIndex * (shaderUniformInfo.getArrayStride() / SIZEOF_FLOAT) + index);
+	}
+
+	protected void copy(float[] values, int valuesOffset, ShaderUniformInfo shaderUniformInfo, int uniformOffset, int count) {
 		if (shaderUniformInfo.isUsed()) {
-			prepareCopy(shaderUniformInfo.getOffset() + start * 4, (end - start) * 4);
-			for (int i = start; i < end; i++) {
-				float value = values[i];
+			prepareCopy(shaderUniformInfo.getOffset() + uniformOffset * SIZEOF_FLOAT, count * SIZEOF_FLOAT);
+			for (int i = 0; i < count; i++) {
+				float value = values[valuesOffset + i];
 				if (Float.isNaN(value)) {
 					value = 0f;
 				}
@@ -434,13 +475,25 @@ public class ShaderContextUBO extends ShaderContext {
 		}
 	}
 
-	protected void copy(int[] values, ShaderUniformInfo shaderUniformInfo, int start, int end) {
+	protected void copyArrayIndex(float[] values, ShaderUniformInfo shaderUniformInfo, int arrayIndex, int count) {
+		copy(values, 0, shaderUniformInfo, arrayIndex * (shaderUniformInfo.getArrayStride() / SIZEOF_FLOAT), count);
+	}
+
+	protected void copy(float[] values, ShaderUniformInfo shaderUniformInfo, int count) {
+		copy(values, 0, shaderUniformInfo, 0, count);
+	}
+
+	protected void copy(int[] values, int valuesOffset, ShaderUniformInfo shaderUniformInfo, int uniformOffset, int count) {
 		if (shaderUniformInfo.isUsed()) {
-			prepareCopy(shaderUniformInfo.getOffset() + start * 4, (end - start) * 4);
-			for (int i = start; i < end; i++) {
-				data.putInt(values[i]);
+			prepareCopy(shaderUniformInfo.getOffset() + uniformOffset * SIZEOF_INT, count * SIZEOF_INT);
+			for (int i = 0; i < count; i++) {
+				data.putInt(values[valuesOffset + i]);
 			}
 		}
+	}
+
+	protected void copy(int[] values, ShaderUniformInfo shaderUniformInfo, int count) {
+		copy(values, 0, shaderUniformInfo, 0, count);
 	}
 
 	protected void copy(boolean value, ShaderUniformInfo shaderUniformInfo) {
@@ -476,7 +529,7 @@ public class ShaderContextUBO extends ShaderContext {
 						break;
 					}
 				}
-				copy(boneMatrix, this.boneMatrix, start, end);
+				copy(boneMatrix, start, this.boneMatrix, start, end - start);
 
 				super.setBoneMatrix(count, boneMatrix);
 			}
@@ -560,6 +613,86 @@ public class ShaderContextUBO extends ShaderContext {
 		if (lightType != getLightType(light)) {
 			copy(lightType, this.lightType, light);
 			super.setLightType(light, lightType);
+		}
+	}
+
+	@Override
+	public void setLightPosition(int light, float[] lightPosition) {
+		if (lightPosition[0] != getLightPosition(light, 0) || lightPosition[1] != getLightPosition(light, 1) || lightPosition[2] != getLightPosition(light, 2)) {
+			copyArrayIndex(lightPosition, this.lightPosition, light, 3);
+			super.setLightPosition(light, lightPosition);
+		}
+	}
+
+	@Override
+	public void setLightDirection(int light, float[] lightDirection) {
+		if (lightDirection[0] != getLightDirection(light, 0) || lightDirection[1] != getLightDirection(light, 1) || lightDirection[2] != getLightDirection(light, 2)) {
+			copyArrayIndex(lightDirection, this.lightDirection, light, 3);
+			super.setLightDirection(light, lightDirection);
+		}
+	}
+
+	@Override
+	public void setLightAmbientColor(int light, float[] lightAmbientColor) {
+		if (lightAmbientColor[0] != getLightAmbientColor(light, 0) || lightAmbientColor[1] != getLightAmbientColor(light, 1) || lightAmbientColor[2] != getLightAmbientColor(light, 2)) {
+			copyArrayIndex(lightAmbientColor, this.lightAmbientColor, light, 3);
+			super.setLightAmbientColor(light, lightAmbientColor);
+		}
+	}
+
+	@Override
+	public void setLightDiffuseColor(int light, float[] lightDiffuseColor) {
+		if (lightDiffuseColor[0] != getLightDiffuseColor(light, 0) || lightDiffuseColor[1] != getLightDiffuseColor(light, 1) || lightDiffuseColor[2] != getLightDiffuseColor(light, 2)) {
+			copyArrayIndex(lightDiffuseColor, this.lightDiffuseColor, light, 3);
+			super.setLightDiffuseColor(light, lightDiffuseColor);
+		}
+	}
+
+	@Override
+	public void setLightSpecularColor(int light, float[] lightSpecularColor) {
+		if (lightSpecularColor[0] != getLightSpecularColor(light, 0) || lightSpecularColor[1] != getLightSpecularColor(light, 1) || lightSpecularColor[2] != getLightSpecularColor(light, 2)) {
+			copyArrayIndex(lightSpecularColor, this.lightSpecularColor, light, 3);
+			super.setLightSpecularColor(light, lightSpecularColor);
+		}
+	}
+
+	@Override
+	public void setLightSpotLightExponent(int light, float lightSpotLightExponent) {
+		if (lightSpotLightExponent != getLightSpotLightExponent(light)) {
+			copyArrayIndex(lightSpotLightExponent, this.lightSpotLightExponent, light, 0);
+			super.setLightSpotLightExponent(light, lightSpotLightExponent);
+		}
+	}
+
+	@Override
+	public void setLightSpotLightCutoff(int light, float lightSpotLightCutoff) {
+		if (lightSpotLightCutoff != getLightSpotLightCutoff(light)) {
+			copyArrayIndex(lightSpotLightCutoff, this.lightSpotLightCutoff, light, 0);
+			super.setLightSpotLightCutoff(light, lightSpotLightCutoff);
+		}
+	}
+
+	@Override
+	public void setLightConstantAttenuation(int light, float lightAttenuation) {
+		if (lightAttenuation != getLightConstantAttenuation(light)) {
+			copyArrayIndex(lightAttenuation, this.lightAttenuation, light, 0);
+			super.setLightConstantAttenuation(light, lightAttenuation);
+		}
+	}
+
+	@Override
+	public void setLightLinearAttenuation(int light, float lightAttenuation) {
+		if (lightAttenuation != getLightLinearAttenuation(light)) {
+			copyArrayIndex(lightAttenuation, this.lightAttenuation, light, 1);
+			super.setLightLinearAttenuation(light, lightAttenuation);
+		}
+	}
+
+	@Override
+	public void setLightQuadraticAttenuation(int light, float lightAttenuation) {
+		if (lightAttenuation != getLightQuadraticAttenuation(light)) {
+			copyArrayIndex(lightAttenuation, this.lightAttenuation, light, 2);
+			super.setLightQuadraticAttenuation(light, lightAttenuation);
 		}
 	}
 
@@ -711,7 +844,7 @@ public class ShaderContextUBO extends ShaderContext {
 	public void setVertexColor(float[] vertexColor) {
 		float[] currentVertexColor = getVertexColor();
 		if (vertexColor[0] != currentVertexColor[0] || vertexColor[1] != currentVertexColor[1] || vertexColor[2] != currentVertexColor[2] || vertexColor[3] != currentVertexColor[3]) {
-			copy(vertexColor, this.vertexColor, 0, 4);
+			copy(vertexColor, this.vertexColor, 4);
 			super.setVertexColor(vertexColor);
 		}
 	}
@@ -824,7 +957,7 @@ public class ShaderContextUBO extends ShaderContext {
 	public void setColorMask(int redMask, int greenMask, int blueMask, int alphaMask) {
 		int[] currentColorMask = getColorMask();
 		if (redMask != currentColorMask[0] || greenMask != currentColorMask[1] || blueMask != currentColorMask[2] || alphaMask != currentColorMask[3]) {
-			copy(new int[] { redMask, greenMask, blueMask, alphaMask }, this.colorMask, 0, 4);
+			copy(new int[] { redMask, greenMask, blueMask, alphaMask }, this.colorMask, 4);
 			super.setColorMask(redMask, greenMask, blueMask, alphaMask);
 		}
 	}
@@ -833,7 +966,7 @@ public class ShaderContextUBO extends ShaderContext {
 	public void setNotColorMask(int notRedMask, int notGreenMask, int notBlueMask, int notAlphaMask) {
 		int[] currentNotColorMask = getNotColorMask();
 		if (notRedMask != currentNotColorMask[0] || notGreenMask != currentNotColorMask[1] || notBlueMask != currentNotColorMask[2] || notAlphaMask != currentNotColorMask[3]) {
-			copy(new int[] { notRedMask, notGreenMask, notBlueMask, notAlphaMask }, this.notColorMask, 0, 4);
+			copy(new int[] { notRedMask, notGreenMask, notBlueMask, notAlphaMask }, this.notColorMask, 4);
 			super.setNotColorMask(notRedMask, notGreenMask, notBlueMask, notAlphaMask);
 		}
 	}
@@ -906,7 +1039,7 @@ public class ShaderContextUBO extends ShaderContext {
 	public void setBlendSFix(float[] blendSFix) {
 		float[] sfix = getBlendSFix();
 		if (blendSFix[0] != sfix[0] || blendSFix[1] != sfix[1] || blendSFix[2] != sfix[2]) {
-			copy(blendSFix, this.blendSFix, 0, 3);
+			copy(blendSFix, this.blendSFix, 3);
 			super.setBlendSFix(blendSFix);
 		}
 	}
@@ -915,7 +1048,7 @@ public class ShaderContextUBO extends ShaderContext {
 	public void setBlendDFix(float[] blendDFix) {
 		float[] dfix = getBlendDFix();
 		if (blendDFix[0] != dfix[0] || blendDFix[1] != dfix[1] || blendDFix[2] != dfix[2]) {
-			copy(blendDFix, this.blendDFix, 0, 3);
+			copy(blendDFix, this.blendDFix, 3);
 			super.setBlendDFix(blendDFix);
 		}
 	}
@@ -956,7 +1089,7 @@ public class ShaderContextUBO extends ShaderContext {
 	public void setFogColor(float[] fogColor) {
 		float[] currentFogColor = getFogColor();
 		if (fogColor[0] != currentFogColor[0] || fogColor[1] != currentFogColor[1] || fogColor[2] != currentFogColor[2]) {
-			copy(fogColor, this.fogColor, 0, 3);
+			copy(fogColor, this.fogColor, 3);
 			super.setFogColor(fogColor);
 		}
 	}
@@ -989,7 +1122,7 @@ public class ShaderContextUBO extends ShaderContext {
 	public void setViewportPos(float x, float y, float z) {
 		float[] currentViewportPos = getViewportPos();
 		if (x != currentViewportPos[0] || y != currentViewportPos[1] || z != currentViewportPos[2]) {
-			copy(new float[] { x, y, z }, this.viewportPos, 0, 3);
+			copy(new float[] { x, y, z }, this.viewportPos, 3);
 			super.setViewportPos(x, y, z);
 		}
 	}
@@ -998,7 +1131,7 @@ public class ShaderContextUBO extends ShaderContext {
 	public void setViewportScale(float sx, float sy, float sz) {
 		float[] currentViewportScale = getViewportScale();
 		if (sx != currentViewportScale[0] || sy != currentViewportScale[1] || sz != currentViewportScale[2]) {
-			copy(new float[] { sx, sy, sz }, this.viewportScale, 0, 3);
+			copy(new float[] { sx, sy, sz }, this.viewportScale, 3);
 			super.setViewportScale(sx, sy, sz);
 		}
 	}

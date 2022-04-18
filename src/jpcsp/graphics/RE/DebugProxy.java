@@ -372,6 +372,21 @@ public class DebugProxy extends BaseRenderingEngineProxy {
 	}
 
 	@Override
+	public void setUniform1v(int id, float[] values) {
+		if (isLogDebugEnabled) {
+			StringBuilder s = new StringBuilder();
+			for (int i = 0; i < values.length; i++) {
+				if (i > 0) {
+					s.append(", ");
+				}
+				s.append(String.format("%f", values[i]));
+			}
+			log.debug(String.format("setUniform1v %s=%s", getUniformName(id), s.toString()));
+		}
+		super.setUniform1v(id, values);
+	}
+
+	@Override
 	public void setUniform(int id, int value1, int value2) {
 		if (isLogDebugEnabled) {
 			log.debug(String.format("setUniform %s=%d, %d", getUniformName(id), value1, value2));
@@ -393,6 +408,21 @@ public class DebugProxy extends BaseRenderingEngineProxy {
 			log.debug(String.format("setUniform3 %s=%d, %d, %d", getUniformName(id), values[0], values[1], values[2]));
 		}
 		super.setUniform3(id, values);
+	}
+
+	@Override
+	public void setUniform3v(int id, float[] values) {
+		if (isLogDebugEnabled) {
+			StringBuilder s = new StringBuilder();
+			for (int i = 0; i < values.length; i++) {
+				if (i > 0) {
+					s.append(", ");
+				}
+				s.append(String.format("%f", values[i]));
+			}
+			log.debug(String.format("setUniform3v %s=%s", getUniformName(id), s.toString()));
+		}
+		super.setUniform3v(id, values);
 	}
 
 	@Override

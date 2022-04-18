@@ -130,6 +130,7 @@ public class VideoEngine {
 
     public static final int NUM_LIGHTS = 4;
     public static final int SIZEOF_FLOAT = IRenderingEngine.sizeOfType[IRenderingEngine.RE_FLOAT];
+    public static final int SIZEOF_INT = IRenderingEngine.sizeOfType[IRenderingEngine.RE_INT];
     public final static String[] psm_names = new String[]{
         "PSM_5650",
         "PSM_5551",
@@ -4641,7 +4642,7 @@ public class VideoEngine {
                 context.light_pos[lnum][3] = 0.f;
                 break;
             case LIGHT_POINT:
-                re.setLightSpotCutoff(lnum, 180);
+                re.setLightSpotCutoff(lnum, 180.f, -1.f);
                 context.light_pos[lnum][3] = 1.f;
                 break;
             case LIGHT_SPOT:
@@ -7023,11 +7024,11 @@ public class VideoEngine {
 
                     if (context.light_type[i] == LIGHT_SPOT) {
                         re.setLightSpotExponent(i, context.spotLightExponent[i]);
-                        re.setLightSpotCutoff(i, context.spotLightCutoff[i]);
+                        re.setLightSpotCutoff(i, context.spotLightCutoff[i], context.spotLightCosCutoff[i]);
                     } else {
                         // uniform light distribution
                         re.setLightSpotExponent(i, 0);
-                        re.setLightSpotCutoff(i, 180);
+                        re.setLightSpotCutoff(i, 180.f, -1.f);
                     }
 
                     // Light kind:

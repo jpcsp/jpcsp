@@ -380,7 +380,7 @@ public interface IRenderingEngine {
 	public void setLightPosition(int light, float[] position);
 	public void setLightDirection(int light, float[] direction);
 	public void setLightSpotExponent(int light, float exponent);
-	public void setLightSpotCutoff(int light, float cutoff);
+	public void setLightSpotCutoff(int light, float cutoff, float pspCutoff);
 	public void setLightConstantAttenuation(int light, float constant);
 	public void setLightLinearAttenuation(int light, float linear);
 	public void setLightQuadraticAttenuation(int light, float quadratic);
@@ -406,9 +406,11 @@ public interface IRenderingEngine {
 	public void setUniform(int id, int value);
 	public void setUniform(int id, int value1, int value2);
 	public void setUniform(int id, float value);
+	public void setUniform1v(int id, float[] values);
 	public void setUniform2(int id, int[] values);
 	public void setUniform3(int id, int[] values);
 	public void setUniform3(int id, float[] values);
+	public void setUniform3v(int id, float[] values);
 	public void setUniform4(int id, int[] values);
 	public void setUniform4(int id, float[] values);
 	public void setUniformMatrix4(int id, int count, float[] values);
@@ -503,6 +505,7 @@ public interface IRenderingEngine {
 	public int getUniformIndex(int program, String name);
 	public int[] getUniformIndices(int program, String[] names);
 	public int getActiveUniformOffset(int program, int uniformIndex);
+	public int getActiveUniformArrayStride(int program, int uniformIndex);
 	public boolean isFramebufferObjectAvailable();
 	public int genFramebuffer();
 	public int genRenderbuffer();

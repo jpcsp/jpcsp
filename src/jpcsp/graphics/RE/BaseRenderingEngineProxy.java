@@ -188,8 +188,8 @@ public class BaseRenderingEngineProxy implements IRenderingEngine {
 	}
 
 	@Override
-	public void setLightSpotCutoff(int light, float cutoff) {
-		proxy.setLightSpotCutoff(light, cutoff);
+	public void setLightSpotCutoff(int light, float cutoff, float pspCutoff) {
+		proxy.setLightSpotCutoff(light, cutoff, pspCutoff);
 	}
 
 	@Override
@@ -348,6 +348,11 @@ public class BaseRenderingEngineProxy implements IRenderingEngine {
 	}
 
 	@Override
+	public void setUniform1v(int id, float[] values) {
+		proxy.setUniform1v(id, values);
+	}
+
+	@Override
 	public void setUniform2(int id, int[] values) {
 		proxy.setUniform2(id, values);
 	}
@@ -360,6 +365,11 @@ public class BaseRenderingEngineProxy implements IRenderingEngine {
 	@Override
 	public void setUniform3(int id, float[] values) {
 		proxy.setUniform3(id, values);
+	}
+
+	@Override
+	public void setUniform3v(int id, float[] values) {
+		proxy.setUniform3v(id, values);
 	}
 
 	@Override
@@ -830,6 +840,11 @@ public class BaseRenderingEngineProxy implements IRenderingEngine {
 	@Override
 	public int getActiveUniformOffset(int program, int uniformIndex) {
 		return proxy.getActiveUniformOffset(program, uniformIndex);
+	}
+
+	@Override
+	public int getActiveUniformArrayStride(int program, int uniformIndex) {
+		return proxy.getActiveUniformArrayStride(program, uniformIndex);
 	}
 
 	@Override

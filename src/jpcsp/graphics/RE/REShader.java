@@ -17,6 +17,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.graphics.RE;
 
 import static jpcsp.graphics.GeCommands.TPSM_PIXEL_STORAGE_MODE_4BIT_INDEXED;
+import static jpcsp.graphics.VideoEngine.NUM_LIGHTS;
 import static jpcsp.graphics.VideoEngineUtilities.getTexturePixelFormat;
 
 import java.io.IOException;
@@ -320,6 +321,7 @@ public class REShader extends BaseRenderingEngineFunction {
 		addDefine(defines, "USE_SHADER_COLOR_MASK", useShaderColorMask);
 		addDefine(defines, "USE_SHADER_ALPHA_TEST", useShaderAlphaTest);
 		addDefine(defines, "USE_SHADER_BLEND_TEST", useShaderBlendTest);
+		addDefine(defines, "NUM_LIGHTS", NUM_LIGHTS);
 
 		replace(src, "// INSERT VERSION", String.format("#version %d", shaderVersion));
 		replace(src, "// INSERT DEFINES", defines.toString());
@@ -667,7 +669,6 @@ public class REShader extends BaseRenderingEngineFunction {
 	public void setLightType(int light, int type, int kind) {
 		shaderContext.setLightType(light, type);
 		shaderContext.setLightKind(light, kind);
-		super.setLightType(light, type, kind);
 	}
 
 	@Override
@@ -1581,5 +1582,55 @@ public class REShader extends BaseRenderingEngineFunction {
 	public void setShadeModel(int model) {
 		shaderContext.setShadeModel(model);
 		super.setShadeModel(model);
+	}
+
+	@Override
+	public void setLightAmbientColor(int light, float[] color) {
+		shaderContext.setLightAmbientColor(light, color);
+	}
+
+	@Override
+	public void setLightConstantAttenuation(int light, float constant) {
+		shaderContext.setLightConstantAttenuation(light, constant);
+	}
+
+	@Override
+	public void setLightDiffuseColor(int light, float[] color) {
+		shaderContext.setLightDiffuseColor(light, color);
+	}
+
+	@Override
+	public void setLightDirection(int light, float[] direction) {
+		shaderContext.setLightDirection(light, direction);
+	}
+
+	@Override
+	public void setLightLinearAttenuation(int light, float linear) {
+		shaderContext.setLightLinearAttenuation(light, linear);
+	}
+
+	@Override
+	public void setLightPosition(int light, float[] position) {
+		shaderContext.setLightPosition(light, position);
+	}
+
+	@Override
+	public void setLightQuadraticAttenuation(int light, float quadratic) {
+		shaderContext.setLightQuadraticAttenuation(light, quadratic);
+	}
+
+	@Override
+	public void setLightSpecularColor(int light, float[] color) {
+		shaderContext.setLightSpecularColor(light, color);
+	}
+
+	@Override
+	public void setLightSpotCutoff(int light, float cutoff, float pspCutoff) {
+		shaderContext.setLightSpotLightCutoff(light, pspCutoff);
+	}
+
+	@Override
+	public void setLightSpotExponent(int light, float exponent) {
+		shaderContext.setLightSpotLightExponent(light, exponent);
 	}
 }

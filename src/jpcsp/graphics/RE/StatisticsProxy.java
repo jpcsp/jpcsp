@@ -1007,10 +1007,10 @@ public class StatisticsProxy extends BaseRenderingEngineProxy {
 	}
 
 	@Override
-	public void setLightSpotCutoff(int light, float cutoff) {
+	public void setLightSpotCutoff(int light, float cutoff, float pspCutoff) {
 		DurationStatistics statistic = statistics[100];
 		statistic.start();
-		super.setLightSpotCutoff(light, cutoff);
+		super.setLightSpotCutoff(light, cutoff, pspCutoff);
 		statistic.end();
 	}
 
