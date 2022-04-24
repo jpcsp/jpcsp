@@ -454,7 +454,7 @@ public class REShader extends BaseRenderingEngineFunction {
 
         if (hasGeometryShader) {
 	        int geometryShader = re.createShader(RE_GEOMETRY_SHADER);
-	        if (!loadShader(geometryShader, "/jpcsp/graphics/shader-150.geom", false, shaderProgram)) {
+	        if (!loadShader(geometryShader, "/jpcsp/graphics/shader.geom", false, shaderProgram)) {
 	        	return -3;
 	        }
 	        re.attachShader(program, geometryShader);
