@@ -59,6 +59,7 @@ public class ShaderContext {
 	private int[] ctestMsk = new int[3];
 	private int[] ctestRef = new int[3];
 	private int[] texEnvMode = new int[2];
+	private float[] texEnvColor = new float[3];
 	private float colorDoubling;
 	private int vinfoColor;
 	private int vinfoPosition;
@@ -115,10 +116,18 @@ public class ShaderContext {
 	private float[] viewportPos = new float[3];
 	private float[] viewportScale = new float[3];
 	private int shadeModel;
+	private float[] ambientLightColor = new float[4];
+	private float materialShininess;
+	private float[] materialAmbientColor = new float[4];
+	private float[] materialDiffuseColor = new float[3];
+	private float[] materialSpecularColor = new float[3];
+	private float[] materialEmissionColor = new float[3];
+	private float[] textureMatrix = new float[16];
+	private float[] modelViewMatrix = new float[16];
+	private float[] modelViewProjectionMatrix = new float[16];
+	private float[] normalMatrix = new float[9];
 
 	public void setUniforms(IRenderingEngine re, int shaderProgram) {
-		re.setUniform(Uniforms.zPos.getId(shaderProgram), zPos);
-		re.setUniform(Uniforms.zScale.getId(shaderProgram), zScale);
 		re.setUniform3(Uniforms.matFlags.getId(shaderProgram), matFlags);
 		re.setUniform4(Uniforms.lightEnabled.getId(shaderProgram), lightEnabled);
 		re.setUniform(Uniforms.lightMode.getId(shaderProgram), lightMode);
@@ -144,6 +153,7 @@ public class ShaderContext {
 		re.setUniform3(Uniforms.ctestMsk.getId(shaderProgram), ctestMsk);
 		re.setUniform3(Uniforms.ctestRef.getId(shaderProgram), ctestRef);
 		re.setUniform2(Uniforms.texEnvMode.getId(shaderProgram), texEnvMode);
+		re.setUniform3(Uniforms.texEnvColor.getId(shaderProgram), texEnvColor);
 		re.setUniform(Uniforms.colorDoubling.getId(shaderProgram), colorDoubling);
 		re.setUniform(Uniforms.vinfoColor.getId(shaderProgram), vinfoColor);
 		re.setUniform(Uniforms.vinfoPosition.getId(shaderProgram), vinfoPosition);
@@ -194,6 +204,16 @@ public class ShaderContext {
 		re.setUniform3(Uniforms.viewportPos.getId(shaderProgram), viewportPos);
 		re.setUniform3(Uniforms.viewportScale.getId(shaderProgram), viewportScale);
 		re.setUniform(Uniforms.shadeModel.getId(shaderProgram), shadeModel);
+		re.setUniform4(Uniforms.ambientLightColor.getId(shaderProgram), ambientLightColor);
+		re.setUniform(Uniforms.materialShininess.getId(shaderProgram), materialShininess);
+		re.setUniform4(Uniforms.materialAmbientColor.getId(shaderProgram), materialAmbientColor);
+		re.setUniform3(Uniforms.materialDiffuseColor.getId(shaderProgram), materialDiffuseColor);
+		re.setUniform3(Uniforms.materialSpecularColor.getId(shaderProgram), materialSpecularColor);
+		re.setUniform3(Uniforms.materialEmissionColor.getId(shaderProgram), materialEmissionColor);
+		re.setUniformMatrix4(Uniforms.pspTextureMatrix.getId(shaderProgram), 1, textureMatrix);
+		re.setUniformMatrix4(Uniforms.modelViewMatrix.getId(shaderProgram), 1, modelViewMatrix);
+		re.setUniformMatrix4(Uniforms.modelViewProjectionMatrix.getId(shaderProgram), 1, modelViewProjectionMatrix);
+		re.setUniformMatrix3(Uniforms.normalMatrix.getId(shaderProgram), 1, normalMatrix);
 
 		setUniformsSamplers(re, shaderProgram);
 	}
@@ -450,6 +470,16 @@ public class ShaderContext {
 
 	public void setTexEnvMode(int index, int texEnvMode) {
 		this.texEnvMode[index] = texEnvMode;
+	}
+
+	public float[] getTexEnvColor() {
+		return texEnvColor;
+	}
+
+	public void setTexEnvColor(float[] texEnvColor) {
+		this.texEnvColor[0] = texEnvColor[0];
+		this.texEnvColor[1] = texEnvColor[1];
+		this.texEnvColor[2] = texEnvColor[2];
 	}
 
 	public float getColorDoubling() {
@@ -917,5 +947,97 @@ public class ShaderContext {
 
 	public void setShadeModel(int shadeModel) {
 		this.shadeModel = shadeModel;
+	}
+
+	public float[] getAmbientLightColor() {
+		return ambientLightColor;
+	}
+
+	public void setAmbientLightColor(float[] ambientLightColor) {
+		this.ambientLightColor[0] = ambientLightColor[0];
+		this.ambientLightColor[1] = ambientLightColor[1];
+		this.ambientLightColor[2] = ambientLightColor[2];
+		this.ambientLightColor[3] = ambientLightColor[3];
+	}
+
+	public float getMaterialShininess() {
+		return materialShininess;
+	}
+
+	public void setMaterialShininess(float materialShininess) {
+		this.materialShininess = materialShininess;
+	}
+
+	public float[] getMaterialAmbientColor() {
+		return materialAmbientColor;
+	}
+
+	public void setMaterialAmbientColor(float[] materialAmbientColor) {
+		this.materialAmbientColor[0] = materialAmbientColor[0];
+		this.materialAmbientColor[1] = materialAmbientColor[1];
+		this.materialAmbientColor[2] = materialAmbientColor[2];
+		this.materialAmbientColor[3] = materialAmbientColor[3];
+	}
+
+	public float[] getMaterialDiffuseColor() {
+		return materialDiffuseColor;
+	}
+
+	public void setMaterialDiffuseColor(float[] materialDiffuseColor) {
+		this.materialDiffuseColor[0] = materialDiffuseColor[0];
+		this.materialDiffuseColor[1] = materialDiffuseColor[1];
+		this.materialDiffuseColor[2] = materialDiffuseColor[2];
+	}
+
+	public float[] getMaterialSpecularColor() {
+		return materialSpecularColor;
+	}
+
+	public void setMaterialSpecularColor(float[] materialSpecularColor) {
+		this.materialSpecularColor[0] = materialSpecularColor[0];
+		this.materialSpecularColor[1] = materialSpecularColor[1];
+		this.materialSpecularColor[2] = materialSpecularColor[2];
+	}
+
+	public float[] getMaterialEmissionColor() {
+		return materialEmissionColor;
+	}
+
+	public void setMaterialEmissionColor(float[] materialEmissionColor) {
+		this.materialEmissionColor[0] = materialEmissionColor[0];
+		this.materialEmissionColor[1] = materialEmissionColor[1];
+		this.materialEmissionColor[2] = materialEmissionColor[2];
+	}
+
+	public float[] getTextureMatrix() {
+		return textureMatrix;
+	}
+
+	public void setTextureMatrix(float[] textureMatrix) {
+		System.arraycopy(textureMatrix, 0, this.textureMatrix, 0, this.textureMatrix.length);
+	}
+
+	public float[] getModelViewMatrix() {
+		return modelViewMatrix;
+	}
+
+	public void setModelViewMatrix(float[] modelViewMatrix) {
+		System.arraycopy(modelViewMatrix, 0, this.modelViewMatrix, 0, this.modelViewMatrix.length);
+	}
+
+	public float[] getModelViewProjectionMatrix() {
+		return modelViewProjectionMatrix;
+	}
+
+	public void setModelViewProjectionMatrix(float[] modelViewProjectionMatrix) {
+		System.arraycopy(modelViewProjectionMatrix, 0, this.modelViewProjectionMatrix, 0, this.modelViewProjectionMatrix.length);
+	}
+
+	public float[] getNormalMatrix() {
+		return normalMatrix;
+	}
+
+	public void setNormalMatrix(float[] normalMatrix) {
+		System.arraycopy(normalMatrix, 0, this.normalMatrix, 0, this.normalMatrix.length);
 	}
 }

@@ -135,7 +135,7 @@ public class StatisticsProxy extends BaseRenderingEngineProxy {
 		addStatistic("setMaterialAmbientColor", 105);
 		addStatistic("setMaterialColor", 106);
 		addStatistic("setMaterialDiffuseColor", 107);
-		addStatistic("setMaterialEmissiveColor", 108);
+		addStatistic("setMaterialEmissionColor", 108);
 		addStatistic("setMaterialShininess", 109);
 		addStatistic("setMaterialSpecularColor", 110);
 		addStatistic("setMatrix", 111);
@@ -1063,10 +1063,10 @@ public class StatisticsProxy extends BaseRenderingEngineProxy {
 	}
 
 	@Override
-	public void setMaterialEmissiveColor(float[] color) {
+	public void setMaterialEmissionColor(float[] color) {
 		DurationStatistics statistic = statistics[108];
 		statistic.start();
-		super.setMaterialEmissiveColor(color);
+		super.setMaterialEmissionColor(color);
 		statistic.end();
 	}
 

@@ -10,8 +10,13 @@
 #if USE_UBO
     #extension GL_ARB_uniform_buffer_object : enable
 #endif
-#if __VERSION__ >= 130 && defined(GL_ARB_compatibility)
+#if __VERSION__ >= 130 && __VERSION__ < 150 && defined(GL_ARB_compatibility)
     #extension GL_ARB_compatibility : enable
+#endif
+#if __VERSION__ >= 410
+	#define LOCATION(N) layout(location=N)
+#else
+	#define LOCATION(N)
 #endif
 
 // Use attributes instead of gl_Vertex, gl_Normal...: attributes support all the
@@ -22,27 +27,31 @@ in vec3 pspNormal;
 in vec4 pspPosition;
 in vec4 pspWeights1;
 in vec4 pspWeights2;
-noperspective out float discarded;
+
+// The output locations must match those defined as input in the geometry and fragment shaders
+LOCATION(0) out vec3 texCoord;
+LOCATION(1) noperspective out float discarded;
+LOCATION(2) out float fogDepth;
 #if !USE_DYNAMIC_DEFINES
 	// When not using dynamic defines, we need to generate the primary and secondary
 	// colors in both the smooth and flat variants as the use of one or the other
 	// will be decided dynamically in the fragment shader based on the value of the shadeModel.
-	smooth out vec4 pspPrimaryColorSmooth;
-	smooth out vec4 pspSecondaryColorSmooth;
-	flat out vec4 pspPrimaryColorFlat;
-	flat out vec4 pspSecondaryColorFlat;
+	LOCATION(3) smooth out vec4 pspPrimaryColorSmooth;
+	LOCATION(4) smooth out vec4 pspSecondaryColorSmooth;
+	LOCATION(5) flat out vec4 pspPrimaryColorFlat;
+	LOCATION(6) flat out vec4 pspSecondaryColorFlat;
 #elif SHADE_MODEL == 0
-	flat out vec4 pspPrimaryColor;
-	flat out vec4 pspSecondaryColor;
+	LOCATION(3) flat out vec4 pspPrimaryColor;
+	LOCATION(4) flat out vec4 pspSecondaryColor;
 #else
-	smooth out vec4 pspPrimaryColor;
-	smooth out vec4 pspSecondaryColor;
+	LOCATION(3) smooth out vec4 pspPrimaryColor;
+	LOCATION(4) smooth out vec4 pspSecondaryColor;
 #endif
 
 #if USE_UBO
 	UBO_STRUCTURE
 #else
-    uniform ivec3 psp_matFlags; // Ambient, Diffuse, Specular
+    uniform ivec3 pspMatFlags; // Ambient, Diffuse, Specular
     uniform ivec4 pspLightType;
     uniform ivec4 pspLightKind;
     uniform ivec4 pspLightEnabled;
@@ -54,8 +63,8 @@ noperspective out float discarded;
     uniform float pspLightSpotLightExponent[NUM_LIGHTS];
     uniform float pspLightSpotLightCutoff[NUM_LIGHTS];
     uniform vec3  pspLightAttenuation[NUM_LIGHTS];
-    uniform mat4  psp_boneMatrix[8];
-    uniform int   psp_numberBones;
+    uniform mat4  pspBoneMatrix[8];
+    uniform int   pspNumberBones;
     uniform bool  texEnable;
     uniform int   texMapMode;
     uniform int   texMapProj;
@@ -75,6 +84,18 @@ noperspective out float discarded;
     uniform bool  clipPlaneEnable;
     uniform vec3  viewportPos;
     uniform vec3  viewportScale;
+    uniform vec4  ambientLightColor;
+    uniform float materialShininess;
+    uniform vec4  materialAmbientColor;
+    uniform vec3  materialDiffuseColor;
+    uniform vec3  materialSpecularColor;
+    uniform vec3  materialEmissionColor;
+    uniform mat4  pspTextureMatrix;
+    uniform mat4  modelViewMatrix;
+    uniform mat4  modelViewProjectionMatrix;
+    uniform mat3  normalMatrix;
+    uniform float fogEnd;
+    uniform float fogScale;
 #endif
 
 
@@ -82,12 +103,14 @@ noperspective out float discarded;
 // Lighting
 ///////////////////////////////////////////////////////////////
 
-#if !USE_DYNAMIC_DEFINES || LIGHTING_ENABLE
+#if !USE_DYNAMIC_DEFINES || LIGHTING_ENABLE || TEX_MAP_MODE == 2
 vec3 getLightVector(in int i, in vec3 V)
 {
 	return (pspLightType[i] != 0) ? pspLightPosition[i] - V : pspLightPosition[i];
 }
+#endif
 
+#if !USE_DYNAMIC_DEFINES || LIGHTING_ENABLE
 void ComputeLight(in int i, in vec3 N, in vec3 V, inout vec3 A, inout vec3 D, inout vec3 S)
 {
 	vec3  L     = getLightVector(i, V);
@@ -95,7 +118,7 @@ void ComputeLight(in int i, in vec3 N, in vec3 V, inout vec3 A, inout vec3 D, in
     float att   = 1.0;
     float NdotL = max(dot(normalize(L), N), 0.0);
     float NdotH = max(dot(normalize(H), N), 0.0);
-    float k     = gl_FrontMaterial.shininess;
+    float k     = materialShininess;
     float Dk    = (pspLightKind[i] == 2) ? max(pow(NdotL, k), 0.0) : NdotL;
     float Sk    = (pspLightKind[i] != 0) ? max(pow(NdotH, k), 0.0) : 0.0;
 
@@ -116,30 +139,30 @@ void ComputeLight(in int i, in vec3 N, in vec3 V, inout vec3 A, inout vec3 D, in
 
 void ApplyLighting(inout vec4 Cp, inout vec4 Cs, in vec3 V, in vec3 N)
 {
-    vec3 Em = gl_FrontMaterial.emission.rgb;
+    vec3 Em = materialEmissionColor;
     #if !USE_DYNAMIC_DEFINES
-        vec4 Am = psp_matFlags[0] != 0 ? Cp.rgba : gl_FrontMaterial.ambient.rgba;
-        vec3 Dm = psp_matFlags[1] != 0 ? Cp.rgb  : gl_FrontMaterial.diffuse.rgb;
-        vec3 Sm = psp_matFlags[2] != 0 ? Cp.rgb  : gl_FrontMaterial.specular.rgb;
+        vec4 Am = pspMatFlags[0] != 0 ? Cp.rgba : materialAmbientColor;
+        vec3 Dm = pspMatFlags[1] != 0 ? Cp.rgb  : materialDiffuseColor;
+        vec3 Sm = pspMatFlags[2] != 0 ? Cp.rgb  : materialSpecularColor;
     #else
         #if MAT_FLAGS0
             vec4 Am = Cp.rgba;
         #else
-            vec4 Am = gl_FrontMaterial.ambient.rgba;
+            vec4 Am = materialAmbientColor;
         #endif
         #if MAT_FLAGS1
             vec3 Dm = Cp.rgb;
         #else
-            vec3 Dm = gl_FrontMaterial.diffuse.rgb;
+            vec3 Dm = materialDiffuseColor;
         #endif
         #if MAT_FLAGS2
             vec3 Sm = Cp.rgb;
         #else
-            vec3 Sm = gl_FrontMaterial.specular.rgb;
+            vec3 Sm = materialSpecularColor;
         #endif
     #endif
 
-    vec4 Al = gl_LightModel.ambient;
+    vec4 Al = ambientLightColor;
     vec3 Dl = vec3(0.0);
     vec3 Sl = vec3(0.0);
 
@@ -210,31 +233,31 @@ void ApplyTexture(inout vec4 T, in vec4 V, in vec3 N, in vec3 Ne)
         switch (texMapMode)
         {
         case 0: // UV mapping
-            T.xyz = vec3(vec2(gl_TextureMatrix[0] * T), 1.0);
+            T.xyz = vec3(vec2(pspTextureMatrix * T), 1.0);
             break;
 
         case 1: // Projection mapping
             switch (texMapProj)
             {
             case 0: // Model Coordinate Projection (XYZ)
-                T.xyz = vec3(gl_TextureMatrix[0] * vec4(V.xyz, 1.0));
+                T.xyz = vec3(pspTextureMatrix * vec4(V.xyz, 1.0));
                 break;
             case 1: // Texture Coordinate Projection (UV0)
-                T.xyz = vec3(gl_TextureMatrix[0] * vec4(T.st, 0.0, 1.0));
+                T.xyz = vec3(pspTextureMatrix * vec4(T.st, 0.0, 1.0));
                 break;
             case 2: // Normalized Normal Coordinate projection (N/|N|), using the Normal from the vertex data
-                T.xyz = vec3(gl_TextureMatrix[0] * vec4(normalize(N.xyz), 1.0));
+                T.xyz = vec3(pspTextureMatrix * vec4(normalize(N.xyz), 1.0));
                 break;
             case 3: // Non-normalized Normal Coordinate projection (N), using the Normal from the vertex data
-                T.xyz = vec3(gl_TextureMatrix[0] * vec4(N.xyz, 1.0));
+                T.xyz = vec3(pspTextureMatrix * vec4(N.xyz, 1.0));
                 break;
             }
             break;
 
         case 2: // Shade mapping, using the Normal in eye coordinates
             vec3  Nn = normalize(Ne);
-            vec3  Ve = vec3(gl_ModelViewMatrix * V);
-            float k  = gl_FrontMaterial.shininess;
+            vec3  Ve = vec3(modelViewMatrix * V);
+            float k  = materialShininess;
             vec3  Lu = getLightVector(texShade.x, Ve);
             vec3  Lv = getLightVector(texShade.y, Ve);
             float Pu = pspLightKind[texShade.x] == 0 ? dot(Nn, normalize(Lu)) : pow(dot(Nn, normalize(Lu + vec3(0.0, 0.0, 1.0))), k);
@@ -244,24 +267,24 @@ void ApplyTexture(inout vec4 T, in vec4 V, in vec3 N, in vec3 Ne)
         }
     #elif TEX_MAP_MODE == 0
         // UV mapping
-        T.xyz = vec3(vec2(gl_TextureMatrix[0] * T), 1.0);
+        T.xyz = vec3(vec2(pspTextureMatrix * T), 1.0);
     #elif TEX_MAP_MODE == 1 && TEX_MAP_PROJ == 0
         // Model Coordinate Projection (XYZ)
-        T.xyz = vec3(gl_TextureMatrix[0] * vec4(V.xyz, 1.0));
+        T.xyz = vec3(pspTextureMatrix * vec4(V.xyz, 1.0));
     #elif TEX_MAP_MODE == 1 && TEX_MAP_PROJ == 1
         // Texture Coordinate Projection (UV0)
-        T.xyz = vec3(gl_TextureMatrix[0] * vec4(T.st, 0.0, 1.0));
+        T.xyz = vec3(pspTextureMatrix * vec4(T.st, 0.0, 1.0));
     #elif TEX_MAP_MODE == 1 && TEX_MAP_PROJ == 2
         // Normalized Normal Coordinate projection (N/|N|)
-        T.xyz = vec3(gl_TextureMatrix[0] * vec4(normalize(N.xyz), 1.0));
+        T.xyz = vec3(pspTextureMatrix * vec4(normalize(N.xyz), 1.0));
     #elif TEX_MAP_MODE == 1 && TEX_MAP_PROJ == 3
         // Non-normalized Normal Coordinate projection (N)
-        T.xyz = vec3(gl_TextureMatrix[0] * vec4(N.xyz, 1.0));
+        T.xyz = vec3(pspTextureMatrix * vec4(N.xyz, 1.0));
     #elif TEX_MAP_MODE == 2
         // Shade mapping
         vec3  Nn = normalize(Ne);
-        vec3  Ve = vec3(gl_ModelViewMatrix * V);
-        float k  = gl_FrontMaterial.shininess;
+        vec3  Ve = vec3(modelViewMatrix * V);
+        float k  = materialShininess;
         vec3  Lu = getLightVector(TEX_SHADE0, Ve);
         vec3  Lv = getLightVector(TEX_SHADE1, Ve);
         float Pu = pspLightKind[TEX_SHADE0] == 0 ? dot(Nn, normalize(Lu)) : pow(dot(Nn, normalize(Lu + vec3(0.0, 0.0, 1.0))), k);
@@ -290,40 +313,40 @@ void ApplySkinning(inout vec3 Vv, inout vec3 Nv)
 
     #if USE_DYNAMIC_DEFINES
         #if NUMBER_BONES >= 8
-            W = W2[3]; M = mat3(psp_boneMatrix[7]); V += (M * Vv + psp_boneMatrix[7][3].xyz) * W; N += M * Nv * W;
+            W = W2[3]; M = mat3(pspBoneMatrix[7]); V += (M * Vv + pspBoneMatrix[7][3].xyz) * W; N += M * Nv * W;
         #endif
         #if NUMBER_BONES >= 7
-            W = W2[2]; M = mat3(psp_boneMatrix[6]); V += (M * Vv + psp_boneMatrix[6][3].xyz) * W; N += M * Nv * W;
+            W = W2[2]; M = mat3(pspBoneMatrix[6]); V += (M * Vv + pspBoneMatrix[6][3].xyz) * W; N += M * Nv * W;
         #endif
         #if NUMBER_BONES >= 6
-            W = W2[1]; M = mat3(psp_boneMatrix[5]); V += (M * Vv + psp_boneMatrix[5][3].xyz) * W; N += M * Nv * W;
+            W = W2[1]; M = mat3(pspBoneMatrix[5]); V += (M * Vv + pspBoneMatrix[5][3].xyz) * W; N += M * Nv * W;
         #endif
         #if NUMBER_BONES >= 5
-            W = W2[0]; M = mat3(psp_boneMatrix[4]); V += (M * Vv + psp_boneMatrix[4][3].xyz) * W; N += M * Nv * W;
+            W = W2[0]; M = mat3(pspBoneMatrix[4]); V += (M * Vv + pspBoneMatrix[4][3].xyz) * W; N += M * Nv * W;
         #endif
         #if NUMBER_BONES >= 4
-            W = W1[3]; M = mat3(psp_boneMatrix[3]); V += (M * Vv + psp_boneMatrix[3][3].xyz) * W; N += M * Nv * W;
+            W = W1[3]; M = mat3(pspBoneMatrix[3]); V += (M * Vv + pspBoneMatrix[3][3].xyz) * W; N += M * Nv * W;
         #endif
         #if NUMBER_BONES >= 3
-            W = W1[2]; M = mat3(psp_boneMatrix[2]); V += (M * Vv + psp_boneMatrix[2][3].xyz) * W; N += M * Nv * W;
+            W = W1[2]; M = mat3(pspBoneMatrix[2]); V += (M * Vv + pspBoneMatrix[2][3].xyz) * W; N += M * Nv * W;
         #endif
         #if NUMBER_BONES >= 2
-            W = W1[1]; M = mat3(psp_boneMatrix[1]); V += (M * Vv + psp_boneMatrix[1][3].xyz) * W; N += M * Nv * W;
+            W = W1[1]; M = mat3(pspBoneMatrix[1]); V += (M * Vv + pspBoneMatrix[1][3].xyz) * W; N += M * Nv * W;
         #endif
         #if NUMBER_BONES >= 1
-            W = W1[0]; M = mat3(psp_boneMatrix[0]); V += (M * Vv + psp_boneMatrix[0][3].xyz) * W; N += M * Nv * W;
+            W = W1[0]; M = mat3(pspBoneMatrix[0]); V += (M * Vv + pspBoneMatrix[0][3].xyz) * W; N += M * Nv * W;
         #endif
     #else
-        switch (psp_numberBones - 1)
+        switch (pspNumberBones)
         {
-        case 7: W = W2[3]; M = mat3(psp_boneMatrix[7]); V += (M * Vv + psp_boneMatrix[7][3].xyz) * W; N += M * Nv * W;
-        case 6: W = W2[2]; M = mat3(psp_boneMatrix[6]); V += (M * Vv + psp_boneMatrix[6][3].xyz) * W; N += M * Nv * W;
-        case 5: W = W2[1]; M = mat3(psp_boneMatrix[5]); V += (M * Vv + psp_boneMatrix[5][3].xyz) * W; N += M * Nv * W;
-        case 4: W = W2[0]; M = mat3(psp_boneMatrix[4]); V += (M * Vv + psp_boneMatrix[4][3].xyz) * W; N += M * Nv * W;
-        case 3: W = W1[3]; M = mat3(psp_boneMatrix[3]); V += (M * Vv + psp_boneMatrix[3][3].xyz) * W; N += M * Nv * W;
-        case 2: W = W1[2]; M = mat3(psp_boneMatrix[2]); V += (M * Vv + psp_boneMatrix[2][3].xyz) * W; N += M * Nv * W;
-        case 1: W = W1[1]; M = mat3(psp_boneMatrix[1]); V += (M * Vv + psp_boneMatrix[1][3].xyz) * W; N += M * Nv * W;
-        case 0: W = W1[0]; M = mat3(psp_boneMatrix[0]); V += (M * Vv + psp_boneMatrix[0][3].xyz) * W; N += M * Nv * W;
+        case 8: W = W2[3]; M = mat3(pspBoneMatrix[7]); V += (M * Vv + pspBoneMatrix[7][3].xyz) * W; N += M * Nv * W; // fallthrough
+        case 7: W = W2[2]; M = mat3(pspBoneMatrix[6]); V += (M * Vv + pspBoneMatrix[6][3].xyz) * W; N += M * Nv * W; // fallthrough
+        case 6: W = W2[1]; M = mat3(pspBoneMatrix[5]); V += (M * Vv + pspBoneMatrix[5][3].xyz) * W; N += M * Nv * W; // fallthrough
+        case 5: W = W2[0]; M = mat3(pspBoneMatrix[4]); V += (M * Vv + pspBoneMatrix[4][3].xyz) * W; N += M * Nv * W; // fallthrough
+        case 4: W = W1[3]; M = mat3(pspBoneMatrix[3]); V += (M * Vv + pspBoneMatrix[3][3].xyz) * W; N += M * Nv * W; // fallthrough
+        case 3: W = W1[2]; M = mat3(pspBoneMatrix[2]); V += (M * Vv + pspBoneMatrix[2][3].xyz) * W; N += M * Nv * W; // fallthrough
+        case 2: W = W1[1]; M = mat3(pspBoneMatrix[1]); V += (M * Vv + pspBoneMatrix[1][3].xyz) * W; N += M * Nv * W; // fallthrough
+        case 1: W = W1[0]; M = mat3(pspBoneMatrix[0]); V += (M * Vv + pspBoneMatrix[0][3].xyz) * W; N += M * Nv * W;
         }
     #endif
     Vv = V;
@@ -610,15 +633,15 @@ void main()
     #endif
 
     #if !USE_DYNAMIC_DEFINES
-        if (psp_numberBones > 0) ApplySkinning(V.xyz, N);
+        if (pspNumberBones > 0) ApplySkinning(V.xyz, N);
     #elif NUMBER_BONES > 0
         ApplySkinning(V.xyz, N);
     #endif
 
-    vec3 Ve = vec3(gl_ModelViewMatrix * V);
+    vec3 Ve = vec3(modelViewMatrix * V);
 
     #if !USE_DYNAMIC_DEFINES || VINFO_NORMAL != 0
-        vec3 Ne = gl_NormalMatrix * N;
+        vec3 Ne = normalMatrix * N;
     #else
 		vec3 Ne = vec3(1.0, 0.0, 0.0);
     #endif
@@ -635,9 +658,9 @@ void main()
         ApplyTexture(T, V, N, Ne);
     #endif
 
-    gl_Position                 = gl_ModelViewProjectionMatrix * V;
-    gl_FogFragCoord             = Ve.z;
-    gl_TexCoord[0]              = T;
+    gl_Position                 = modelViewProjectionMatrix * V;
+    fogDepth                    = (fogEnd + Ve.z) * fogScale;
+    texCoord                    = T.xyz;
     #if !USE_DYNAMIC_DEFINES
 		pspPrimaryColorFlat     = Cp;
 		pspSecondaryColorFlat   = Cs;

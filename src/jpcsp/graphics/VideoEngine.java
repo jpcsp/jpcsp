@@ -4528,15 +4528,15 @@ public class VideoEngine {
     }
 
     private void executeCommandEMC() {
-        context.mat_emissive[0] = ((normalArgument) & 255) / 255.f;
-        context.mat_emissive[1] = ((normalArgument >> 8) & 255) / 255.f;
-        context.mat_emissive[2] = ((normalArgument >> 16) & 255) / 255.f;
-        context.mat_emissive[3] = 1.f;
+        context.mat_emission[0] = ((normalArgument) & 255) / 255.f;
+        context.mat_emission[1] = ((normalArgument >> 8) & 255) / 255.f;
+        context.mat_emission[2] = ((normalArgument >> 16) & 255) / 255.f;
+        context.mat_emission[3] = 1.f;
         materialChanged = true;
-        re.setMaterialEmissiveColor(context.mat_emissive);
+        re.setMaterialEmissionColor(context.mat_emission);
         if (isLogDebugEnabled) {
             log("material emission " + String.format("r=%.1f g=%.1f b=%.1f (%08X)",
-                    context.mat_emissive[0], context.mat_emissive[1], context.mat_emissive[2], normalArgument));
+                    context.mat_emission[0], context.mat_emission[1], context.mat_emission[2], normalArgument));
         }
     }
 

@@ -26,8 +26,8 @@ import jpcsp.graphics.RE.software.RESoftware;
  *
  */
 public class RenderingEngineFactory {
-	private static final boolean enableDebugProxy = false;
-	private static final boolean enableCheckErrorsProxy = false;
+	private static final boolean enableDebugProxy = true;
+	private static final boolean enableCheckErrorsProxy = true;
 	private static final boolean enableStatisticsProxy = false;
 
 	private static IRenderingEngine createRenderingEngine(boolean forDisplay) {

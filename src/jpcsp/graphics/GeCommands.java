@@ -158,7 +158,7 @@ public class GeCommands {
         public final static int CMAT_FLAG_AMBIENT = 0X01;
         public final static int CMAT_FLAG_DIFFUSE = 0X02;
         public final static int CMAT_FLAG_SPECULAR = 0X04;
-    public final static int EMC = 0x54;// 	EMC 	Emissive Model Color
+    public final static int EMC = 0x54;// 	EMC 	Emission Model Color
     public final static int AMC = 0x55;// 	AMC 	Ambient Model Color
     public final static int DMC = 0x56;// 	DMC 	Diffuse Model Color
     public final static int SMC = 0x57;// 	SMC 	Specular Model Color

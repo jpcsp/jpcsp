@@ -136,7 +136,7 @@ public class NullRenderingEngine implements IRenderingEngine {
 	}
 
 	@Override
-	public void setMaterialEmissiveColor(float[] color) {
+	public void setMaterialEmissionColor(float[] color) {
 	}
 
 	@Override
@@ -305,6 +305,10 @@ public class NullRenderingEngine implements IRenderingEngine {
 
 	@Override
 	public void setUniform4(int id, float[] values) {
+	}
+
+	@Override
+	public void setUniformMatrix3(int id, int count, float[] values) {
 	}
 
 	@Override

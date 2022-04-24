@@ -241,9 +241,9 @@ public class CheckErrorsProxy extends BaseRenderingEngineProxy {
 	}
 
 	@Override
-	public void setMaterialEmissiveColor(float[] color) {
-		super.setMaterialEmissiveColor(color);
-		re.checkAndLogErrors("setMaterialEmissiveColor");
+	public void setMaterialEmissionColor(float[] color) {
+		super.setMaterialEmissionColor(color);
+		re.checkAndLogErrors("setMaterialEmissionColor");
 	}
 
 	@Override
@@ -436,6 +436,12 @@ public class CheckErrorsProxy extends BaseRenderingEngineProxy {
 	public void setUniform4(int id, float[] values) {
 		super.setUniform4(id, values);
 		re.checkAndLogErrors("setUniform4");
+	}
+
+	@Override
+	public void setUniformMatrix3(int id, int count, float[] values) {
+		super.setUniformMatrix3(id, count, values);
+		re.checkAndLogErrors("setUniformMatrix3");
 	}
 
 	@Override

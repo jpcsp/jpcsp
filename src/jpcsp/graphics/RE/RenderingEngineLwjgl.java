@@ -90,7 +90,7 @@ public class RenderingEngineLwjgl extends NullRenderingEngine {
     };
     protected static final int[] colorTypeToGL = {
         GL11.GL_AMBIENT, // RE_AMBIENT
-        GL11.GL_EMISSION, // RE_EMISSIVE
+        GL11.GL_EMISSION, // RE_EMISSION
         GL11.GL_DIFFUSE, // RE_DIFFUSE
         GL11.GL_SPECULAR // RE_SPECULAR
     };
@@ -547,7 +547,7 @@ public class RenderingEngineLwjgl extends NullRenderingEngine {
     }
 
     @Override
-    public void setMaterialEmissiveColor(float[] color) {
+    public void setMaterialEmissionColor(float[] color) {
         GL11.glMaterialfv(GL11.GL_FRONT, GL11.GL_EMISSION, directBufferUtilities.getDirectBuffer(color));
     }
 
@@ -750,6 +750,11 @@ public class RenderingEngineLwjgl extends NullRenderingEngine {
     @Override
     public void setUniform4(int id, float[] values) {
         GL20.glUniform4f(id, values[0], values[1], values[2], values[3]);
+    }
+
+    @Override
+    public void setUniformMatrix3(int id, int count, float[] values) {
+        GL20.glUniformMatrix3fv(id, false, directBufferUtilities.getDirectBuffer(values, count * 9));
     }
 
     @Override

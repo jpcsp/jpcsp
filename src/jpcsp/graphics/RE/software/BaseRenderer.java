@@ -275,7 +275,7 @@ public abstract class BaseRenderer implements IRenderer {
 
 		if (!transform2D && context.lightingFlag.isEnabled()) {
 			lighting = new Lighting(context.view_uploaded_matrix,
-			               context.mat_emissive,
+			               context.mat_emission,
 			               context.ambient_light,
 			               context.lightFlags,
 			               context.light_pos,

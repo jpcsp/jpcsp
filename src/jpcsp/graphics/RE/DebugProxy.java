@@ -104,17 +104,26 @@ public class DebugProxy extends BaseRenderingEngineProxy {
 		super.setBlendEquation(mode);
 	}
 
-	protected void debugMatrix(String name, float[] matrix, int offset) {
+	protected void debugMatrix3(String name, float[] matrix, int offset) {
+		if (matrix == null) {
+			matrix = identityMatrix;
+		}
+        for (int y = 0; y < 3; y++) {
+            log.debug(String.format("%s %.4f %.4f %.4f", name, matrix[offset + 0 + y * 3], matrix[offset + 1 + y * 3], matrix[offset + 2 + y * 3]));
+        }
+	}
+
+	protected void debugMatrix4(String name, float[] matrix, int offset) {
 		if (matrix == null) {
 			matrix = identityMatrix;
 		}
         for (int y = 0; y < 4; y++) {
-            log.debug(String.format("%s %.3f %.3f %.3f %.3f", name, matrix[offset + 0 + y * 4], matrix[offset + 1 + y * 4], matrix[offset + 2 + y * 4], matrix[offset + 3 + y * 4]));
+            log.debug(String.format("%s %.4f %.4f %.4f %.4f", name, matrix[offset + 0 + y * 4], matrix[offset + 1 + y * 4], matrix[offset + 2 + y * 4], matrix[offset + 3 + y * 4]));
         }
 	}
 
 	protected void debugMatrix(String name, float[] matrix) {
-		debugMatrix(name, matrix, 0);
+		debugMatrix4(name, matrix, 0);
 	}
 
 	@Override
@@ -316,18 +325,29 @@ public class DebugProxy extends BaseRenderingEngineProxy {
 		if (isLogDebugEnabled) {
 			log.debug(String.format("setBones count=%d", count));
 			for (int i = 0; i < count; i++) {
-				debugMatrix("setBones[" + i + "]", values, i * 16);
+				debugMatrix4("setBones[" + i + "]", values, i * 16);
 			}
 		}
 		return super.setBones(count, values);
 	}
 
 	@Override
+	public void setUniformMatrix3(int id, int count, float[] values) {
+		if (isLogDebugEnabled) {
+			log.debug(String.format("setUniformMatrix3 %s, count=%d", getUniformName(id), count));
+			for (int i = 0; i < count; i++) {
+				debugMatrix3("setUniformMatrix3[" + i + "]", values, i * 16);
+			}
+		}
+		super.setUniformMatrix3(id, count, values);
+	}
+
+	@Override
 	public void setUniformMatrix4(int id, int count, float[] values) {
 		if (isLogDebugEnabled) {
-			log.debug(String.format("setUniformMatrix4 id=%d, count=%d", id, count));
+			log.debug(String.format("setUniformMatrix4 %s, count=%d", getUniformName(id), count));
 			for (int i = 0; i < count; i++) {
-				debugMatrix("setUniformMatrix4[" + i + "]", values, i * 16);
+				debugMatrix4("setUniformMatrix4[" + i + "]", values, i * 16);
 			}
 		}
 		super.setUniformMatrix4(id, count, values);

@@ -22,8 +22,6 @@ import jpcsp.graphics.RE.IRenderingEngine;
 import jpcsp.graphics.RE.StateProxy;
 
 public enum Uniforms {
-	zPos("psp_zPos"),
-	zScale("psp_zScale"),
 	lightingEnable("lightingEnable"),
 	lightEnabled("pspLightEnabled"),
 	lightType("pspLightType"),
@@ -37,10 +35,11 @@ public enum Uniforms {
 	lightSpotLightCutoff("pspLightSpotLightCutoff"),
 	lightAttenuation("pspLightAttenuation"),
 	lightMode("colorAddition"),
-	matFlags("psp_matFlags"),
+	matFlags("pspMatFlags"),
 	tex("tex"),
 	texEnable("texEnable"),
 	texEnvMode("texEnvMode"),
+	texEnvColor("texEnvColor"),
 	texMapMode("texMapMode"),
 	texMapProj("texMapProj"),
 	texShade("texShade"),
@@ -49,9 +48,9 @@ public enum Uniforms {
 	ctestFunc("ctestFunc"),
 	ctestRef("ctestRef"),
 	ctestMsk("ctestMsk"),
-	boneMatrix("psp_boneMatrix"),
-	weights("psp_weights"),
-	numberBones("psp_numberBones"),
+	boneMatrix("pspBoneMatrix"),
+	weights("pspWeights"),
+	numberBones("pspNumberBones"),
 	vinfoColor("vinfoColor"),
 	vinfoPosition("vinfoPosition"),
 	vinfoTransform2D("vinfoTransform2D"),
@@ -102,10 +101,21 @@ public enum Uniforms {
 	fogColor("fogColor"),
 	fogEnd("fogEnd"),
 	fogScale("fogScale"),
+	fogDepth("fogDepth"),
 	clipPlaneEnable("clipPlaneEnable"),
 	viewportPos("viewportPos"),
 	viewportScale("viewportScale"),
-	shadeModel("shadeModel");
+	shadeModel("shadeModel"),
+	ambientLightColor("ambientLightColor"),
+	materialShininess("materialShininess"),
+	materialAmbientColor("materialAmbientColor"),
+	materialDiffuseColor("materialDiffuseColor"),
+	materialSpecularColor("materialSpecularColor"),
+	materialEmissionColor("materialEmissionColor"),
+	pspTextureMatrix("pspTextureMatrix"),
+	modelViewMatrix("modelViewMatrix"),
+	modelViewProjectionMatrix("modelViewProjectionMatrix"),
+	normalMatrix("normalMatrix");
 
 	String uniformString;
 	int[] uniformId = new int[StateProxy.maxProgramId];

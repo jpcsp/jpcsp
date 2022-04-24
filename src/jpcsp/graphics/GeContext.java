@@ -104,7 +104,7 @@ public class GeContext extends pspAbstractMemoryMappedStructure {
     public float[] mat_ambient = new float[4];
     public float[] mat_diffuse = new float[4];
     public float[] mat_specular = new float[4];
-    public float[] mat_emissive = new float[4];
+    public float[] mat_emission = new float[4];
     public float[] ambient_light = new float[4];
     public float materialShininess;
     public int texture_storage, texture_num_mip_maps;
@@ -237,7 +237,7 @@ public class GeContext extends pspAbstractMemoryMappedStructure {
     	re.setPatchDiv(patch_div_s, patch_div_t);
     	re.setPatchPrim(patch_prim);
     	re.setShadeModel(shadeModel);
-    	re.setMaterialEmissiveColor(mat_emissive);
+    	re.setMaterialEmissionColor(mat_emission);
     	re.setMaterialShininess(materialShininess);
     	re.setLightModelAmbientColor(ambient_light);
     	re.setLightMode(lightMode);
@@ -368,7 +368,7 @@ public class GeContext extends pspAbstractMemoryMappedStructure {
 		readFloatArray(mat_ambient);
 		readFloatArray(mat_diffuse);
 		readFloatArray(mat_specular);
-		readFloatArray(mat_emissive);
+		readFloatArray(mat_emission);
 
 		readFloatArray(ambient_light);
 		materialShininess = readFloat();
@@ -541,7 +541,7 @@ public class GeContext extends pspAbstractMemoryMappedStructure {
 		writeFloatArray(mat_ambient);
 		writeFloatArray(mat_diffuse);
 		writeFloatArray(mat_specular);
-		writeFloatArray(mat_emissive);
+		writeFloatArray(mat_emission);
 
 		writeFloatArray(ambient_light);
 		writeFloat(materialShininess);

@@ -218,8 +218,8 @@ public class BaseRenderingEngineProxy implements IRenderingEngine {
 	}
 
 	@Override
-	public void setMaterialEmissiveColor(float[] color) {
-		proxy.setMaterialEmissiveColor(color);
+	public void setMaterialEmissionColor(float[] color) {
+		proxy.setMaterialEmissionColor(color);
 	}
 
 	@Override
@@ -380,6 +380,11 @@ public class BaseRenderingEngineProxy implements IRenderingEngine {
 	@Override
 	public void setUniform4(int id, float[] values) {
 		proxy.setUniform4(id, values);
+	}
+
+	@Override
+	public void setUniformMatrix3(int id, int count, float[] values) {
+		proxy.setUniformMatrix3(id, count, values);
 	}
 
 	@Override

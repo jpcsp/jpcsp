@@ -19,6 +19,10 @@ package jpcsp.graphics.RE;
 import static jpcsp.graphics.GeCommands.TPSM_PIXEL_STORAGE_MODE_4BIT_INDEXED;
 import static jpcsp.graphics.VideoEngine.NUM_LIGHTS;
 import static jpcsp.graphics.VideoEngineUtilities.getTexturePixelFormat;
+import static jpcsp.util.Utilities.invertMatrix3x3;
+import static jpcsp.util.Utilities.matrixMult;
+import static jpcsp.util.Utilities.reduceMatrix4x4to3x3;
+import static jpcsp.util.Utilities.transposeMatrix3x3;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -95,6 +99,7 @@ public class REShader extends BaseRenderingEngineFunction {
 	protected String shaderStaticDefines;
 	protected String shaderDummyDynamicDefines;
 	protected int shaderVersion = 120;
+	protected String shaderProfile = "";
 	protected ShaderProgramManager shaderProgramManager;
 	protected boolean useDynamicShaders;
 	protected ShaderProgram currentShaderProgram;
@@ -106,6 +111,16 @@ public class REShader extends BaseRenderingEngineFunction {
 	protected FBTexture renderTexture;
 	protected FBTexture copyOfRenderTexture;
 	protected int pixelFormat;
+	private final float[] viewMatrix = new float[16];
+	private final float[] modelMatrix = new float[16];
+	private final float[] projectionMatrix = new float[16];
+	private final float[] modelViewMatrix = new float[16];
+	private final float[] invertedModelViewMatrix = new float[16];
+	private final float[] normalMatrix4 = new float[16];
+	private final float[] normalMatrix3 = new float[9];
+	private final float[] modelViewProjectionMatrix = new float[16];
+	private boolean modelViewMatrixChanged;
+	private boolean modelViewProjectionMatrixChanged;
 
 	public REShader(IRenderingEngine proxy) {
 		super(proxy);
@@ -124,6 +139,10 @@ public class REShader extends BaseRenderingEngineFunction {
 		useGeometryShader = Settings.getInstance().readBool("emu.useGeometryShader");
 
 		if (!re.isExtensionAvailable("GL_ARB_geometry_shader4")) {
+			useGeometryShader = false;
+		}
+		if (useGeometryShader && getAvailableShadingLanguageVersion() < 410) {
+			log.warn(String.format("Disabling Geometry Shader at it requires GLSL version 4.10 or higher (available GLSL version is %d)", getAvailableShadingLanguageVersion()));
 			useGeometryShader = false;
 		}
 		if (useGeometryShader) {
@@ -269,6 +288,11 @@ public class REShader extends BaseRenderingEngineFunction {
         	shaderVersion = Math.max(140, shaderVersion);
         }
 
+        if (useGeometryShader) {
+        	// Geometry shader requires at least version 4.10 (for layout location)
+        	shaderVersion = Math.max(410, shaderVersion);
+        }
+
         addDefine(staticDefines, "USE_GEOMETRY_SHADER", useGeometryShader);
 		addDefine(staticDefines, "USE_UBO", useUniformBufferObject);
 		if (useUniformBufferObject) {
@@ -286,6 +310,10 @@ public class REShader extends BaseRenderingEngineFunction {
 		if (useShaderStencilTest || useShaderBlendTest || useShaderColorMask) {
 			// Function texelFetch requires at least shader version 1.30
 			shaderVersion = Math.max(130, shaderVersion);
+		}
+
+		if (shaderVersion >= 150) {
+			shaderProfile = " compatibility";
 		}
 
 		boolean useBitOperators = re.isExtensionAvailable("GL_EXT_gpu_shader4");
@@ -323,7 +351,7 @@ public class REShader extends BaseRenderingEngineFunction {
 		addDefine(defines, "USE_SHADER_BLEND_TEST", useShaderBlendTest);
 		addDefine(defines, "NUM_LIGHTS", NUM_LIGHTS);
 
-		replace(src, "// INSERT VERSION", String.format("#version %d", shaderVersion));
+		replace(src, "// INSERT VERSION", String.format("#version %d%s", shaderVersion, shaderProfile));
 		replace(src, "// INSERT DEFINES", defines.toString());
 	}
 
@@ -389,7 +417,13 @@ public class REShader extends BaseRenderingEngineFunction {
 		infoLogs = new StringBuilder();
 
 		int programId = tryCreateShader(hasGeometryShader, shaderProgram);
-		if (programId == -1) {
+		if (programId < 0) {
+			switch (programId) {
+				case -1: log.error("Error while compiling the vertex shader:"); break;
+				case -2: log.error("Error while compiling the fragment shader:"); break;
+				case -3: log.error("Error while compiling the geometry shader:"); break;
+				case -4: log.error("Error while linking the shader program:"); break;
+			}
 			printInfoLog(true);
 			shaderProgram = null;
 		} else {
@@ -405,13 +439,13 @@ public class REShader extends BaseRenderingEngineFunction {
 
 	private int tryCreateShader(boolean hasGeometryShader, ShaderProgram shaderProgram) {
 		int vertexShader = re.createShader(RE_VERTEX_SHADER);
-        int fragmentShader = re.createShader(RE_FRAGMENT_SHADER);
-
         if (!loadShader(vertexShader, "/jpcsp/graphics/shader.vert", false, shaderProgram)) {
         	return -1;
         }
+
+        int fragmentShader = re.createShader(RE_FRAGMENT_SHADER);
         if (!loadShader(fragmentShader, "/jpcsp/graphics/shader.frag", false, shaderProgram)) {
-        	return -1;
+        	return -2;
         }
 
         int program = re.createProgram();
@@ -420,19 +454,8 @@ public class REShader extends BaseRenderingEngineFunction {
 
         if (hasGeometryShader) {
 	        int geometryShader = re.createShader(RE_GEOMETRY_SHADER);
-	        boolean compiled;
-	        compiled = loadShader(geometryShader, "/jpcsp/graphics/shader-150.geom", false, shaderProgram);
-	        if (compiled) {
-	        	log.info("Using Geometry Shader shader-150.geom");
-	        } else {
-	        	compiled = loadShader(geometryShader, "/jpcsp/graphics/shader-120.geom", false, shaderProgram);
-	        	if (compiled) {
-		        	log.info("Using Geometry Shader shader-120.geom");
-	        	}
-	        }
-
-	        if (!compiled) {
-	        	return -1;
+	        if (!loadShader(geometryShader, "/jpcsp/graphics/shader-150.geom", false, shaderProgram)) {
+	        	return -3;
 	        }
 	        re.attachShader(program, geometryShader);
 	        re.setProgramParameter(program, RE_GEOMETRY_INPUT_TYPE, spriteGeometryShaderInputType);
@@ -460,7 +483,7 @@ public class REShader extends BaseRenderingEngineFunction {
 
         boolean linked = linkShaderProgram(program);
         if (!linked) {
-        	return -1;
+        	return -4;
         }
 
         re.useProgram(program);
@@ -766,6 +789,9 @@ public class REShader extends BaseRenderingEngineFunction {
 		}
 
 		super.startDisplay();
+
+		modelViewMatrixChanged = true;
+		modelViewProjectionMatrixChanged = true;
 
 		// We don't use Client States
 		super.disableClientState(IRenderingEngine.RE_TEXTURE);
@@ -1096,6 +1122,25 @@ public class REShader extends BaseRenderingEngineFunction {
 		if (primitive == GU_SPRITES) {
 			primitive = spriteGeometryShaderInputType;
 		}
+
+		if (modelViewMatrixChanged) {
+			matrixMult(modelViewMatrix, viewMatrix, modelMatrix);
+			shaderContext.setModelViewMatrix(modelViewMatrix);
+			if (invertMatrix3x3(invertedModelViewMatrix, modelViewMatrix)) {
+				transposeMatrix3x3(normalMatrix4, invertedModelViewMatrix);
+				reduceMatrix4x4to3x3(normalMatrix3, normalMatrix4);
+				shaderContext.setNormalMatrix(normalMatrix3);
+			}
+			modelViewMatrixChanged = false;
+			// We also need to update the MVP matrix
+			modelViewProjectionMatrixChanged = true;
+		}
+		if (modelViewProjectionMatrixChanged) {
+			matrixMult(modelViewProjectionMatrix, projectionMatrix, modelViewMatrix);
+			shaderContext.setModelViewProjectionMatrix(modelViewProjectionMatrix);
+			modelViewProjectionMatrixChanged = false;
+		}
+
 		if (!burstMode) {
 			// The uniform values are specific to a shader program:
 			// update the uniform values after switching the active shader program.
@@ -1632,5 +1677,89 @@ public class REShader extends BaseRenderingEngineFunction {
 	@Override
 	public void setLightSpotExponent(int light, float exponent) {
 		shaderContext.setLightSpotLightExponent(light, exponent);
+	}
+
+	@Override
+	public void setLightModelAmbientColor(float[] color) {
+		shaderContext.setAmbientLightColor(color);
+	}
+
+	@Override
+	public void setMaterialAmbientColor(float[] color) {
+		shaderContext.setMaterialAmbientColor(color);
+	}
+
+	@Override
+	public void setMaterialDiffuseColor(float[] color) {
+		shaderContext.setMaterialDiffuseColor(color);
+	}
+
+	@Override
+	public void setMaterialEmissionColor(float[] color) {
+		shaderContext.setMaterialEmissionColor(color);
+	}
+
+	@Override
+	public void setMaterialSpecularColor(float[] color) {
+		shaderContext.setMaterialSpecularColor(color);
+	}
+
+	@Override
+	public void setMaterialShininess(float shininess) {
+		shaderContext.setMaterialShininess(shininess);
+	}
+
+	@Override
+	public void setTextureMatrix(float[] values) {
+		if (values == null) {
+			values = identityMatrix;
+		}
+		shaderContext.setTextureMatrix(values);
+	}
+
+	@Override
+	public void setViewMatrix(float[] values) {
+		if (values == null) {
+			values = identityMatrix;
+		}
+		System.arraycopy(values, 0, viewMatrix, 0, viewMatrix.length);
+		modelViewMatrixChanged = true;
+		super.setViewMatrix(values);
+	}
+
+	@Override
+	public void setModelMatrix(float[] values) {
+		if (values == null) {
+			values = identityMatrix;
+		}
+		System.arraycopy(values, 0, modelMatrix, 0, modelMatrix.length);
+		modelViewMatrixChanged = true;
+		super.setModelMatrix(values);
+	}
+
+	@Override
+	public void setProjectionMatrix(float[] values) {
+		if (values == null) {
+			values = identityMatrix;
+		}
+		System.arraycopy(values, 0, projectionMatrix, 0, projectionMatrix.length);
+		modelViewProjectionMatrixChanged = true;
+		super.setProjectionMatrix(values);
+	}
+
+	@Override
+	public void setModelViewMatrix(float[] values) {
+		if (values == null) {
+			values = identityMatrix;
+		}
+		System.arraycopy(values, 0, modelMatrix, 0, modelMatrix.length);
+		System.arraycopy(identityMatrix, 0, viewMatrix, 0, viewMatrix.length);
+		modelViewMatrixChanged = true;
+		super.setModelViewMatrix(values);
+	}
+
+	@Override
+	public void setTextureEnvColor(float[] color) {
+		shaderContext.setTexEnvColor(color);
 	}
 }

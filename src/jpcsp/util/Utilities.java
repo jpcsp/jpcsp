@@ -1498,6 +1498,18 @@ public class Utilities {
         }
     }
 
+    public static void reduceMatrix4x4to3x3(float[] result, float[] m) {
+    	result[0] = m[0];
+    	result[1] = m[1];
+    	result[2] = m[2];
+    	result[3] = m[4];
+    	result[4] = m[5];
+    	result[5] = m[6];
+    	result[6] = m[8];
+    	result[7] = m[9];
+    	result[8] = m[10];
+    }
+
     public static boolean sameColor(float[] c1, float[] c2, float[] c3) {
         for (int i = 0; i < 4; i++) {
             if (c1[i] != c2[i] || c1[i] != c3[i]) {
@@ -2507,4 +2519,38 @@ public class Utilities {
         // use host0:/ ?
         return pspFileName;
     }
+
+	public static boolean equalsMat3(float[] m1, float[] m2) {
+		if (m1 == null) {
+			return m2 == null;
+		}
+		if (m2 == null) {
+			return false;
+		}
+
+		for (int i = 0; i < 9; i++) {
+			if (m1[i] != m2[i]) {
+				return false;
+			}
+		}
+
+		return true;
+	}
+
+	public static boolean equalsMat4(float[] m1, float[] m2) {
+		if (m1 == null) {
+			return m2 == null;
+		}
+		if (m2 == null) {
+			return false;
+		}
+
+		for (int i = 0; i < 16; i++) {
+			if (m1[i] != m2[i]) {
+				return false;
+			}
+		}
+
+		return true;
+	}
 }

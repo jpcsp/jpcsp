@@ -166,7 +166,7 @@ public interface IRenderingEngine {
 
 	// Color types:
 	public static final int RE_AMBIENT             = 0;
-	public static final int RE_EMISSIVE            = 1;
+	public static final int RE_EMISSION            = 1;
 	public static final int RE_DIFFUSE             = 2;
 	public static final int RE_SPECULAR            = 3;
 
@@ -370,7 +370,7 @@ public interface IRenderingEngine {
 	public void setDepthRange(float zpos, float zscale, int near, int far);
 	public void setDepthFunc(int func);
 	public void setShadeModel(int model);
-	public void setMaterialEmissiveColor(float[] color);
+	public void setMaterialEmissionColor(float[] color);
 	public void setMaterialAmbientColor(float[] color);
 	public void setMaterialDiffuseColor(float[] color);
 	public void setMaterialSpecularColor(float[] color);
@@ -413,6 +413,7 @@ public interface IRenderingEngine {
 	public void setUniform3v(int id, float[] values);
 	public void setUniform4(int id, int[] values);
 	public void setUniform4(int id, float[] values);
+	public void setUniformMatrix3(int id, int count, float[] values);
 	public void setUniformMatrix4(int id, int count, float[] values);
 	public void setColorTestFunc(int func);
 	public void setColorTestReference(int[] values);

@@ -8,22 +8,43 @@
 #if USE_UBO
     #extension GL_ARB_uniform_buffer_object : enable
 #endif
-#if __VERSION__ >= 130 && defined(GL_ARB_compatibility)
+#if __VERSION__ >= 130 && __VERSION__ < 150 && defined(GL_ARB_compatibility)
     #extension GL_ARB_compatibility : enable
 #endif
-
-// The built-in function round() is only available in v1.30 or later
-#if __VERSION__ >= 130
-    #define ROUND(n) round(n)
+#if __VERSION__ >= 410
+	#define LOCATION(N) layout(location=N)
 #else
-    #define ROUND(n) floor((n) + 0.5)
+	#define LOCATION(N)
 #endif
+
+// The input locations must match those defined as output in the vertex and geometry shaders
+LOCATION(0) in vec3 texCoord;
+LOCATION(1) noperspective in float discarded;
+LOCATION(2) in float fogDepth;
+#if !USE_DYNAMIC_DEFINES
+	// When not using dynamic defines, we need the primary and secondary
+	// colors in both the smooth and flat variants as the use of one or the other
+	// will be decided dynamically based on the value of the shadeModel.
+	LOCATION(3) smooth in vec4 pspPrimaryColorSmooth;
+	LOCATION(4) smooth in vec4 pspSecondaryColorSmooth;
+	LOCATION(5) flat in vec4 pspPrimaryColorFlat;
+	LOCATION(6) flat in vec4 pspSecondaryColorFlat;
+#elif SHADE_MODEL == 0
+	LOCATION(3) flat in vec4 pspPrimaryColor;
+	LOCATION(4) flat in vec4 pspSecondaryColor;
+#else
+	LOCATION(3) smooth in vec4 pspPrimaryColor;
+	LOCATION(4) smooth in vec4 pspSecondaryColor;
+#endif
+
+out vec4 fragColor;
 
 #if USE_UBO
 	UBO_STRUCTURE
 #else
     uniform bool      texEnable;
     uniform ivec2     texEnvMode;
+    uniform vec3      texEnvColor;
     uniform int       texMapMode;
     uniform float     colorDoubling;
     uniform bool      ctestEnable;
@@ -66,35 +87,22 @@
     #endif
     uniform bool  fogEnable;
     uniform vec3  fogColor;
-    uniform float fogEnd;
-    uniform float fogScale;
     uniform int   shadeModel;
 #endif
 
 uniform sampler2D tex;   // The active texture
 uniform sampler2D fbTex; // The texture containing the current screen (FrameBuffer)
 uniform sampler2D depthTex; // The texture containing the current depth buffer (depth FrameBuffer)
-noperspective in float discarded;
-
-#if !USE_DYNAMIC_DEFINES
-	// When not using dynamic defines, we need the primary and secondary
-	// colors in both the smooth and flat variants as the use of one or the other
-	// will be decided dynamically based on the value of the shadeModel.
-	smooth in vec4 pspPrimaryColorSmooth;
-	smooth in vec4 pspSecondaryColorSmooth;
-	flat in vec4 pspPrimaryColorFlat;
-	flat in vec4 pspSecondaryColorFlat;
-#elif SHADE_MODEL == 0
-	flat in vec4 pspPrimaryColor;
-	flat in vec4 pspSecondaryColor;
-#else
-	smooth in vec4 pspPrimaryColor;
-	smooth in vec4 pspSecondaryColor;
-#endif
-
 #if USE_NATIVE_CLUT
     uniform usampler2D utex;
     uniform sampler2D clut;
+#endif
+
+// The built-in function round() is only available in v1.30 or later
+#if __VERSION__ >= 130
+    #define ROUND(n) round(n)
+#else
+    #define ROUND(n) floor((n) + 0.5)
 #endif
 
 #if __VERSION__ >= 140
@@ -166,7 +174,7 @@ vec4 getIndexedTextureRED()
 	int clutIndex;
 	uint Ci;
 	ivec2 texSize = textureSize(utex, 0);
-	vec2 projCoords = gl_TexCoord[0].xy / gl_TexCoord[0].z * texSize;
+	vec2 projCoords = texCoord.xy / texCoord.z * texSize;
 	ivec2 iprojCoords = ivec2(floor(projCoords));
 
     // Apply texture wrapping (texelFetch does not wrap)
@@ -200,7 +208,7 @@ vec4 getIndexedTextureRED()
 // and must be transformed into 16-bit (BGR5650)
 vec4 getIndexedTexture5650()
 {
-    vec3 Ct = TEXTURE_2D_PROJ(tex, gl_TexCoord[0].xyz).rgb * vec3(31.0, 63.0, 31.0);
+    vec3 Ct = TEXTURE_2D_PROJ(tex, texCoord).rgb * vec3(31.0, 63.0, 31.0);
     #if !USE_DYNAMIC_DEFINES || CLUT_INDEX_HINT == 0
         uint Ci = uint(Ct.r) | (uint(Ct.g) << 5u) | (uint(Ct.b) << 11u);
         int clutIndex = int((Ci >> uint(clutShift)) & uint(clutMask)) + clutOffset;
@@ -229,7 +237,7 @@ vec4 getIndexedTexture5650()
 // and must be transformed into 16-bit (ABGR5551)
 vec4 getIndexedTexture5551()
 {
-    vec4 Ct = TEXTURE_2D_PROJ(tex, gl_TexCoord[0].xyz) * vec4(31.0, 31.0, 31.0, 1.0);
+    vec4 Ct = TEXTURE_2D_PROJ(tex, texCoord) * vec4(31.0, 31.0, 31.0, 1.0);
     #if !USE_DYNAMIC_DEFINES || CLUT_INDEX_HINT == 0
         uint Ci = uint(Ct.r) | (uint(Ct.g) << 5u) | (uint(Ct.b) << 10u) | (uint(Ct.a) << 15u);
         int clutIndex = int((Ci >> uint(clutShift)) & uint(clutMask)) + clutOffset;
@@ -258,7 +266,7 @@ vec4 getIndexedTexture5551()
 // and must be transformed into 16-bit (ABGR4444)
 vec4 getIndexedTexture4444()
 {
-    vec4 Ct = TEXTURE_2D_PROJ(tex, gl_TexCoord[0].xyz) * vec4(15.0);
+    vec4 Ct = TEXTURE_2D_PROJ(tex, texCoord) * vec4(15.0);
     #if !USE_DYNAMIC_DEFINES || CLUT_INDEX_HINT == 0
         uint Ci = uint(Ct.r) | (uint(Ct.g) << 4u) | (uint(Ct.b) << 8u) | (uint(Ct.a) << 12u);
         int clutIndex = int((Ci >> uint(clutShift)) & uint(clutMask)) + clutOffset;
@@ -287,7 +295,7 @@ vec4 getIndexedTexture4444()
 // and must be transformed into 32-bit (ABGR8888)
 vec4 getIndexedTexture8888()
 {
-    vec4 Ct = ROUND(TEXTURE_2D_PROJ(tex, gl_TexCoord[0].xyz) * 255.0);
+    vec4 Ct = ROUND(TEXTURE_2D_PROJ(tex, texCoord) * 255.0);
     #if !USE_DYNAMIC_DEFINES || CLUT_INDEX_HINT == 0
         uint Ci = uint(Ct.r) | (uint(Ct.g) << 8u) | (uint(Ct.b) << 16u) | (uint(Ct.a) << 24u);
         int clutIndex = int((Ci >> uint(clutShift)) & uint(clutMask)) + clutOffset;
@@ -314,7 +322,7 @@ vec4 getIndexedTexture8888()
 // Non-indexed texture
 vec4 getNonIndexedTexture()
 {
-    return TEXTURE_2D_PROJ(tex, gl_TexCoord[0].xyz);
+    return TEXTURE_2D_PROJ(tex, texCoord);
 }
 
 
@@ -385,7 +393,7 @@ vec4 getTextureColor(in vec4 Cp, in vec4 Cs)
             Cp.rgb = mix(Cp.rgb, Ct.rgb, Ct.a);
             break;
         case 2: // BLEND
-            Cp.rgb = mix(Cp.rgb, gl_TextureEnvColor[0].rgb, Ct.rgb);
+            Cp.rgb = mix(Cp.rgb, texEnvColor, Ct.rgb);
             Cp.a   = Cp.a * Ct.a;
             break;
         case 3: // REPLACE
@@ -413,7 +421,7 @@ vec4 getTextureColor(in vec4 Cp, in vec4 Cs)
         #endif
     #elif TEX_ENV_MODE0 == 2
         // BLEND
-        Cp.rgb = mix(Cp.rgb, gl_TextureEnvColor[0].rgb, Ct.rgb);
+        Cp.rgb = mix(Cp.rgb, texEnvColor, Ct.rgb);
         #if TEX_ENV_MODE1 != 0
             Cp.a = Cp.a * Ct.a;
         #endif
@@ -914,8 +922,7 @@ void ApplyBlendTest(inout vec4 Cf, in vec4 Csrc, in vec4 Cdst)
 
 void ApplyFog(inout vec4 Cf)
 {
-	float fog = (fogEnd + gl_FogFragCoord) * fogScale;
-	fog = clamp(fog, 0.0, 1.0);
+	float fog = clamp(fogDepth, 0.0, 1.0);
 	Cf.rgb = mix(fogColor, Cf.rgb, fog);
 }
 
@@ -1056,5 +1063,5 @@ void main()
 		#endif
 	#endif
 
-    gl_FragColor = Cf;
+    fragColor = Cf;
 }

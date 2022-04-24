@@ -106,7 +106,7 @@ public class StateProxy extends BaseRenderingEngineProxy {
 	protected float[] materialAmbientColor;
 	protected float[] materialDiffuseColor;
 	protected float[] materialSpecularColor;
-	protected float[] materialEmissiveColor;
+	protected float[] materialEmissionColor;
 	protected StateBoolean colorMaterialAmbient;
 	protected StateBoolean colorMaterialDiffuse;
 	protected StateBoolean colorMaterialSpecular;
@@ -221,7 +221,7 @@ public class StateProxy extends BaseRenderingEngineProxy {
 		materialAmbientColor = new float[4];
 		materialSpecularColor = new float[4];
 		materialDiffuseColor = new float[4];
-		materialEmissiveColor = new float[4];
+		materialEmissionColor = new float[4];
 		bindTexture = new int[5]; // assume max 5 active texture units
 
 		colorMaterialAmbient = new StateBoolean();
@@ -312,7 +312,7 @@ public class StateProxy extends BaseRenderingEngineProxy {
 		materialAmbientColor[0] = -10000.f;
 		materialDiffuseColor[0] = -1.f;
 		materialSpecularColor[0] = -1.f;
-		materialEmissiveColor[0] = -1.f;
+		materialEmissionColor[0] = -1.f;
 		colorMaterialAmbient.setUndefined();
 		colorMaterialDiffuse.setUndefined();
 		colorMaterialSpecular.setUndefined();
@@ -487,6 +487,10 @@ public class StateProxy extends BaseRenderingEngineProxy {
 	}
 
 	protected int matrixFirstUpdated(int id, float[] values) {
+		if (id < 0) {
+			return 0;
+		}
+
 		if (values == null) {
 			values = identityMatrix;
 		}
@@ -501,24 +505,6 @@ public class StateProxy extends BaseRenderingEngineProxy {
 		}
 
 		return values.length;
-	}
-
-	protected int matrixLastUpdated(int id, float[] values, int length) {
-		float[] oldValues = matrix[id];
-
-		if (values == null) {
-			values = identityMatrix;
-		}
-
-		for (int i = length - 1; i >= 0; i--) {
-			if (oldValues[i] != values[i]) {
-				// Update the remaining values
-				System.arraycopy(values, 0, oldValues, 0, i + 1);
-				return i;
-			}
-		}
-
-		return 0;
 	}
 
 	protected boolean isIdentityMatrix(float[] values) {
@@ -1024,13 +1010,13 @@ public class StateProxy extends BaseRenderingEngineProxy {
 	}
 
 	@Override
-	public void setMaterialEmissiveColor(float[] color) {
-		if (materialEmissiveColor[0] != color[0] || materialEmissiveColor[1] != color[1] || materialEmissiveColor[2] != color[2] || materialEmissiveColor[3] != color[3]) {
-			super.setMaterialEmissiveColor(color);
-			materialEmissiveColor[0] = color[0];
-			materialEmissiveColor[1] = color[1];
-			materialEmissiveColor[2] = color[2];
-			materialEmissiveColor[3] = color[3];
+	public void setMaterialEmissionColor(float[] color) {
+		if (materialEmissionColor[0] != color[0] || materialEmissionColor[1] != color[1] || materialEmissionColor[2] != color[2] || materialEmissionColor[3] != color[3]) {
+			super.setMaterialEmissionColor(color);
+			materialEmissionColor[0] = color[0];
+			materialEmissionColor[1] = color[1];
+			materialEmissionColor[2] = color[2];
+			materialEmissionColor[3] = color[3];
 		}
 	}
 

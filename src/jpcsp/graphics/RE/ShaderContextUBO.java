@@ -19,6 +19,8 @@ package jpcsp.graphics.RE;
 import static jpcsp.graphics.VideoEngine.NUM_LIGHTS;
 import static jpcsp.graphics.VideoEngine.SIZEOF_FLOAT;
 import static jpcsp.graphics.VideoEngine.SIZEOF_INT;
+import static jpcsp.util.Utilities.equalsMat3;
+import static jpcsp.util.Utilities.equalsMat4;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -45,6 +47,12 @@ public class ShaderContextUBO extends ShaderContext {
 	private ShaderUniformInfo lightSpotLightExponent;
 	private ShaderUniformInfo lightSpotLightCutoff;
 	private ShaderUniformInfo lightAttenuation;
+	private ShaderUniformInfo ambientLightColor;
+	private ShaderUniformInfo materialShininess;
+	private ShaderUniformInfo materialAmbientColor;
+	private ShaderUniformInfo materialDiffuseColor;
+	private ShaderUniformInfo materialSpecularColor;
+	private ShaderUniformInfo materialEmissionColor;
 	private ShaderUniformInfo vertexColor;
 	private ShaderUniformInfo colorMask;
 	private ShaderUniformInfo notColorMask;
@@ -53,6 +61,7 @@ public class ShaderContextUBO extends ShaderContext {
 	private ShaderUniformInfo ctestMsk;
 	private ShaderUniformInfo texShade;
 	private ShaderUniformInfo texEnvMode;
+	private ShaderUniformInfo texEnvColor;
 	private ShaderUniformInfo ctestFunc;
 	private ShaderUniformInfo texMapMode;
 	private ShaderUniformInfo texMapProj;
@@ -64,6 +73,10 @@ public class ShaderContextUBO extends ShaderContext {
 	private ShaderUniformInfo normalScale;
 	private ShaderUniformInfo textureScale;
 	private ShaderUniformInfo weightScale;
+	private ShaderUniformInfo textureMatrix;
+	private ShaderUniformInfo modelViewMatrix;
+	private ShaderUniformInfo modelViewProjectionMatrix;
+	private ShaderUniformInfo normalMatrix;
 	private ShaderUniformInfo colorDoubling;
 	private ShaderUniformInfo texEnable;
 	private ShaderUniformInfo lightingEnable;
@@ -113,7 +126,8 @@ public class ShaderContextUBO extends ShaderContext {
 	private int bufferSize;
 	protected static final int bindingPoint = 1;
 	protected static final String uniformBlockName = "psp";
-	protected static final String uniformMemoryLayout = "std140";
+	// We do not need a std140 layout as we do query the uniform offsets and do not need a vendor-independent layout
+	protected static final String uniformMemoryLayout = "shared";
 	protected int buffer;
 	protected ByteBuffer data;
 	private int startUpdate;
@@ -223,6 +237,12 @@ public class ShaderContextUBO extends ShaderContext {
 		lightSpotLightExponent = addShaderUniform(Uniforms.lightSpotLightExponent, "float", NUM_LIGHTS);
 		lightSpotLightCutoff = addShaderUniform(Uniforms.lightSpotLightCutoff, "float", NUM_LIGHTS);
 		lightAttenuation = addShaderUniform(Uniforms.lightAttenuation, "vec3", NUM_LIGHTS);
+		ambientLightColor = addShaderUniform(Uniforms.ambientLightColor, "vec4");
+		materialShininess = addShaderUniform(Uniforms.materialShininess, "float");
+		materialAmbientColor = addShaderUniform(Uniforms.materialAmbientColor, "vec4");
+		materialDiffuseColor = addShaderUniform(Uniforms.materialDiffuseColor, "vec3");
+		materialSpecularColor = addShaderUniform(Uniforms.materialSpecularColor, "vec3");
+		materialEmissionColor = addShaderUniform(Uniforms.materialEmissionColor, "vec3");
 		vertexColor = addShaderUniform(Uniforms.vertexColor, "vec4");
 		colorMask = addShaderUniform(Uniforms.colorMask, "ivec4");
 		notColorMask = addShaderUniform(Uniforms.notColorMask, "ivec4");
@@ -233,6 +253,7 @@ public class ShaderContextUBO extends ShaderContext {
 		ctestMsk = addShaderUniform(Uniforms.ctestMsk, "ivec3");
 		texShade = addShaderUniform(Uniforms.texShade, "ivec2");
 		texEnvMode = addShaderUniform(Uniforms.texEnvMode, "ivec2");
+		texEnvColor = addShaderUniform(Uniforms.texEnvColor, "vec3");
 		ctestFunc = addShaderUniform(Uniforms.ctestFunc, "int");
 		texMapMode = addShaderUniform(Uniforms.texMapMode, "int");
 		texMapProj = addShaderUniform(Uniforms.texMapProj, "int");
@@ -244,6 +265,10 @@ public class ShaderContextUBO extends ShaderContext {
 		normalScale = addShaderUniform(Uniforms.normalScale, "float");
 		textureScale = addShaderUniform(Uniforms.textureScale, "float");
 		weightScale = addShaderUniform(Uniforms.weightScale, "float");
+		textureMatrix = addShaderUniform(Uniforms.pspTextureMatrix, "mat4");
+		modelViewMatrix = addShaderUniform(Uniforms.modelViewMatrix, "mat4");
+		modelViewProjectionMatrix = addShaderUniform(Uniforms.modelViewProjectionMatrix, "mat4");
+		normalMatrix = addShaderUniform(Uniforms.normalMatrix, "mat3");
 		colorDoubling = addShaderUniform(Uniforms.colorDoubling, "float");
 		texEnable = addShaderUniform(Uniforms.texEnable, "bool");
 		lightingEnable = addShaderUniform(Uniforms.lightingEnable, "bool");
@@ -737,6 +762,15 @@ public class ShaderContextUBO extends ShaderContext {
 	}
 
 	@Override
+	public void setTexEnvColor(float[] texEnvColor) {
+		float[] currentTexEnvColor = getTexEnvColor();
+		if (texEnvColor[0] != currentTexEnvColor[0] || texEnvColor[1] != currentTexEnvColor[1] || texEnvColor[2] != currentTexEnvColor[2]) {
+			copy(texEnvColor, this.texEnvColor, 3);
+			super.setTexEnvColor(texEnvColor);
+		}
+	}
+
+	@Override
 	public void setTexMapMode(int texMapMode) {
 		if (texMapMode != getTexMapMode()) {
 			copy(texMapMode, this.texMapMode);
@@ -1141,6 +1175,91 @@ public class ShaderContextUBO extends ShaderContext {
 		if (shadeModel != getShadeModel()) {
 			copy(shadeModel, this.shadeModel);
 			super.setShadeModel(shadeModel);
+		}
+	}
+
+	@Override
+	public void setAmbientLightColor(float[] ambientLightColor) {
+		float[] currentAmbientLightColor = getAmbientLightColor();
+		if (currentAmbientLightColor[0] != ambientLightColor[0] || currentAmbientLightColor[1] != ambientLightColor[1] || currentAmbientLightColor[2] != ambientLightColor[2] || currentAmbientLightColor[3] != ambientLightColor[3]) {
+			copy(ambientLightColor, this.ambientLightColor, 4);
+			super.setAmbientLightColor(ambientLightColor);
+		}
+	}
+
+	@Override
+	public void setMaterialShininess(float materialShininess) {
+		if (materialShininess != getMaterialShininess()) {
+			copy(materialShininess, this.materialShininess);
+			super.setMaterialShininess(materialShininess);
+		}
+	}
+
+	@Override
+	public void setMaterialAmbientColor(float[] materialAmbientColor) {
+		float[] currentMaterialAmbientColor = getMaterialAmbientColor();
+		if (currentMaterialAmbientColor[0] != materialAmbientColor[0] || currentMaterialAmbientColor[1] != materialAmbientColor[1] || currentMaterialAmbientColor[2] != materialAmbientColor[2] || currentMaterialAmbientColor[3] != materialAmbientColor[3]) {
+			copy(materialAmbientColor, this.materialAmbientColor, 4);
+			super.setMaterialAmbientColor(materialAmbientColor);
+		}
+	}
+
+	@Override
+	public void setMaterialDiffuseColor(float[] materialDiffuseColor) {
+		float[] currentMaterialDiffuseColor = getMaterialDiffuseColor();
+		if (currentMaterialDiffuseColor[0] != materialDiffuseColor[0] || currentMaterialDiffuseColor[1] != materialDiffuseColor[1] || currentMaterialDiffuseColor[2] != materialDiffuseColor[2]) {
+			copy(materialDiffuseColor, this.materialDiffuseColor, 3);
+			super.setMaterialDiffuseColor(materialDiffuseColor);
+		}
+	}
+
+	@Override
+	public void setMaterialSpecularColor(float[] materialSpecularColor) {
+		float[] currentMaterialSpecularColor = getMaterialSpecularColor();
+		if (currentMaterialSpecularColor[0] != materialSpecularColor[0] || currentMaterialSpecularColor[1] != materialSpecularColor[1] || currentMaterialSpecularColor[2] != materialSpecularColor[2]) {
+			copy(materialSpecularColor, this.materialSpecularColor, 3);
+			super.setMaterialSpecularColor(materialSpecularColor);
+		}
+	}
+
+	@Override
+	public void setMaterialEmissionColor(float[] materialEmissionColor) {
+		float[] currentMaterialEmissionColor = getMaterialEmissionColor();
+		if (currentMaterialEmissionColor[0] != materialEmissionColor[0] || currentMaterialEmissionColor[1] != materialEmissionColor[1] || currentMaterialEmissionColor[2] != materialEmissionColor[2]) {
+			copy(materialEmissionColor, this.materialEmissionColor, 3);
+			super.setMaterialEmissionColor(materialEmissionColor);
+		}
+	}
+
+	@Override
+	public void setTextureMatrix(float[] textureMatrix) {
+		if (!equalsMat4(textureMatrix, getTextureMatrix())) {
+			copy(textureMatrix, this.textureMatrix, 16);
+			super.setTextureMatrix(textureMatrix);
+		}
+	}
+
+	@Override
+	public void setModelViewMatrix(float[] modelViewMatrix) {
+		if (!equalsMat4(modelViewMatrix, getModelViewMatrix())) {
+			copy(modelViewMatrix, this.modelViewMatrix, 16);
+			super.setModelViewMatrix(modelViewMatrix);
+		}
+	}
+
+	@Override
+	public void setModelViewProjectionMatrix(float[] modelViewProjectionMatrix) {
+		if (!equalsMat4(modelViewProjectionMatrix, getModelViewProjectionMatrix())) {
+			copy(modelViewProjectionMatrix, this.modelViewProjectionMatrix, 16);
+			super.setModelViewProjectionMatrix(modelViewProjectionMatrix);
+		}
+	}
+
+	@Override
+	public void setNormalMatrix(float[] normalMatrix) {
+		if (!equalsMat3(normalMatrix, getNormalMatrix())) {
+			copy(normalMatrix, this.normalMatrix, 9);
+			super.setNormalMatrix(normalMatrix);
 		}
 	}
 }
