@@ -1,5 +1,7 @@
 // INSERT VERSION
 
+// INSERT DEFINES
+
 #define LOCATION(N) layout(location=N)
 
 layout(lines) in;
@@ -15,11 +17,11 @@ LOCATION(2) in float in_fogDepth[2];
 	LOCATION(5) flat in vec4 in_pspPrimaryColorFlat[2];
 	LOCATION(6) flat in vec4 in_pspSecondaryColorFlat[2];
 #elif SHADE_MODEL == 0
-	LOCATION(3) flat vec4 in_pspPrimaryColor[2];
-	LOCATION(4) flat vec4 in_pspSecondaryColor[2];
+	LOCATION(3) flat in vec4 in_pspPrimaryColor[2];
+	LOCATION(4) flat in vec4 in_pspSecondaryColor[2];
 #else
-	LOCATION(3) smooth vec4 in_pspPrimaryColor[2];
-	LOCATION(4) smooth vec4 in_pspSecondaryColor[2];
+	LOCATION(3) smooth in vec4 in_pspPrimaryColor[2];
+	LOCATION(4) smooth in vec4 in_pspSecondaryColor[2];
 #endif
 
 // The output locations must match those defined as input in the fragment shader
