@@ -16,10 +16,13 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.graphics.RE;
 
+import static jpcsp.graphics.VideoEngine.primitiveTypeNames;
+
 import java.nio.Buffer;
 import java.nio.IntBuffer;
 
 import jpcsp.graphics.Uniforms;
+import jpcsp.graphics.VertexInfo;
 import jpcsp.graphics.VideoEngine;
 import jpcsp.graphics.RE.software.PixelColor;
 
@@ -267,7 +270,7 @@ public class DebugProxy extends BaseRenderingEngineProxy {
 	public void drawArrays(int type, int first, int count) {
 		isLogDebugEnabled = log.isDebugEnabled();
 		if (isLogDebugEnabled) {
-			log.debug(String.format("drawArrays type=%d, first=%d, count=%d", type, first, count));
+			log.debug(String.format("drawArrays type=%d(%s), first=%d, count=%d", type, primitiveTypeNames[type], first, count));
 		}
 		super.drawArrays(type, first, count);
 	}
@@ -275,7 +278,7 @@ public class DebugProxy extends BaseRenderingEngineProxy {
 	@Override
 	public void drawArraysBurstMode(int type, int first, int count) {
 		if (isLogDebugEnabled) {
-			log.debug(String.format("drawArraysBurstMode type=%d, first=%d, count=%d", type, first, count));
+			log.debug(String.format("drawArraysBurstMode type=%d(%s), first=%d, count=%d", type, primitiveTypeNames[type], first, count));
 		}
 		super.drawArraysBurstMode(type, first, count);
 	}
@@ -1048,5 +1051,13 @@ public class DebugProxy extends BaseRenderingEngineProxy {
 			log.debug(String.format("deleteRenderbuffer %d", renderbuffer));
 		}
 		super.deleteRenderbuffer(renderbuffer);
+	}
+
+	@Override
+	public void setVertexInfo(VertexInfo vinfo, boolean allNativeVertexInfo, boolean useVertexColor, boolean useTexture, boolean useNormal, int type) {
+		if (isLogDebugEnabled) {
+			log.debug(String.format("setVertexInfo vinfo=%s, allNativeVertexInfo=%b, useVertexColor=%b, useTexture=%b, useNormal=%b, type=%d(%s)", vinfo, allNativeVertexInfo, useVertexColor, useTexture, useNormal, type, primitiveTypeNames[type]));
+		}
+		super.setVertexInfo(vinfo, allNativeVertexInfo, useVertexColor, useTexture, useNormal, type);
 	}
 }

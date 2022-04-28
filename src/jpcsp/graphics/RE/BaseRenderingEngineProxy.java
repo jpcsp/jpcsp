@@ -798,8 +798,8 @@ public class BaseRenderingEngineProxy implements IRenderingEngine {
 	}
 
 	@Override
-	public void setVertexInfo(VertexInfo vinfo, boolean allNativeVertexInfo, boolean useVertexColor, boolean useTexture, int type) {
-		proxy.setVertexInfo(vinfo, allNativeVertexInfo, useVertexColor, useTexture, type);
+	public void setVertexInfo(VertexInfo vinfo, boolean allNativeVertexInfo, boolean useVertexColor, boolean useTexture, boolean useNormal, int type) {
+		proxy.setVertexInfo(vinfo, allNativeVertexInfo, useVertexColor, useTexture, useNormal, type);
 	}
 
 	@Override

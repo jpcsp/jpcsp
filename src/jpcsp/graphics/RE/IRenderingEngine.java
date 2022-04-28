@@ -496,7 +496,7 @@ public interface IRenderingEngine {
 	public void setBufferManager(IREBufferManager bufferManager);
 	public boolean canAllNativeVertexInfo();
 	public boolean canNativeSpritesPrimitive();
-	public void setVertexInfo(VertexInfo vinfo, boolean allNativeVertexInfo, boolean useVertexColor, boolean useTexture, int type);
+	public void setVertexInfo(VertexInfo vinfo, boolean allNativeVertexInfo, boolean useVertexColor, boolean useTexture, boolean useNormal, int type);
 	public void setProgramParameter(int program, int parameter, int value);
 	public boolean isQueryAvailable();
 	public boolean isShaderAvailable();

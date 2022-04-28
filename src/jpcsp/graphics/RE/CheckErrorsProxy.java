@@ -945,8 +945,8 @@ public class CheckErrorsProxy extends BaseRenderingEngineProxy {
 	}
 
 	@Override
-	public void setVertexInfo(VertexInfo vinfo, boolean allNativeVertexInfo, boolean useVertexColor, boolean useTexture, int type) {
-		super.setVertexInfo(vinfo, allNativeVertexInfo, useVertexColor, useTexture, type);
+	public void setVertexInfo(VertexInfo vinfo, boolean allNativeVertexInfo, boolean useVertexColor, boolean useTexture, boolean useNormal, int type) {
+		super.setVertexInfo(vinfo, allNativeVertexInfo, useVertexColor, useTexture, useNormal, type);
 		re.checkAndLogErrors("setVertexInfo");
 	}
 

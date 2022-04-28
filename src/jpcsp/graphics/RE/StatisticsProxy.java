@@ -1431,10 +1431,10 @@ public class StatisticsProxy extends BaseRenderingEngineProxy {
 	}
 
 	@Override
-	public void setVertexInfo(VertexInfo vinfo, boolean allNativeVertexInfo, boolean useVertexColor, boolean useTexture, int type) {
+	public void setVertexInfo(VertexInfo vinfo, boolean allNativeVertexInfo, boolean useVertexColor, boolean useTexture, boolean useNormal, int type) {
 		DurationStatistics statistic = statistics[155];
 		statistic.start();
-		super.setVertexInfo(vinfo, allNativeVertexInfo, useVertexColor, useTexture, type);
+		super.setVertexInfo(vinfo, allNativeVertexInfo, useVertexColor, useTexture, useNormal, type);
 		statistic.end();
 	}
 

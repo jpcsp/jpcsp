@@ -897,7 +897,7 @@ public class REShader extends BaseRenderingEngineFunction {
 	}
 
 	@Override
-	public void setVertexInfo(VertexInfo vinfo, boolean allNativeVertexInfo, boolean useVertexColor, boolean useTexture, int type) {
+	public void setVertexInfo(VertexInfo vinfo, boolean allNativeVertexInfo, boolean useVertexColor, boolean useTexture, boolean useNormal, int type) {
 		if (allNativeVertexInfo) {
 			// Weight
 			shaderContext.setWeightScale(weightScale[vinfo.weight]);
@@ -910,7 +910,7 @@ public class REShader extends BaseRenderingEngineFunction {
 			shaderContext.setVinfoColor(useVertexColor ? vinfo.color : 8);
 
 			// Normal
-			shaderContext.setVinfoNormal(vinfo.normal);
+			shaderContext.setVinfoNormal(useNormal ? (vinfo.normal != 0 ? vinfo.normal : 3) : 0);
 			shaderContext.setNormalScale(vinfo.transform2D ? 1.f : normalScale[vinfo.normal]);
 
 			// Position
@@ -928,7 +928,7 @@ public class REShader extends BaseRenderingEngineFunction {
 			shaderContext.setVinfoColor(useVertexColor ? 0 : 8);
 
 			// Normal
-			shaderContext.setVinfoNormal(vinfo == null || vinfo.normal == 0 ? 0 : 3);
+			shaderContext.setVinfoNormal(useNormal ? 3 : 0);
 			shaderContext.setNormalScale(1);
 
 			// Position
@@ -938,7 +938,7 @@ public class REShader extends BaseRenderingEngineFunction {
 		shaderContext.setVinfoTransform2D(vinfo == null || vinfo.transform2D ? 1 : 0);
 		setCurrentShaderProgram(type);
 
-		super.setVertexInfo(vinfo, allNativeVertexInfo, useVertexColor, useTexture, type);
+		super.setVertexInfo(vinfo, allNativeVertexInfo, useVertexColor, useTexture, useNormal, type);
 	}
 
 	private void setCurrentShaderProgram(int type) {

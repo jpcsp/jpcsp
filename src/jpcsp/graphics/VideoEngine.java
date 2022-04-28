@@ -131,7 +131,20 @@ public class VideoEngine {
     public static final int NUM_LIGHTS = 4;
     public static final int SIZEOF_FLOAT = IRenderingEngine.sizeOfType[IRenderingEngine.RE_FLOAT];
     public static final int SIZEOF_INT = IRenderingEngine.sizeOfType[IRenderingEngine.RE_INT];
-    public final static String[] psm_names = new String[]{
+    public final static String[] primitiveTypeNames = new String[] {
+		"GU_POINTS",
+		"GU_LINES",
+		"GU_LINE_STRIP",
+		"GU_TRIANGLES",
+		"GU_TRIANGLE_STRIP",
+		"GU_TRIANGLE_FAN",
+		"GU_SPRITES",
+		"RE_QUADS",
+		"RE_LINES_ADJACENCY",
+		"RE_TRIANGLES_ADJACENCY",
+		"RE_TRIANGLE_STRIP_ADJACENCY"
+    };
+    public final static String[] psm_names = new String[] {
         "PSM_5650",
         "PSM_5551",
         "PSM_4444",
@@ -151,7 +164,7 @@ public class VideoEngine {
         "RE_STENCIL_INDEX",
         "RE_DEPTH_STENCIL"
     };
-    public final static String[] logical_ops_names = new String[]{
+    public final static String[] logical_ops_names = new String[] {
         "LOP_CLEAR",
         "LOP_AND",
         "LOP_REVERSE_AND",
@@ -2515,6 +2528,8 @@ public class VideoEngine {
         int nColor = 4;
         int nVertex = 3;
 
+        boolean useNormal = context.vinfo.normal != 0;
+
         boolean useTexture = false;
         boolean useTextureFromNormal = false;
         boolean useTextureFromNormalizedNormal = false;
@@ -2604,7 +2619,7 @@ public class VideoEngine {
 
         if (re.canReadAllVertexInfo()) {
             // The rendering engine can read the vertex infos by himself.
-            re.setVertexInfo(context.vinfo, true, context.useVertexColor, useTexture, type);
+            re.setVertexInfo(context.vinfo, true, context.useVertexColor, useTexture, useNormal, type);
             re.drawArrays(type, 0, numberOfVertex);
         } else {
             // In clear mode STENCIL, set the stencil value to the alpha value of the rendered color
@@ -2770,7 +2785,7 @@ public class VideoEngine {
                     }
                 }
 
-                re.setVertexInfo(context.vinfo, re.canAllNativeVertexInfo(), context.useVertexColor, useTexture, type);
+                re.setVertexInfo(context.vinfo, re.canAllNativeVertexInfo(), context.useVertexColor, useTexture, useNormal, type);
 
                 if (needSetDataPointers) {
                     if (hasIndex) {
@@ -2802,9 +2817,9 @@ public class VideoEngine {
                     nColor = vertexInfoReader.getColorNumberValues();
                     int nWeight = vertexInfoReader.getWeightNumberValues();
 
-                    enableClientState(context.useVertexColor, useTexture);
+                    enableClientState(context.useVertexColor, useTexture, useNormal);
                     setColorPointer(context.useVertexColor, nColor, vertexInfoReader.getColorType(), stride, vertexInfoReader.getColorOffset(), vertexInfoReader.isColorNative(), useBufferManager);
-                    setNormalPointer(vertexInfoReader.getNormalType(), stride, vertexInfoReader.getNormalOffset(), vertexInfoReader.isNormalNative(), useBufferManager);
+                    setNormalPointer(useNormal, vertexInfoReader.getNormalType(), stride, vertexInfoReader.getNormalOffset(), vertexInfoReader.isNormalNative(), useBufferManager);
                     setWeightPointer(nWeight, vertexInfoReader.getWeightType(), stride, vertexInfoReader.getWeightOffset(), vertexInfoReader.isWeightNative(), useBufferManager);
                     setVertexPointer(nVertex, vertexInfoReader.getPositionType(), stride, vertexInfoReader.getPositionOffset(), vertexInfoReader.isPositionNative(), useBufferManager);
                 }
@@ -2871,7 +2886,7 @@ public class VideoEngine {
                     case PRIM_TRIANGLE:
                     case PRIM_TRIANGLE_STRIPS:
                     case PRIM_TRIANGLE_FANS:
-                        re.setVertexInfo(context.vinfo, false, context.useVertexColor, useTexture, type);
+                        re.setVertexInfo(context.vinfo, false, context.useVertexColor, useTexture, useNormal, type);
 
                         if (cachedVertexInfo == null) {
                             vertexReadingStatistics.start();
@@ -2920,7 +2935,7 @@ public class VideoEngine {
                                     floatBufferArray[ii++] = v.c[3];
                                 }
                                 // Normal
-                                if (context.vinfo.normal != 0) {
+                                if (useNormal) {
                                     floatBufferArray[ii++] = v.n[0];
                                     floatBufferArray[ii++] = v.n[1];
                                     floatBufferArray[ii++] = v.n[2];
@@ -2964,7 +2979,7 @@ public class VideoEngine {
                             needSetDataPointers = cachedVertexInfo.bindVertex(re);
                         }
                         if (needSetDataPointers) {
-                            setDataPointers(nVertex, context.useVertexColor, nColor, useTexture, nTexCoord, context.vinfo.normal != 0, numberOfWeightsForBuffer, cachedVertexInfo == null);
+                            setDataPointers(nVertex, context.useVertexColor, nColor, useTexture, nTexCoord, useNormal, numberOfWeightsForBuffer, cachedVertexInfo == null);
                         }
                         drawArraysStatistics.start();
                         re.drawArrays(type, 0, numberOfVertex);
@@ -2974,7 +2989,7 @@ public class VideoEngine {
                         break;
 
                     case PRIM_SPRITES:
-                        re.setVertexInfo(context.vinfo, false, context.useVertexColor, useTexture, IRenderingEngine.RE_QUADS);
+                        re.setVertexInfo(context.vinfo, false, context.useVertexColor, useTexture, useNormal, IRenderingEngine.RE_QUADS);
                         if (!context.clearMode) {
                             re.disableFlag(IRenderingEngine.GU_CULL_FACE);
                         }
@@ -3067,7 +3082,7 @@ public class VideoEngine {
                                     floatBufferArray[ii++] = v2.c[2];
                                     floatBufferArray[ii++] = v2.c[3];
                                 }
-                                if (context.vinfo.normal != 0) {
+                                if (useNormal) {
                                     floatBufferArray[ii++] = v2.n[0];
                                     floatBufferArray[ii++] = v2.n[1];
                                     floatBufferArray[ii++] = v2.n[2];
@@ -3093,7 +3108,7 @@ public class VideoEngine {
                                     floatBufferArray[ii++] = v2.c[2];
                                     floatBufferArray[ii++] = v2.c[3];
                                 }
-                                if (context.vinfo.normal != 0) {
+                                if (useNormal) {
                                     floatBufferArray[ii++] = v2.n[0];
                                     floatBufferArray[ii++] = v2.n[1];
                                     floatBufferArray[ii++] = v2.n[2];
@@ -3115,7 +3130,7 @@ public class VideoEngine {
                                     floatBufferArray[ii++] = v2.c[2];
                                     floatBufferArray[ii++] = v2.c[3];
                                 }
-                                if (context.vinfo.normal != 0) {
+                                if (useNormal) {
                                     floatBufferArray[ii++] = v2.n[0];
                                     floatBufferArray[ii++] = v2.n[1];
                                     floatBufferArray[ii++] = v2.n[2];
@@ -3141,7 +3156,7 @@ public class VideoEngine {
                                     floatBufferArray[ii++] = v2.c[2];
                                     floatBufferArray[ii++] = v2.c[3];
                                 }
-                                if (context.vinfo.normal != 0) {
+                                if (useNormal) {
                                     floatBufferArray[ii++] = v2.n[0];
                                     floatBufferArray[ii++] = v2.n[1];
                                     floatBufferArray[ii++] = v2.n[2];
@@ -3172,7 +3187,7 @@ public class VideoEngine {
                             needSetDataPointers = cachedVertexInfo.bindVertex(re);
                         }
                         if (needSetDataPointers) {
-                            setDataPointers(nVertex, context.useVertexColor, nColor, useTexture, nTexCoord, context.vinfo.normal != 0, 0, cachedVertexInfo == null);
+                            setDataPointers(nVertex, context.useVertexColor, nColor, useTexture, nTexCoord, useNormal, 0, cachedVertexInfo == null);
                         }
                         drawArraysStatistics.start();
                         re.drawArrays(IRenderingEngine.RE_QUADS, 0, numberOfVertex * 2);
@@ -3554,7 +3569,7 @@ public class VideoEngine {
             int bufferSizeInFloats = i;
             byteBuffer.asFloatBuffer().put(floatBufferArray, 0, bufferSizeInFloats);
 
-            re.setVertexInfo(null, false, false, true, IRenderingEngine.RE_QUADS);
+            re.setVertexInfo(null, false, false, true, false, IRenderingEngine.RE_QUADS);
             re.enableClientState(IRenderingEngine.RE_TEXTURE);
             re.disableClientState(IRenderingEngine.RE_COLOR);
             re.disableClientState(IRenderingEngine.RE_NORMAL);
@@ -5593,7 +5608,7 @@ public class VideoEngine {
         }
     }
 
-    private void enableClientState(boolean useVertexColor, boolean useTexture) {
+    private void enableClientState(boolean useVertexColor, boolean useTexture, boolean useNormal) {
         if (useTexture) {
             re.enableClientState(IRenderingEngine.RE_TEXTURE);
         } else {
@@ -5604,7 +5619,7 @@ public class VideoEngine {
         } else {
             re.disableClientState(IRenderingEngine.RE_COLOR);
         }
-        if (context.vinfo.normal != 0) {
+        if (useNormal) {
             re.enableClientState(IRenderingEngine.RE_NORMAL);
         } else {
             re.disableClientState(IRenderingEngine.RE_NORMAL);
@@ -5646,8 +5661,8 @@ public class VideoEngine {
         }
     }
 
-    private void setNormalPointer(int type, int stride, int offset, boolean isNative, boolean useBufferManager) {
-        if (context.vinfo.normal != 0) {
+    private void setNormalPointer(boolean useNormal, int type, int stride, int offset, boolean isNative, boolean useBufferManager) {
+        if (useNormal) {
             if (!useBufferManager) {
                 re.setNormalPointer(type, stride, offset);
             } else if (isNative) {
@@ -5691,10 +5706,10 @@ public class VideoEngine {
             stride += SIZEOF_FLOAT * numberOfWeightsForBuffer;
         }
 
-        enableClientState(useVertexColor, useTexture);
+        enableClientState(useVertexColor, useTexture, useNormal);
         setTexCoordPointer(useTexture, nTexCoord, IRenderingEngine.RE_FLOAT, stride, 0, false, useBufferManager);
         setColorPointer(useVertexColor, nColor, IRenderingEngine.RE_FLOAT, stride, cpos, false, useBufferManager);
-        setNormalPointer(IRenderingEngine.RE_FLOAT, stride, npos, false, useBufferManager);
+        setNormalPointer(useNormal, IRenderingEngine.RE_FLOAT, stride, npos, false, useBufferManager);
         setWeightPointer(numberOfWeightsForBuffer, IRenderingEngine.RE_FLOAT, stride, wpos, false, useBufferManager);
         setVertexPointer(nVertex, IRenderingEngine.RE_FLOAT, stride, vpos, false, useBufferManager);
     }
@@ -5966,6 +5981,9 @@ public class VideoEngine {
                 log.debug(String.format("Resizing GETexture %s to %dx%d", geTexture, width, height));
             }
             geTexture = GETextureManager.getInstance().getGEResizedTexture(re, geTexture, tex_addr, bufferWidth, width, height, pixelFormat);
+            if (State.dumpGeNextFrame) {
+        		geTexture.capture(re);
+            }
         }
         geTexture.bind(re, true);
         context.currentTextureId = geTexture.getTextureId();
@@ -7274,6 +7292,54 @@ public class VideoEngine {
         return orthoMatrix;
     }
 
+    private static void direction(float[] dir, float[] v1, float[] v2) {
+    	dir[0] = v2[0] - v1[0];
+    	dir[1] = v2[1] - v1[1];
+    	dir[2] = v2[2] - v1[2];
+    }
+
+    private static void cross(float[] cross, float[] v1, float[] v2) {
+    	cross[0] = v1[1] * v2[2] - v1[2] * v2[1];
+    	cross[1] = v1[2] * v2[0] - v1[0] * v2[2];
+    	cross[2] = v1[0] * v2[1] - v1[1] * v2[0];
+    }
+
+    private void computeNormals(VertexState[][] patch) {
+		final float[] dir1 = new float[3];
+		final float[] dir2 = new float[3];
+		final boolean reverseNormal = context.patchFaceFlag.isEnabled();
+        for (int j = 0; j <= context.patch_div_t; j++) {
+        	for (int i = 0; i <= context.patch_div_s; i++) {
+        		// Calculate the normal based on the patch positions
+        		if (i < context.patch_div_s) {
+        			direction(dir1, patch[i][j].p, patch[i + 1][j].p);
+        		} else {
+        			// How to handle the border?
+        			direction(dir1, patch[i - 1][j].p, patch[i][j].p);
+        		}
+        		if (j < context.patch_div_t) {
+        			direction(dir2, patch[i][j].p, patch[i][j + 1].p);
+        		} else {
+        			// How to handle the border?
+        			direction(dir2, patch[i][j - 1].p, patch[i][j].p);
+        		}
+
+        		final float[] normal = patch[i][j].n;
+        		cross(normal, dir1, dir2);
+
+        		if (reverseNormal) {
+        			normal[0] = -normal[0];
+        			normal[1] = -normal[1];
+        			normal[2] = -normal[2];
+        		}
+
+        		if (isLogDebugEnabled) {
+        			log.debug(String.format("normal[%d][%d]: (%f,%f,%f)", i, j, normal[0], normal[1], normal[2]));
+        		}
+        	}
+        }
+    }
+
     float spline_n(int i, int j, float u, int[] knot) {
         if (j == 0) {
             if (knot[i] <= u && u < knot[i + 1]) {
@@ -7384,6 +7450,11 @@ public class VideoEngine {
                     }
                 }
             }
+
+            // Compute the normals
+            if (useNormal && context.vinfo.normal == 0) {
+            	computeNormals(patch);
+            }
         }
 
         drawCurvedSurface(patch, ucount, vcount, cachedVertexInfo, context.useVertexColor, useTexture, useNormal);
@@ -7492,6 +7563,11 @@ public class VideoEngine {
                     }
                 }
             }
+
+            // Compute the normals
+            if (useNormal && context.vinfo.normal == 0) {
+            	computeNormals(patch);
+            }
         }
 
         drawCurvedSurface(patch, ucount, vcount, cachedVertexInfo, context.useVertexColor, useTexture, useNormal);
@@ -7503,7 +7579,7 @@ public class VideoEngine {
         }
 
         int type = patch_prim_types[context.patch_prim];
-        re.setVertexInfo(context.vinfo, false, useVertexColor, useTexture, type);
+        re.setVertexInfo(context.vinfo, false, useVertexColor, useTexture, useNormal, type);
 
         // Triangle strips can be combined across rows into one single drawArrays call.
         // Two dummy vertices have to be added when switching from one row to the next one.

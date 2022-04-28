@@ -462,7 +462,7 @@ public class RESoftware extends NullRenderingEngine {
 	}
 
 	@Override
-	public void setVertexInfo(VertexInfo vinfo, boolean allNativeVertexInfo, boolean useVertexColor, boolean useTexture, int type) {
+	public void setVertexInfo(VertexInfo vinfo, boolean allNativeVertexInfo, boolean useVertexColor, boolean useTexture, boolean useNormal, int type) {
 		this.useVertexTexture = useTexture;
 		resetBufferVertexReader();
 	}
