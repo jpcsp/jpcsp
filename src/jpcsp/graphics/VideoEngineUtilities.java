@@ -560,7 +560,7 @@ public class VideoEngineUtilities {
 
             // Lock the geTexture to avoid that it is recreated at the same time by another thread
             synchronized (geTextureLock) {
-            	drawFromMemory(re, geTextureId, sceDisplayModule.getBufferWidthGe(), sceDisplayModule.getPixelFormatGe(), sceDisplayModule.getHeightGe(), sceDisplayModule.getWidthGe(), sceDisplayModule.getHeightGe(), sceDisplayModule.getPixelsGe());
+            	drawFromMemory(re, geTextureId, Math.min(sceDisplayModule.getBufferWidthGe(), geTextureBufferWidth), sceDisplayModule.getPixelFormatGe(), Math.min(sceDisplayModule.getHeightGe(), geTextureHeight), Math.min(sceDisplayModule.getWidthGe(), geTextureWidth), sceDisplayModule.getHeightGe(), sceDisplayModule.getPixelsGe());
             }
         }
 
