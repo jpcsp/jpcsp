@@ -19,7 +19,6 @@ package jpcsp.graphics.RE;
 import static jpcsp.graphics.VideoEngine.NUM_LIGHTS;
 import static jpcsp.graphics.VideoEngine.SIZEOF_FLOAT;
 import static jpcsp.graphics.VideoEngine.SIZEOF_INT;
-import static jpcsp.util.Utilities.equalsMat3;
 import static jpcsp.util.Utilities.equalsMat4;
 
 import java.nio.ByteBuffer;
@@ -74,9 +73,9 @@ public class ShaderContextUBO extends ShaderContext {
 	private ShaderUniformInfo textureScale;
 	private ShaderUniformInfo weightScale;
 	private ShaderUniformInfo textureMatrix;
+	private ShaderUniformInfo modelMatrix;
 	private ShaderUniformInfo modelViewMatrix;
 	private ShaderUniformInfo modelViewProjectionMatrix;
-	private ShaderUniformInfo normalMatrix;
 	private ShaderUniformInfo colorDoubling;
 	private ShaderUniformInfo texEnable;
 	private ShaderUniformInfo lightingEnable;
@@ -266,9 +265,9 @@ public class ShaderContextUBO extends ShaderContext {
 		textureScale = addShaderUniform(Uniforms.textureScale, "float");
 		weightScale = addShaderUniform(Uniforms.weightScale, "float");
 		textureMatrix = addShaderUniform(Uniforms.pspTextureMatrix, "mat4");
+		modelMatrix = addShaderUniform(Uniforms.modelMatrix, "mat4");
 		modelViewMatrix = addShaderUniform(Uniforms.modelViewMatrix, "mat4");
 		modelViewProjectionMatrix = addShaderUniform(Uniforms.modelViewProjectionMatrix, "mat4");
-		normalMatrix = addShaderUniform(Uniforms.normalMatrix, "mat3");
 		colorDoubling = addShaderUniform(Uniforms.colorDoubling, "float");
 		texEnable = addShaderUniform(Uniforms.texEnable, "bool");
 		lightingEnable = addShaderUniform(Uniforms.lightingEnable, "bool");
@@ -1240,6 +1239,14 @@ public class ShaderContextUBO extends ShaderContext {
 	}
 
 	@Override
+	public void setModelMatrix(float[] modelMatrix) {
+		if (!equalsMat4(modelMatrix, getModelMatrix())) {
+			copy(modelMatrix, this.modelMatrix, 16);
+			super.setModelMatrix(modelMatrix);
+		}
+	}
+
+	@Override
 	public void setModelViewMatrix(float[] modelViewMatrix) {
 		if (!equalsMat4(modelViewMatrix, getModelViewMatrix())) {
 			copy(modelViewMatrix, this.modelViewMatrix, 16);
@@ -1252,14 +1259,6 @@ public class ShaderContextUBO extends ShaderContext {
 		if (!equalsMat4(modelViewProjectionMatrix, getModelViewProjectionMatrix())) {
 			copy(modelViewProjectionMatrix, this.modelViewProjectionMatrix, 16);
 			super.setModelViewProjectionMatrix(modelViewProjectionMatrix);
-		}
-	}
-
-	@Override
-	public void setNormalMatrix(float[] normalMatrix) {
-		if (!equalsMat3(normalMatrix, getNormalMatrix())) {
-			copy(normalMatrix, this.normalMatrix, 9);
-			super.setNormalMatrix(normalMatrix);
 		}
 	}
 }

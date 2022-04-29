@@ -19,10 +19,7 @@ package jpcsp.graphics.RE;
 import static jpcsp.graphics.GeCommands.TPSM_PIXEL_STORAGE_MODE_4BIT_INDEXED;
 import static jpcsp.graphics.VideoEngine.NUM_LIGHTS;
 import static jpcsp.graphics.VideoEngineUtilities.getTexturePixelFormat;
-import static jpcsp.util.Utilities.invertMatrix3x3;
 import static jpcsp.util.Utilities.matrixMult;
-import static jpcsp.util.Utilities.reduceMatrix4x4to3x3;
-import static jpcsp.util.Utilities.transposeMatrix3x3;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -115,10 +112,8 @@ public class REShader extends BaseRenderingEngineFunction {
 	private final float[] modelMatrix = new float[16];
 	private final float[] projectionMatrix = new float[16];
 	private final float[] modelViewMatrix = new float[16];
-	private final float[] invertedModelViewMatrix = new float[16];
-	private final float[] normalMatrix4 = new float[16];
-	private final float[] normalMatrix3 = new float[9];
 	private final float[] modelViewProjectionMatrix = new float[16];
+	private boolean modelMatrixChanged;
 	private boolean modelViewMatrixChanged;
 	private boolean modelViewProjectionMatrixChanged;
 
@@ -1123,14 +1118,15 @@ public class REShader extends BaseRenderingEngineFunction {
 			primitive = spriteGeometryShaderInputType;
 		}
 
+		if (modelMatrixChanged) {
+			shaderContext.setModelMatrix(modelMatrix);
+			modelMatrixChanged = false;
+			// We also need to update the MV matrix
+			modelViewMatrixChanged = true;
+		}
 		if (modelViewMatrixChanged) {
 			matrixMult(modelViewMatrix, viewMatrix, modelMatrix);
 			shaderContext.setModelViewMatrix(modelViewMatrix);
-			if (invertMatrix3x3(invertedModelViewMatrix, modelViewMatrix)) {
-				transposeMatrix3x3(normalMatrix4, invertedModelViewMatrix);
-				reduceMatrix4x4to3x3(normalMatrix3, normalMatrix4);
-				shaderContext.setNormalMatrix(normalMatrix3);
-			}
 			modelViewMatrixChanged = false;
 			// We also need to update the MVP matrix
 			modelViewProjectionMatrixChanged = true;
@@ -1733,7 +1729,7 @@ public class REShader extends BaseRenderingEngineFunction {
 			values = identityMatrix;
 		}
 		System.arraycopy(values, 0, modelMatrix, 0, modelMatrix.length);
-		modelViewMatrixChanged = true;
+		modelMatrixChanged = true;
 		super.setModelMatrix(values);
 	}
 

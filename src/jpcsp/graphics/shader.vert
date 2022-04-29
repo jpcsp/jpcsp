@@ -91,9 +91,9 @@ LOCATION(2) out float fogDepth;
     uniform vec3  materialSpecularColor;
     uniform vec3  materialEmissionColor;
     uniform mat4  pspTextureMatrix;
+    uniform mat4  modelMatrix;
     uniform mat4  modelViewMatrix;
     uniform mat4  modelViewProjectionMatrix;
-    uniform mat3  normalMatrix;
     uniform float fogEnd;
     uniform float fogScale;
 #endif
@@ -114,22 +114,29 @@ vec3 getLightVector(in int i, in vec3 V)
 void ComputeLight(in int i, in vec3 N, in vec3 V, inout vec3 A, inout vec3 D, inout vec3 S)
 {
 	vec3  L     = getLightVector(i, V);
-    vec3  H     = L + vec3(0.0, 0.0, 1.0);
     float att   = 1.0;
     float NdotL = max(dot(normalize(L), N), 0.0);
-    float NdotH = max(dot(normalize(H), N), 0.0);
     float k     = materialShininess;
     float Dk    = (pspLightKind[i] == 2) ? max(pow(NdotL, k), 0.0) : NdotL;
-    float Sk    = (pspLightKind[i] != 0) ? max(pow(NdotH, k), 0.0) : 0.0;
+    float Sk    = 0.0;
+    if (pspLightKind[i] != 0) // LIGHT_DIFFUSE_SPECULAR or LIGHT_POWER_DIFFUSE_SPECULAR
+    {
+		if (dot(L, N) >= 0)
+		{
+		    vec3 H = normalize(L) + vec3(0.0, 0.0, 1.0);
+		    float NdotH = max(dot(normalize(H), N), 0.0);
+			Sk = max(pow(NdotH, k), 0.0);
+		}
+	}
 
     if (pspLightType[i] != 0) // Not directional type
     {
         float d = length(L);
         att = clamp(1.0 / dot(pspLightAttenuation[i], vec3(1.0, d, d * d)), 0.0, 1.0);
-        if (pspLightSpotLightCutoff[i] > -1.0f)
+        if (pspLightType[i] == 2) // Spot light
         {
-            float spot = dot(normalize(pspLightDirection[i]), -L);
-            att *= (spot < pspLightSpotLightCutoff[i]) ? 0.0 : pow(spot, pspLightSpotLightExponent[i]);
+            float spot = dot(normalize(pspLightDirection[i]), normalize(-L));
+            att *= (spot <= pspLightSpotLightCutoff[i]) ? 0.0 : pow(spot, pspLightSpotLightExponent[i]);
         }
     }
     A += pspLightAmbientColor[i]  * att;
@@ -258,10 +265,10 @@ void ApplyTexture(inout vec4 T, in vec4 V, in vec3 N, in vec3 Ne)
             vec3  Nn = normalize(Ne);
             vec3  Ve = vec3(modelViewMatrix * V);
             float k  = materialShininess;
-            vec3  Lu = getLightVector(texShade.x, Ve);
-            vec3  Lv = getLightVector(texShade.y, Ve);
-            float Pu = pspLightKind[texShade.x] == 0 ? dot(Nn, normalize(Lu)) : pow(dot(Nn, normalize(Lu + vec3(0.0, 0.0, 1.0))), k);
-            float Pv = pspLightKind[texShade.y] == 0 ? dot(Nn, normalize(Lv)) : pow(dot(Nn, normalize(Lv + vec3(0.0, 0.0, 1.0))), k);
+            vec3  Lu = normalize(getLightVector(texShade.x, Ve));
+            vec3  Lv = normalize(getLightVector(texShade.y, Ve));
+            float Pu = pspLightKind[texShade.x] == 0 ? dot(Nn, Lu) : pow(dot(Nn, normalize(Lu + vec3(0.0, 0.0, 1.0))), k);
+            float Pv = pspLightKind[texShade.y] == 0 ? dot(Nn, Lv) : pow(dot(Nn, normalize(Lv + vec3(0.0, 0.0, 1.0))), k);
             T.xyz = vec3(0.5*vec2(1.0 + Pu, 1.0 + Pv), 1.0);
             break;
         }
@@ -641,15 +648,15 @@ void main()
     vec3 Ve = vec3(modelViewMatrix * V);
 
     #if !USE_DYNAMIC_DEFINES || VINFO_NORMAL != 0
-        vec3 Ne = normalMatrix * N;
+        vec3 Ne = vec3(modelMatrix * vec4(N, 0.0));
     #else
 		vec3 Ne = vec3(1.0, 0.0, 0.0);
     #endif
 
     #if !USE_DYNAMIC_DEFINES
-        if (lightingEnable) ApplyLighting(Cp, Cs, Ve, normalize(Ne));
+        if (lightingEnable) ApplyLighting(Cp, Cs, V.xyz, normalize(Ne));
     #elif LIGHTING_ENABLE
-        ApplyLighting(Cp, Cs, Ve, normalize(Ne));
+        ApplyLighting(Cp, Cs, V.xyz, normalize(Ne));
     #endif
 
     #if !USE_DYNAMIC_DEFINES

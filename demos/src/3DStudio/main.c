@@ -520,9 +520,9 @@ int materialAmbientFlag = 0;
 struct Color materialDiffuse;
 int materialDiffuseFlag = 0;
 struct Color materialEmissive;
-int materialEmissiveFlag = 0;
 struct Color materialSpecular;
 int materialSpecularFlag = 0;
+float materialShininess;
 int vertexColorFlag = 1;
 int tpsm1 = GU_PSM_8888;
 int tpsm2 = GU_PSM_8888;
@@ -691,7 +691,7 @@ void addPositionAttribute(char *label, ScePspFVector3 *pposition, int x, int y)
 int addLightAttribute(int index, struct Light *plight, int x, int y)
 {
 	char *label = malloc(100);
-	sprintf(label, "Light %d", index + 1);
+	sprintf(label, "Light %d", index);
 
 	addAttribute(label, &plight->type, NULL, x, y, 0, 3, 1, NULL);
 	setAttributeValueNames(&lightTypeNames[0]);
@@ -708,9 +708,9 @@ int addLightAttribute(int index, struct Light *plight, int x, int y)
 	y++;
 	addColorAttribute("    Specular Color R", &plight->specularColor, x, y, 0, 0x10);
 	y++;
-	addAttribute("    Attenuation Cst", NULL, &plight->constantAttenuation, x, y, 0, 1000, 1, NULL);
-	addAttribute(", Lin", NULL, &plight->linearAttenuation, x + 24, y, 0, 1000, 1, NULL);
-	addAttribute(", Quad", NULL, &plight->quadraticAttenuation, x + 24 + 10, y, 0, 1000, 1, NULL);
+	addAttribute("    Attenuation Cst", NULL, &plight->constantAttenuation, x, y, 0, 10, 0.1, NULL);
+	addAttribute(", Lin", NULL, &plight->linearAttenuation, x + 24, y, 0, 10, 0.1, NULL);
+	addAttribute(", Quad", NULL, &plight->quadraticAttenuation, x + 24 + 10, y, 0, 10, 0.1, NULL);
 	y++;
 
 	addAttribute("    Spot Exponent", NULL, &plight->spotExponent, x, y, 0, 128, 1, NULL);
@@ -1272,18 +1272,18 @@ void drawRectangles()
 	if (materialDiffuseFlag ) materialFlags |= GU_DIFFUSE;
 	if (materialSpecularFlag) materialFlags |= GU_SPECULAR;
 	sceGuColorMaterial(materialFlags);
+	sendCommandi(84, getColor(&materialEmissive));
 	sceGuMaterial(GU_AMBIENT , getColor(&materialAmbient));
 	sendCommandi(88, (getColor(&materialAmbient) >> 24) & 0xFF);
 	sceGuMaterial(GU_DIFFUSE , getColor(&materialDiffuse));
 	sceGuMaterial(GU_SPECULAR, getColor(&materialSpecular));
-	if (materialEmissiveFlag)
-	{
-		sendCommandi(84, getColor(&materialEmissive));
-	}
+	sceGuSpecular(materialShininess);
 	sceGuStencilOp(stencilOpFail, stencilOpZFail, stencilOpZPass);
 	sceGuStencilFunc(stencilFunc, stencilReference, stencilMask);
 	sceGuFog(fogNear, fogFar, getColor(&fogColor));
 	sceGuShadeModel(shadeModel);
+	sceGuAmbient(getColor(&ambientColor));
+	sceGuTexEnvColor(getColor(&texEnvColor));
 
 	for (i = 0; i < NUM_LIGHTS; i++)
 	{
@@ -1297,7 +1297,7 @@ void drawRectangles()
 		{
 			components = GU_DIFFUSE_AND_SPECULAR;
 		}
-		else if (plight-> kind == 2)
+		else if (plight->kind == 2)
 		{
 			components = GU_UNKNOWN_LIGHT_COMPONENT;
 		}
@@ -1308,8 +1308,6 @@ void drawRectangles()
 		sceGuLightColor(i, GU_SPECULAR, getColor(&plight->specularColor));
 		sceGuLightSpot(i, &plight->direction, plight->spotExponent, plight->spotCutoff);
 	}
-	sceGuAmbient(getColor(&ambientColor));
-	sceGuTexEnvColor(getColor(&texEnvColor));
 
 	drawStates(stateValues1);
 	if (frontFace1 != 0)	// 0 means unchanged
@@ -2058,7 +2056,7 @@ void init()
 	rectangle2rotation.z = 0;
 	rectangle2normal.x = 0;
 	rectangle2normal.y = 0;
-	rectangle2normal.z = 1;
+	rectangle2normal.z = -1;
 	colorTestMask2.r = colorTestMask2.g = colorTestMask2.b = 0xFF;
 	colorTestRef2.r = 0xFF;
 	colorTestRef2.g = 0x00;
@@ -2206,30 +2204,36 @@ void init()
 	ambientColor.g = 0x00;
 	ambientColor.b = 0x00;
 	ambientColor.a = 0xFF;
-	texEnvColor.r = 0xE0;
-	texEnvColor.g = 0xE0;
-	texEnvColor.b = 0xE0;
+	texEnvColor.r = 0x00;
+	texEnvColor.g = 0x00;
+	texEnvColor.b = 0x00;
+	materialEmissive.r = 0x00;
+	materialEmissive.g = 0x00;
+	materialEmissive.b = 0x00;
+	materialAmbientFlag = 0;
 	materialAmbient.r  = 0xE0;
 	materialAmbient.g  = 0xE0;
 	materialAmbient.b  = 0xE0;
 	materialAmbient.a  = 0xFF;
-	materialSpecular.r = 0xE0;
-	materialSpecular.g = 0xE0;
-	materialSpecular.b = 0xE0;
+	materialDiffuseFlag = 0;
 	materialDiffuse.r  = 0xE0;
 	materialDiffuse.g  = 0xE0;
 	materialDiffuse.b  = 0xE0;
-	materialEmissive.r = 0xE0;
-	materialEmissive.g = 0xE0;
-	materialEmissive.b = 0xE0;
+	materialSpecularFlag = 0;
+	materialSpecular.r = 0xE0;
+	materialSpecular.g = 0xE0;
+	materialSpecular.b = 0xE0;
+	materialShininess = 1;
 
 	addColorAttribute("Ambient Color R", &ambientColor, x, y, 1, 0x10);
 	y++;
 	addColorAttribute("TexEnv Color R", &texEnvColor, x, y, 0, 0x10);
 	y++;
-	addAttribute("Material Emissive", &materialEmissiveFlag, NULL, x, y, 0, 1, 1, NULL);
+	addColorAttribute("Material Emissive R", &materialEmissive, x, y, 0, 0x10);
+	y++;
+	addAttribute("Material Ambient ", &materialAmbientFlag, NULL, x, y, 0, 1, 1, NULL);
 	setAttributeValueNames(&onOffNames[0]);
-	addColorAttribute(", R", &materialEmissive, x + 22, y, 0, 0x10);
+	addColorAttribute(", R", &materialAmbient , x + 22, y, 1, 0x10);
 	y++;
 	addAttribute("Material Diffuse ", &materialDiffuseFlag, NULL, x, y, 0, 1, 1, NULL);
 	setAttributeValueNames(&onOffNames[0]);
@@ -2239,9 +2243,7 @@ void init()
 	setAttributeValueNames(&onOffNames[0]);
 	addColorAttribute(", R", &materialSpecular, x + 22, y, 0, 0x10);
 	y++;
-	addAttribute("Material Ambient ", &materialAmbientFlag, NULL, x, y, 0, 1, 1, NULL);
-	setAttributeValueNames(&onOffNames[0]);
-	addColorAttribute(", R", &materialAmbient , x + 22, y, 1, 0x10);
+	addAttribute("Material Shininess ", NULL, &materialShininess, x, y, -10, 10, 0.1, NULL);
 	y++;
 
 	fogColor.r = 0xFF;
@@ -2262,26 +2264,30 @@ void init()
 	{
 		struct Light *plight = &lights[i];
 
-		plight->position.x = i * 5;
+		plight->position.x = 0;
 		plight->position.y = 0;
-		plight->position.z = 5;
+		plight->position.z = 1;
 		plight->direction.x = 0;
 		plight->direction.y = 0;
 		plight->direction.z = 1;
-		plight->ambientColor.r = 0x00;
+		plight->ambientColor.r = 0xFF;
 		plight->ambientColor.g = 0x00;
 		plight->ambientColor.b = 0x00;
 		plight->diffuseColor.r = 0x00;
-		plight->diffuseColor.g = 0x00;
+		plight->diffuseColor.g = 0xFF;
 		plight->diffuseColor.b = 0x00;
 		plight->specularColor.r = 0x00;
 		plight->specularColor.g = 0x00;
-		plight->specularColor.b = 0x00;
+		plight->specularColor.b = 0xFF;
 		plight->constantAttenuation = 1;
 		plight->linearAttenuation = 0;
 		plight->quadraticAttenuation = 0;
-		plight->type = GU_DIRECTIONAL;
-		plight->kind = 0;
+		switch (i) {
+			case 0: plight->type = GU_DIRECTIONAL; plight->kind = 0; break;
+			case 1: plight->type = GU_DIRECTIONAL; plight->kind = 1; break;
+			case 2: plight->type = GU_POINTLIGHT; plight->kind = 0; break;
+			case 3: plight->type = GU_SPOTLIGHT; plight->kind = 2; break;
+		}
 		plight->spotExponent = 10;
 		plight->spotCutoff = 0.5;
 

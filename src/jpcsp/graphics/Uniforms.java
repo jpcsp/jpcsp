@@ -113,9 +113,9 @@ public enum Uniforms {
 	materialSpecularColor("materialSpecularColor"),
 	materialEmissionColor("materialEmissionColor"),
 	pspTextureMatrix("pspTextureMatrix"),
+	modelMatrix("modelMatrix"),
 	modelViewMatrix("modelViewMatrix"),
-	modelViewProjectionMatrix("modelViewProjectionMatrix"),
-	normalMatrix("normalMatrix");
+	modelViewProjectionMatrix("modelViewProjectionMatrix");
 
 	String uniformString;
 	int[] uniformId = new int[StateProxy.maxProgramId];

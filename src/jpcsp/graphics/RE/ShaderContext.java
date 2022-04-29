@@ -123,9 +123,9 @@ public class ShaderContext {
 	private float[] materialSpecularColor = new float[3];
 	private float[] materialEmissionColor = new float[3];
 	private float[] textureMatrix = new float[16];
+	private float[] modelMatrix = new float[16];
 	private float[] modelViewMatrix = new float[16];
 	private float[] modelViewProjectionMatrix = new float[16];
-	private float[] normalMatrix = new float[9];
 
 	public void setUniforms(IRenderingEngine re, int shaderProgram) {
 		re.setUniform3(Uniforms.matFlags.getId(shaderProgram), matFlags);
@@ -211,9 +211,9 @@ public class ShaderContext {
 		re.setUniform3(Uniforms.materialSpecularColor.getId(shaderProgram), materialSpecularColor);
 		re.setUniform3(Uniforms.materialEmissionColor.getId(shaderProgram), materialEmissionColor);
 		re.setUniformMatrix4(Uniforms.pspTextureMatrix.getId(shaderProgram), 1, textureMatrix);
+		re.setUniformMatrix4(Uniforms.modelMatrix.getId(shaderProgram), 1, modelMatrix);
 		re.setUniformMatrix4(Uniforms.modelViewMatrix.getId(shaderProgram), 1, modelViewMatrix);
 		re.setUniformMatrix4(Uniforms.modelViewProjectionMatrix.getId(shaderProgram), 1, modelViewProjectionMatrix);
-		re.setUniformMatrix3(Uniforms.normalMatrix.getId(shaderProgram), 1, normalMatrix);
 
 		setUniformsSamplers(re, shaderProgram);
 	}
@@ -1017,6 +1017,14 @@ public class ShaderContext {
 		System.arraycopy(textureMatrix, 0, this.textureMatrix, 0, this.textureMatrix.length);
 	}
 
+	public float[] getModelMatrix() {
+		return modelMatrix;
+	}
+
+	public void setModelMatrix(float[] modelMatrix) {
+		System.arraycopy(modelMatrix, 0, this.modelMatrix, 0, this.modelMatrix.length);
+	}
+
 	public float[] getModelViewMatrix() {
 		return modelViewMatrix;
 	}
@@ -1031,13 +1039,5 @@ public class ShaderContext {
 
 	public void setModelViewProjectionMatrix(float[] modelViewProjectionMatrix) {
 		System.arraycopy(modelViewProjectionMatrix, 0, this.modelViewProjectionMatrix, 0, this.modelViewProjectionMatrix.length);
-	}
-
-	public float[] getNormalMatrix() {
-		return normalMatrix;
-	}
-
-	public void setNormalMatrix(float[] normalMatrix) {
-		System.arraycopy(normalMatrix, 0, this.normalMatrix, 0, this.normalMatrix.length);
 	}
 }
