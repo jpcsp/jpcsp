@@ -131,7 +131,7 @@ public class VideoEngine {
     public static final int NUM_LIGHTS = 4;
     public static final int SIZEOF_FLOAT = IRenderingEngine.sizeOfType[IRenderingEngine.RE_FLOAT];
     public static final int SIZEOF_INT = IRenderingEngine.sizeOfType[IRenderingEngine.RE_INT];
-    public final static String[] primitiveTypeNames = new String[] {
+    public final static String[] primitiveTypeNames = {
 		"GU_POINTS",
 		"GU_LINES",
 		"GU_LINE_STRIP",
@@ -144,7 +144,7 @@ public class VideoEngine {
 		"RE_TRIANGLES_ADJACENCY",
 		"RE_TRIANGLE_STRIP_ADJACENCY"
     };
-    public final static String[] psm_names = new String[] {
+    public final static String[] psm_names = {
         "PSM_5650",
         "PSM_5551",
         "PSM_4444",
@@ -164,7 +164,7 @@ public class VideoEngine {
         "RE_STENCIL_INDEX",
         "RE_DEPTH_STENCIL"
     };
-    public final static String[] logical_ops_names = new String[] {
+    public final static String[] logical_ops_names = {
         "LOP_CLEAR",
         "LOP_AND",
         "LOP_REVERSE_AND",
@@ -198,12 +198,19 @@ public class VideoEngine {
         // value [8..F]
         -8, -7, -6, -5, -4, -3, -2, -1
     };
-    private static final int[] indexTypes = new int[]{
+    private static final int[] indexTypes = {
         0,
         IRenderingEngine.RE_UNSIGNED_BYTE,
         IRenderingEngine.RE_UNSIGNED_SHORT,
         IRenderingEngine.RE_UNSIGNED_INT
     };
+    private static final int[] patchPrimTypes = {
+    	PRIM_TRIANGLE_STRIPS,
+    	PRIM_LINES_STRIPS,
+    	PRIM_POINT,
+    	PRIM_POINT // Same as point (tested on PSP)
+    };
+    private static final float[] blackColor = {0, 0, 0, 0};
     public static final int maxDrawingBufferWidth = 512;
     public static final int maxDrawingWidth = Screen.width;
     public static final int maxDrawingHeight = Screen.height;
@@ -254,11 +261,9 @@ public class VideoEngine {
     public MatrixUpload textureMatrixUpload;
     private int boneMatrixIndex;
     private int boneMatrixLinearUpdatedMatrix; // number of updated matrix
-    private static final float[] blackColor = new float[]{0, 0, 0, 0};
     private boolean lightingChanged;
     private boolean materialChanged;
     private boolean textureChanged;
-    private int[] patch_prim_types = {PRIM_TRIANGLE_STRIPS, PRIM_LINES_STRIPS, PRIM_POINT};
     private boolean clutIsDirty;
     private boolean usingTRXKICK;
     private int maxSpriteHeight;
@@ -277,9 +282,9 @@ public class VideoEngine {
     private PspGeList currentList; // The currently executing list
     private static final int drawBufferSizeInBytes = 2048 * 1024;
     private static final int indexDrawBufferSizeInBytes = 512 * 1024;
-    private int bufferId;
-    private int nativeBufferId;
-    private int indexBufferId;
+    private int bufferId = -1;
+    private int nativeBufferId = -1;
+    private int indexBufferId = -1;
     private ByteBuffer indexByteBuffer;
     private float[] floatBufferArray;
     private List<Integer> buffersToBeDeleted = new LinkedList<Integer>();
@@ -643,6 +648,19 @@ public class VideoEngine {
         Settings.getInstance().removeSettingsListener(name);
     }
 
+    private void allocateDrawBuffer(int sizeInBytes) {
+    	if (bufferId >= 0) {
+            buffersToBeDeleted.add(bufferId);
+    	}
+    	if (nativeBufferId >= 0) {
+            buffersToBeDeleted.add(nativeBufferId);
+    	}
+
+    	bufferId = bufferManager.genBuffer(re, IRenderingEngine.RE_ARRAY_BUFFER, IRenderingEngine.RE_FLOAT, sizeInBytes / SIZEOF_FLOAT, IRenderingEngine.RE_STREAM_DRAW);
+        nativeBufferId = bufferManager.genBuffer(re, IRenderingEngine.RE_ARRAY_BUFFER, IRenderingEngine.RE_BYTE, sizeInBytes, IRenderingEngine.RE_STREAM_DRAW);
+        floatBufferArray = new float[sizeInBytes / SIZEOF_FLOAT];
+    }
+
     public void start() {
         Settings.getInstance().registerSettingsListener(name, "emu.useVertexCache", new UseVertexCacheSettingsListerner());
         Settings.getInstance().registerSettingsListener(name, "emu.graphics.filters.anisotropic", new UseTextureAnisotropicFilterSettingsListerner());
@@ -665,10 +683,8 @@ public class VideoEngine {
 
         deletePendingBuffers();
 
-        bufferId = bufferManager.genBuffer(re, IRenderingEngine.RE_ARRAY_BUFFER, IRenderingEngine.RE_FLOAT, drawBufferSizeInBytes / SIZEOF_FLOAT, IRenderingEngine.RE_STREAM_DRAW);
-        nativeBufferId = bufferManager.genBuffer(re, IRenderingEngine.RE_ARRAY_BUFFER, IRenderingEngine.RE_BYTE, drawBufferSizeInBytes, IRenderingEngine.RE_STREAM_DRAW);
+        allocateDrawBuffer(drawBufferSizeInBytes);
         indexBufferId = bufferManager.genBuffer(re, IRenderingEngine.RE_ELEMENT_ARRAY_BUFFER, IRenderingEngine.RE_UNSIGNED_BYTE, indexDrawBufferSizeInBytes, IRenderingEngine.RE_STREAM_DRAW);
-        floatBufferArray = new float[drawBufferSizeInBytes / SIZEOF_FLOAT];
 
         if (useAsyncVertexCache) {
             AsyncVertexCache.getInstance().setUseVertexArray(re.isVertexArrayAvailable());
@@ -7304,20 +7320,20 @@ public class VideoEngine {
     	cross[2] = v1[0] * v2[1] - v1[1] * v2[0];
     }
 
-    private void computeNormals(VertexState[][] patch) {
+    private void computeNormals(VertexState[][] patch, int patchDivisionsU, int patchDivisionsV) {
 		final float[] dir1 = new float[3];
 		final float[] dir2 = new float[3];
 		final boolean reverseNormal = context.patchFaceFlag.isEnabled();
-        for (int j = 0; j <= context.patch_div_t; j++) {
-        	for (int i = 0; i <= context.patch_div_s; i++) {
+        for (int j = 0; j <= patchDivisionsV; j++) {
+        	for (int i = 0; i <= patchDivisionsU; i++) {
         		// Calculate the normal based on the patch positions
-        		if (i < context.patch_div_s) {
+        		if (i < patchDivisionsU) {
         			direction(dir1, patch[i][j].p, patch[i + 1][j].p);
         		} else {
         			// How to handle the border?
         			direction(dir1, patch[i - 1][j].p, patch[i][j].p);
         		}
-        		if (j < context.patch_div_t) {
+        		if (j < patchDivisionsV) {
         			direction(dir2, patch[i][j].p, patch[i][j + 1].p);
         		} else {
         			// How to handle the border?
@@ -7400,9 +7416,12 @@ public class VideoEngine {
             CaptureManager.captureRAM(mem, context.vinfo.ptr_vertex, context.vinfo.vertexSize * ucount * vcount);
         }
 
+        int patchDivisionsU = context.patch_div_s * (ucount - 3);
+        int patchDivisionsV = context.patch_div_t * (vcount - 3);
+
         VertexInfo cachedVertexInfo = null;
         if (useVertexCache) {
-            int numberOfVertex = context.patch_div_t * (context.patch_div_s + 1) * 2;
+            int numberOfVertex = patchDivisionsV * (patchDivisionsU + 1) * 2;
             vertexCacheLookupStatistics.start();
             cachedVertexInfo = VertexCache.getInstance().getVertex(context.vinfo, numberOfVertex, context.bone_uploaded_matrix, 0);
             vertexCacheLookupStatistics.end();
@@ -7414,7 +7433,7 @@ public class VideoEngine {
             VertexState[][] ctrlpoints = getControlPoints(ucount, vcount);
 
             // Generate patch VertexState.
-            patch = new VertexState[context.patch_div_s + 1][context.patch_div_t + 1];
+            patch = new VertexState[patchDivisionsU + 1][patchDivisionsV + 1];
 
             // Calculate knot arrays.
             int n = ucount - 1;
@@ -7424,21 +7443,34 @@ public class VideoEngine {
 
             // The spline grows to a limit defined by n - 2 for u and m - 2 for v.
             // This limit is open, so we need to get a very close approximation of it.
-            float limit = 2.000001f;
+            final float limit = 2.000001f;
 
+            final int order = 3;
+
+            int endKnotV = order;
             // Process spline vertexes with Cox-deBoor's algorithm.
-            for (int j = 0; j <= context.patch_div_t; j++) {
-                float cv = (float) j * (float) (m - limit) / (float) context.patch_div_t;
+            // See optimization described in https://en.wikipedia.org/wiki/De_Boor%27s_algorithm
+            for (int j = 0; j <= patchDivisionsV; j++) {
+                float cv = (float) j * (float) (m - limit) / (float) patchDivisionsV;
 
-                for (int i = 0; i <= context.patch_div_s; i++) {
-                    float cu = (float) i * (float) (n - limit) / (float) context.patch_div_s;
+                while (endKnotV < m && cv >= knot_v[endKnotV + 1]) {
+                	endKnotV++;
+                }
 
-                    patch[i][j] = new VertexState();
-                    VertexState p = patch[i][j];
+                int endKnotU = order;
+                for (int i = 0; i <= patchDivisionsU; i++) {
+                    float cu = (float) i * (float) (n - limit) / (float) patchDivisionsU;
 
-                    for (int ii = 0; ii <= n; ii++) {
-                        for (int jj = 0; jj <= m; jj++) {
-                            float f = spline_n(ii, 3, cu, knot_u) * spline_n(jj, 3, cv, knot_v);
+                    while (endKnotU < n && cu >= knot_u[endKnotU + 1]) {
+                    	endKnotU++;
+                    }
+
+                    VertexState p = new VertexState();
+                    patch[i][j] = p;
+
+                    for (int ii = endKnotU - order; ii <= endKnotU; ii++) {
+                        for (int jj = endKnotV - order; jj <= endKnotV; jj++) {
+                            float f = spline_n(ii, order, cu, knot_u) * spline_n(jj, order, cv, knot_v);
                             if (f != 0) {
                                 pointMultAdd(p, ctrlpoints[ii][jj], f, context.useVertexColor, useTexture, useNormal);
                             }
@@ -7453,11 +7485,13 @@ public class VideoEngine {
 
             // Compute the normals
             if (useNormal && context.vinfo.normal == 0) {
-            	computeNormals(patch);
+            	computeNormals(patch, patchDivisionsU, patchDivisionsV);
             }
         }
 
-        drawCurvedSurface(patch, ucount, vcount, cachedVertexInfo, context.useVertexColor, useTexture, useNormal);
+        drawCurvedSurface(patch, patchDivisionsU, patchDivisionsV, cachedVertexInfo, context.useVertexColor, useTexture, useNormal);
+
+        endRendering(ucount * vcount);
     }
 
     private void pointMultAdd(VertexState dest, VertexState src, float f, boolean useVertexColor, boolean useTexture, boolean useNormal) {
@@ -7494,6 +7528,9 @@ public class VideoEngine {
         ucount = Math.max(ucount, 4);
         vcount = Math.max(vcount, 4);
 
+        int patchDivisionsU = context.patch_div_s * ((ucount - 1) / 3);
+        int patchDivisionsV = context.patch_div_t * ((vcount - 1) / 3);
+
         initRendering();
         boolean useTexture = context.vinfo.texture != 0 || context.textureFlag.isEnabled();
         boolean useNormal = context.lightingFlag.isEnabled();
@@ -7505,7 +7542,7 @@ public class VideoEngine {
 
         VertexInfo cachedVertexInfo = null;
         if (useVertexCache) {
-            int numberOfVertex = context.patch_div_t * (context.patch_div_s + 1) * 2;
+            int numberOfVertex = patchDivisionsV * (patchDivisionsU + 1) * 2;
             vertexCacheLookupStatistics.start();
             cachedVertexInfo = VertexCache.getInstance().getVertex(context.vinfo, numberOfVertex, context.bone_uploaded_matrix, 0);
             vertexCacheLookupStatistics.end();
@@ -7516,30 +7553,30 @@ public class VideoEngine {
             VertexState[][] anchors = getControlPoints(ucount, vcount);
 
             // Generate patch VertexState.
-            patch = new VertexState[context.patch_div_s + 1][context.patch_div_t + 1];
+            patch = new VertexState[patchDivisionsU + 1][patchDivisionsV + 1];
 
             // Number of patches in the U and V directions
             int upcount = ucount / 3;
             int vpcount = vcount / 3;
 
-            float[][] ucoeff = new float[context.patch_div_s + 1][];
+            float[][] ucoeff = new float[patchDivisionsU + 1][];
 
-            for (int j = 0; j <= context.patch_div_t; j++) {
-                float vglobal = (float) j * vpcount / (float) context.patch_div_t;
+            for (int j = 0; j <= patchDivisionsV; j++) {
+                float vglobal = (float) j * vpcount / (float) patchDivisionsV;
 
                 int vpatch = (int) vglobal; // Patch number
                 float cv = vglobal - vpatch;
-                if (j == context.patch_div_t) {
+                if (j == patchDivisionsV) {
                     vpatch--;
                     cv = 1.f;
                 }
                 float[] vcoeff = BernsteinCoeff(cv);
 
-                for (int i = 0; i <= context.patch_div_s; i++) {
-                    float uglobal = (float) i * upcount / (float) context.patch_div_s;
+                for (int i = 0; i <= patchDivisionsU; i++) {
+                    float uglobal = (float) i * upcount / (float) patchDivisionsU;
                     int upatch = (int) uglobal;
                     float cu = uglobal - upatch;
-                    if (i == context.patch_div_s) {
+                    if (i == patchDivisionsU) {
                         upatch--;
                         cu = 1.f;
                     }
@@ -7566,20 +7603,26 @@ public class VideoEngine {
 
             // Compute the normals
             if (useNormal && context.vinfo.normal == 0) {
-            	computeNormals(patch);
+            	computeNormals(patch, patchDivisionsU, patchDivisionsV);
             }
         }
 
-        drawCurvedSurface(patch, ucount, vcount, cachedVertexInfo, context.useVertexColor, useTexture, useNormal);
+        drawCurvedSurface(patch, patchDivisionsU, patchDivisionsV, cachedVertexInfo, context.useVertexColor, useTexture, useNormal);
+
+        endRendering(ucount * vcount);
     }
 
-    private void drawCurvedSurface(VertexState[][] patch, int ucount, int vcount, VertexInfo cachedVertexInfo, boolean useVertexColor, boolean useTexture, boolean useNormal) {
+    private void drawCurvedSurface(VertexState[][] patch, int patchDivisionsU, int patchDivisionsV, VertexInfo cachedVertexInfo, boolean useVertexColor, boolean useTexture, boolean useNormal) {
         if (re.isVertexArrayAvailable()) {
             re.bindVertexArray(0);
         }
 
-        int type = patch_prim_types[context.patch_prim];
+        int type = patchPrimTypes[context.patch_prim];
         re.setVertexInfo(context.vinfo, false, useVertexColor, useTexture, useNormal, type);
+
+        // No need to compute weights when drawing a curved surfaces,
+        // this has already been done while reading the control points.
+        re.setBones(0, null);
 
         // Triangle strips can be combined across rows into one single drawArrays call.
         // Two dummy vertices have to be added when switching from one row to the next one.
@@ -7590,12 +7633,20 @@ public class VideoEngine {
         // Might be crashing the video driver.
         combineRowPrimitives = false;
 
+        int numberOfVertexPerRow = (patchDivisionsU + 1) * 2;
+        int requiredFloatsPerVertex = (useTexture ? 2 : 0) + (useVertexColor ? 4 : 0) + (useNormal ? 3 : 0) + 3;
+        int requiredBufferArraySize = numberOfVertexPerRow * patchDivisionsV * requiredFloatsPerVertex;
+        // Extend the floatBufferArray if required
+        if (floatBufferArray.length < requiredBufferArraySize) {
+        	allocateDrawBuffer(requiredBufferArraySize * SIZEOF_FLOAT);
+        	floatBufferArray = new float[requiredBufferArraySize];
+        }
+
         boolean needSetDataPointers = true;
-        int numberOfVertexPerRow = (context.patch_div_s + 1) * 2;
         if (cachedVertexInfo == null) {
             int ii = 0;
-            for (int j = 0; j < context.patch_div_t; j++) {
-                for (int i = 0; i <= context.patch_div_s; i++) {
+            for (int j = 0; j < patchDivisionsV; j++) {
+                for (int i = 0; i <= patchDivisionsU; i++) {
                     VertexState vs1 = patch[i][j];
                     VertexState vs2 = patch[i][j + 1];
 
@@ -7659,7 +7710,7 @@ public class VideoEngine {
                     floatBufferArray[ii++] = vs2.p[1];
                     floatBufferArray[ii++] = vs2.p[2];
 
-                    if (combineRowPrimitives && i == context.patch_div_s && j < context.patch_div_t - 1) {
+                    if (combineRowPrimitives && i == patchDivisionsU && j < patchDivisionsV - 1) {
                         // Second dummy vertex: add v2 again
                         if (useTexture) {
                             floatBufferArray[ii++] = vs2.t[0];
@@ -7700,7 +7751,7 @@ public class VideoEngine {
                 	vtype = (vtype & ~(0x3 << 5)) | VTYPE_NORMAL_FORMAT_32_BIT;
                 }
                 cachedVertexInfo.processType(vtype);
-                int numberOfVertex = numberOfVertexPerRow * context.patch_div_t;
+                int numberOfVertex = numberOfVertexPerRow * patchDivisionsV;
                 VertexCache.getInstance().addVertex(re, cachedVertexInfo, numberOfVertex, context.bone_uploaded_matrix, 0);
                 needSetDataPointers = cachedVertexInfo.loadVertex(re, floatBufferArray, bufferSizeInFloats);
             } else {
@@ -7714,13 +7765,12 @@ public class VideoEngine {
         }
 
         if (needSetDataPointers) {
-            // TODO: Compute the normals
             setDataPointers(3, useVertexColor, 4, useTexture, 2, useNormal, 0, cachedVertexInfo == null);
         }
 
         if (combineRowPrimitives) {
             // Draw all the vertices in one call
-            int numberOfVertexToDraw = numberOfVertexPerRow * context.patch_div_t + 2 * (context.patch_div_t - 1);
+            int numberOfVertexToDraw = numberOfVertexPerRow * patchDivisionsV + 2 * (patchDivisionsV - 1);
             drawArraysStatistics.start();
             re.drawArrays(type, 0, numberOfVertexToDraw);
             drawArraysStatistics.end();
@@ -7728,7 +7778,7 @@ public class VideoEngine {
             // Draw the vertices one row at a time
             drawArraysStatistics.start();
             re.drawArrays(type, 0, numberOfVertexPerRow);
-            for (int j = 1, first = numberOfVertexPerRow; j < context.patch_div_t; j++, first += numberOfVertexPerRow) {
+            for (int j = 1, first = numberOfVertexPerRow; j < patchDivisionsV; j++, first += numberOfVertexPerRow) {
                 re.drawArraysBurstMode(type, first, numberOfVertexPerRow);
             }
             drawArraysStatistics.end();
@@ -7738,8 +7788,6 @@ public class VideoEngine {
             display.dumpGeImage();
             textureChanged = true;
         }
-
-        endRendering(ucount * vcount);
     }
 
     private VertexState[][] getControlPoints(int ucount, int vcount) {
