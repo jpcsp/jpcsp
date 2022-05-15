@@ -17,6 +17,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE.VFS.memoryStick;
 
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_MEMSTICK_DEVCTL_BAD_PARAMS;
+
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.VFS.AbstractVirtualFileSystem;
@@ -100,6 +101,56 @@ public class MemoryStickVirtualFileSystem extends AbstractVirtualFileSystem {
 	            }
 	            break;
 	        }
+            // Unknown, used by flash0:/kd/utility.prx
+            case 0x02015807: {
+                log.debug("sceIoDevctl 0x02015807 (mscmhc0)");
+                if (outputPointer.isAddressGood() && outputLength == 4) {
+                	outputPointer.setValue32(0); // Unknown value: seems to be 0 or 1?
+                	result = 0;
+                } else {
+                	result = ERROR_MEMSTICK_DEVCTL_BAD_PARAMS;
+                }
+                break;
+            }
+            // Unknown, used by flash0:/kd/utility.prx
+            case 0x0201580B: {
+                log.debug("sceIoDevctl 0x0201580B (mscmhc0)");
+                if (inputPointer.isAddressGood() && inputLength == 20) {
+                	result = 0;
+                } else {
+                	result = ERROR_MEMSTICK_DEVCTL_BAD_PARAMS;
+                }
+                break;
+            }
+            // Unknown, used by flash0:/kd/utility.prx
+            case 0x0202580A: {
+                log.debug("sceIoDevctl 0x0202580A (mscmhc0)");
+                if (outputPointer.isAddressGood() && outputLength == 16) {
+                	// When value1 or value2 are < 10000, sceUtilitySavedata is
+                	// returning an error 0x8011032C (bad status).
+                	// When value1 or value2 are > 10000, sceUtilitySavedata is
+                	// returning an error 0x8011032A (the system has been shifted to sleep mode).
+                	final int value1 = 10000;
+                	final int value2 = 10000;
+                	// When value3 or value4 are < 10000, sceUtilitySavedata is
+                	// returning an error 0x8011032C (bad status)
+                	// When value3 or value4 are > 10000, sceUtilitySavedata is
+                	// returning an error 0x80110322 (the memory stick has been removed).
+                	final int value3 = 10000;
+                	final int value4 = 10000;
+                	// No error is returned by sceUtilitySavedata only when
+                	// all 4 values are set to 10000.
+
+                    outputPointer.setValue32(0, value1);
+                    outputPointer.setValue32(4, value2);
+                    outputPointer.setValue32(8, value3);
+                    outputPointer.setValue32(12, value4);
+                    result = 0;
+                } else {
+                	result = -1;
+                }
+                break;
+            }
 	        default:
 	        	result = super.ioDevctl(deviceName, command, inputPointer, inputLength, outputPointer, outputLength);
 		}
