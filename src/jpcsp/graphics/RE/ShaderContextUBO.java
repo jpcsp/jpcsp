@@ -119,6 +119,9 @@ public class ShaderContextUBO extends ShaderContext {
 	private ShaderUniformInfo clipPlaneEnable;
 	private ShaderUniformInfo viewportPos;
 	private ShaderUniformInfo viewportScale;
+	private ShaderUniformInfo curvedSurfaceType;
+	private ShaderUniformInfo splineInfo;
+	private ShaderUniformInfo patchFace;
 	private ShaderUniformInfo numberBones;
 	private ShaderUniformInfo boneMatrix;
 	private ShaderUniformInfo endOfUBO;
@@ -309,6 +312,9 @@ public class ShaderContextUBO extends ShaderContext {
 		clipPlaneEnable = addShaderUniform(Uniforms.clipPlaneEnable, "bool");
 		viewportPos = addShaderUniform(Uniforms.viewportPos, "vec3");
 		viewportScale = addShaderUniform(Uniforms.viewportScale, "vec3");
+		curvedSurfaceType = addShaderUniform(Uniforms.curvedSurfaceType, "int");
+		splineInfo = addShaderUniform(Uniforms.splineInfo, "ivec4");
+		patchFace = addShaderUniform(Uniforms.patchFace, "int");
 		numberBones = addShaderUniform(Uniforms.numberBones, "int");
 		boneMatrix = addShaderUniform(Uniforms.boneMatrix, "mat4", 8);
 		// The following entry has always to be the last one
@@ -1259,6 +1265,31 @@ public class ShaderContextUBO extends ShaderContext {
 		if (!equalsMat4(modelViewProjectionMatrix, getModelViewProjectionMatrix())) {
 			copy(modelViewProjectionMatrix, this.modelViewProjectionMatrix, 16);
 			super.setModelViewProjectionMatrix(modelViewProjectionMatrix);
+		}
+	}
+
+	@Override
+	public void setCurvedSurfaceType(int curvedSurfaceType) {
+		if (curvedSurfaceType != getCurvedSurfaceType()) {
+			copy(curvedSurfaceType, this.curvedSurfaceType);
+			super.setCurvedSurfaceType(curvedSurfaceType);
+		}
+	}
+
+	@Override
+	public void setSplineInfo(int ucount, int vcount, int utype, int vtype) {
+		int[] currentSplineInfo = getSplineInfo();
+		if (currentSplineInfo[0] != ucount || currentSplineInfo[1] != vcount || currentSplineInfo[2] != utype || currentSplineInfo[3] != vtype) {
+			copy(new int[] { ucount, vcount, utype, vtype }, this.splineInfo, 4);
+			super.setSplineInfo(ucount, vcount, utype, vtype);
+		}
+	}
+
+	@Override
+	public void setPatchFace(int patchFace) {
+		if (getPatchFace() != patchFace) {
+			copy(patchFace, this.patchFace);
+			super.setPatchFace(patchFace);
 		}
 	}
 }

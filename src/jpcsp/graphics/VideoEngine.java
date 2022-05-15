@@ -40,12 +40,15 @@ import static jpcsp.Memory.isVRAM;
 import static jpcsp.MemoryMap.END_VRAM;
 import static jpcsp.MemoryMap.START_VRAM;
 import static jpcsp.graphics.GeCommands.*;
+import static jpcsp.graphics.RE.IRenderingEngine.RE_BEZIER_TRIANGLES;
+import static jpcsp.graphics.RE.IRenderingEngine.RE_SPLINE_TRIANGLES;
 import static jpcsp.graphics.RE.externalge.NativeUtils.CTRL_ACTIVE;
 import static jpcsp.graphics.RE.externalge.NativeUtils.CTRL_RET1;
 import static jpcsp.graphics.RE.externalge.NativeUtils.CTRL_RET2;
 import static jpcsp.graphics.RE.externalge.NativeUtils.INTR_STAT_END;
 import static jpcsp.graphics.RE.externalge.NativeUtils.INTR_STAT_FINISH;
 import static jpcsp.graphics.RE.externalge.NativeUtils.INTR_STAT_SIGNAL;
+import static jpcsp.graphics.VertexInfo.size_mapping;
 import static jpcsp.graphics.VideoEngineUtilities.copyGeToMemory;
 import static jpcsp.graphics.VideoEngineUtilities.getPixelFormatBytes;
 import static jpcsp.graphics.capture.CaptureManager.replayFileName;
@@ -142,7 +145,14 @@ public class VideoEngine {
 		"RE_QUADS",
 		"RE_LINES_ADJACENCY",
 		"RE_TRIANGLES_ADJACENCY",
-		"RE_TRIANGLE_STRIP_ADJACENCY"
+		"RE_TRIANGLE_STRIP_ADJACENCY",
+		"RE_PATCHES",
+		"RE_SPLINE_TRIANGLES",
+		"RE_SPLINE_LINES",
+		"RE_SPLINE_POINTS",
+		"RE_BEZIER_TRIANGLES",
+		"RE_BEZIER_LINES",
+		"RE_BEZIER_POINTS"
     };
     public final static String[] psm_names = {
         "PSM_5650",
@@ -204,7 +214,7 @@ public class VideoEngine {
         IRenderingEngine.RE_UNSIGNED_SHORT,
         IRenderingEngine.RE_UNSIGNED_INT
     };
-    private static final int[] patchPrimTypes = {
+    public static final int[] patchPrimTypes = {
     	PRIM_TRIANGLE_STRIPS,
     	PRIM_LINES_STRIPS,
     	PRIM_POINT,
@@ -2676,7 +2686,7 @@ public class VideoEngine {
                 // vertex info are available in a format usable by OpenGL.
                 //
                 int numberOfVertexInfo = numberOfVertex;
-                int bytesPerIndex = VertexInfo.size_mapping[context.vinfo.index];
+                int bytesPerIndex = size_mapping[context.vinfo.index];
                 long indicesBufferOffset = 0;
                 int firstVertexInfo = 0;
                 int firstVertex = 0;
@@ -3778,7 +3788,7 @@ public class VideoEngine {
     private void executeCommandVADDR() {
         context.vinfo.ptr_vertex = currentList.getAddressRelOffset(normalArgument);
         if (isLogDebugEnabled) {
-            log(String.format("%s 0x%08x", helper.getCommandString(VADDR), context.vinfo.ptr_vertex));
+            log(String.format("%s 0x%08X", helper.getCommandString(VADDR), context.vinfo.ptr_vertex));
         }
     }
 
@@ -7290,7 +7300,7 @@ public class VideoEngine {
         if (context.vinfo.index == 0) {
             context.vinfo.ptr_vertex = context.vinfo.getAddress(mem, numberOfVertex);
         } else {
-            context.vinfo.ptr_index += numberOfVertex * context.vinfo.index;
+            context.vinfo.ptr_index += numberOfVertex * size_mapping[context.vinfo.index];
         }
     }
 
@@ -7408,16 +7418,22 @@ public class VideoEngine {
         }
 
         initRendering();
-        boolean useTexture = context.vinfo.texture != 0 || context.textureFlag.isEnabled();
-        boolean useNormal = context.lightingFlag.isEnabled();
+        re.setSplineInfo(ucount, vcount, utype, vtype);
 
         if (State.recordGeFrames) {
             log.debug("Capture drawSpline");
             CaptureManager.captureRAM(mem, context.vinfo.ptr_vertex, context.vinfo.vertexSize * ucount * vcount);
         }
 
+        if (re.canNativeCurvePrimitive()) {
+            drawNativeCurvedSurface(ucount, vcount, false);
+            return;
+        }
+
         int patchDivisionsU = context.patch_div_s * (ucount - 3);
         int patchDivisionsV = context.patch_div_t * (vcount - 3);
+        boolean useTexture = context.vinfo.texture != 0 || context.textureFlag.isEnabled();
+        boolean useNormal = context.lightingFlag.isEnabled();
 
         VertexInfo cachedVertexInfo = null;
         if (useVertexCache) {
@@ -7528,17 +7544,22 @@ public class VideoEngine {
         ucount = Math.max(ucount, 4);
         vcount = Math.max(vcount, 4);
 
-        int patchDivisionsU = context.patch_div_s * ((ucount - 1) / 3);
-        int patchDivisionsV = context.patch_div_t * ((vcount - 1) / 3);
-
         initRendering();
-        boolean useTexture = context.vinfo.texture != 0 || context.textureFlag.isEnabled();
-        boolean useNormal = context.lightingFlag.isEnabled();
 
         if (State.recordGeFrames) {
             log.debug("Capture drawBezier");
             CaptureManager.captureRAM(mem, context.vinfo.ptr_vertex, context.vinfo.vertexSize * ucount * vcount);
         }
+
+        if (re.canNativeCurvePrimitive()) {
+            drawNativeCurvedSurface(ucount, vcount, true);
+            return;
+        }
+
+        int patchDivisionsU = context.patch_div_s * ((ucount - 1) / 3);
+        int patchDivisionsV = context.patch_div_t * ((vcount - 1) / 3);
+        boolean useTexture = context.vinfo.texture != 0 || context.textureFlag.isEnabled();
+        boolean useNormal = context.lightingFlag.isEnabled();
 
         VertexInfo cachedVertexInfo = null;
         if (useVertexCache) {
@@ -7788,6 +7809,109 @@ public class VideoEngine {
             display.dumpGeImage();
             textureChanged = true;
         }
+    }
+
+    private void drawNativeCurvedSurface(int ucount, int vcount, boolean isBezier) {
+        if (re.isVertexArrayAvailable()) {
+            re.bindVertexArray(0);
+        }
+
+        boolean useVertexColor = context.useVertexColor;
+        boolean useTexture = context.vinfo.texture != 0;
+        boolean useNormal = context.vinfo.normal != 0;
+
+        int type = (isBezier ? RE_BEZIER_TRIANGLES : RE_SPLINE_TRIANGLES) + Math.min(context.patch_prim, 2);
+        re.setVertexInfo(context.vinfo, true, useVertexColor, useTexture, useNormal, type);
+
+        int numberOfWeightsForBuffer;
+        if (context.vinfo.weight != 0) {
+        	numberOfWeightsForBuffer = re.setBones(context.vinfo.skinningWeightCount, context.boneMatrixLinear);
+        } else {
+        	numberOfWeightsForBuffer = re.setBones(0, null);
+        }
+
+        int numberOfVertex = ucount * vcount;
+        int firstVertexInfo = 0;
+        int[] indexMapping = new int[numberOfVertex];
+        if (context.vinfo.index != 0) {
+            int bytesPerIndex = size_mapping[context.vinfo.index];
+            IMemoryReader indexReader = MemoryReader.getMemoryReader(context.vinfo.ptr_index, numberOfVertex * bytesPerIndex, bytesPerIndex);
+            int minIndex = Integer.MAX_VALUE;
+            int maxIndex = 0;
+            for (int i = 0; i < numberOfVertex; i++) {
+            	int index = indexReader.readNext();
+            	indexMapping[i] = index;
+            	minIndex = Math.min(minIndex, index);
+            	maxIndex = Math.max(maxIndex, index);
+            }
+
+            if (minIndex <= maxIndex) {
+            	firstVertexInfo = minIndex;
+            	numberOfVertex = maxIndex - minIndex + 1;
+            }
+        } else {
+        	for (int i = 0; i < numberOfVertex; i++) {
+        		indexMapping[i] = i;
+        	}
+        }
+
+        boolean useBufferManager = true;
+        int size = context.vinfo.vertexSize * numberOfVertex;
+
+        Buffer buffer = vertexInfoReader.read(context.vinfo, context.vinfo.ptr_vertex, firstVertexInfo, numberOfVertex, re.canAllNativeVertexInfo());
+        int stride = vertexInfoReader.getStride();
+
+        if (buffer != null) {
+            bufferManager.setBufferSubData(re, IRenderingEngine.RE_ARRAY_BUFFER, bufferId, firstVertexInfo * stride, stride * numberOfVertex, buffer, IRenderingEngine.RE_STREAM_DRAW);
+        }
+
+        if (vertexInfoReader.hasNative()) {
+            // Copy the VertexInfo from Memory to the nativeBuffer
+            // (a direct buffer is required by glXXXPointer())
+            int vertexAddr = context.vinfo.ptr_vertex + firstVertexInfo * context.vinfo.vertexSize;
+            Buffer vertexData = mem.getBuffer(vertexAddr, size);
+            size = fixNativeBufferOffset(vertexData, vertexAddr, size);
+            bufferManager.setBufferSubData(re, IRenderingEngine.RE_ARRAY_BUFFER, nativeBufferId, firstVertexInfo * context.vinfo.vertexSize, size, vertexData, IRenderingEngine.RE_STREAM_DRAW);
+        }
+
+        enableClientState(useVertexColor, useTexture, useNormal);
+        setTexCoordPointer(useTexture, vertexInfoReader.getTextureNumberValues(), vertexInfoReader.getTextureType(), stride, vertexInfoReader.getTextureOffset(), vertexInfoReader.isTextureNative(), useBufferManager);
+        setColorPointer(useVertexColor, vertexInfoReader.getColorNumberValues(), vertexInfoReader.getColorType(), stride, vertexInfoReader.getColorOffset(), vertexInfoReader.isColorNative(), useBufferManager);
+        setNormalPointer(useNormal, vertexInfoReader.getNormalType(), stride, vertexInfoReader.getNormalOffset(), vertexInfoReader.isNormalNative(), useBufferManager);
+        if (numberOfWeightsForBuffer > 0) {
+        	setWeightPointer(vertexInfoReader.getWeightNumberValues(), vertexInfoReader.getWeightType(), stride, vertexInfoReader.getWeightOffset(), vertexInfoReader.isWeightNative(), useBufferManager);
+        }
+        setVertexPointer(vertexInfoReader.getPositionNumberValues(), vertexInfoReader.getPositionType(), stride, vertexInfoReader.getPositionOffset(), vertexInfoReader.isPositionNative(), useBufferManager);
+
+        int patchStep = isBezier ? 3 : 1;
+        int patchesU = (ucount - (4 - patchStep)) / patchStep; // (ucount - 1) / 3 for Bezier and (ucount - 3) for Spline
+        int patchesV = (vcount - (4 - patchStep)) / patchStep; // (vcount - 1) / 3 for Bezier and (vcount - 3) for Spline
+    	int numberIndicesPerPatch = 16;
+        int numberIndices = patchesU * patchesV * numberIndicesPerPatch;
+        int[] indices = new int[numberIndices];
+        int n = 0;
+    	for (int patchV = 0; patchV < patchesV; patchV++) {
+    		for (int patchU = 0; patchU < patchesU; patchU++) {
+        		for (int i = 0; i < 4; i++) {
+        			for (int j = 0; j < 4; j++, n++) {
+        				int index = patchU * patchStep + j + (patchV * patchStep + i) * ucount;
+        				indices[n] = indexMapping[index];
+        			}
+        		}
+        	}
+        }
+        Buffer indicesBuffer = IntBuffer.wrap(indices);
+        int indicesBufferSize = numberIndices * SIZEOF_INT;
+        bufferManager.setBufferSubData(re, IRenderingEngine.RE_ELEMENT_ARRAY_BUFFER, indexBufferId, 0, indicesBufferSize, indicesBuffer, IRenderingEngine.RE_DYNAMIC_DRAW);
+
+        re.drawElements(type, numberIndices, IRenderingEngine.RE_UNSIGNED_INT, 0L);
+
+        if (State.dumpGeNextFrame) {
+            display.dumpGeImage();
+            textureChanged = true;
+        }
+
+        endRendering(ucount * vcount);
     }
 
     private VertexState[][] getControlPoints(int ucount, int vcount) {

@@ -52,6 +52,10 @@ import jpcsp.util.Utilities;
  * the OpenGL fixed-function pipeline.
  * If geometry shaders are available, implement the GU_SPRITES primitive by
  * inserting a geometry shader into the shader program.
+ * If tessallation shaders are available, implement the Spline and Bezier
+ * curved surfaces and their patch divisions by inserting a tessallation
+ * evaluation shader into the shader program. A tessallation control shader
+ * is not required.
  * 
  * This class is implemented as a Proxy, forwarding the non-relevant calls
  * to the proxy.
@@ -75,10 +79,12 @@ public class REShader extends BaseRenderingEngineFunction {
 	protected ShaderContext shaderContext;
 	protected ShaderProgram defaultShaderProgram;
 	protected ShaderProgram defaultSpriteShaderProgram;
+	protected ShaderProgram defaultCurveShaderProgram;
 	protected int numberOfWeightsForShader;
 	protected final static int spriteGeometryShaderInputType = GU_LINES;
 	protected final static int spriteGeometryShaderOutputType = GU_TRIANGLE_STRIP;
 	protected boolean useGeometryShader;
+	protected boolean useTessallationShader = true;
 	protected boolean useUniformBufferObject = true;
 	protected boolean useNativeClut;
 	protected boolean useShaderDepthTest = false;
@@ -137,11 +143,19 @@ public class REShader extends BaseRenderingEngineFunction {
 			useGeometryShader = false;
 		}
 		if (useGeometryShader && getAvailableShadingLanguageVersion() < 410) {
-			log.warn(String.format("Disabling Geometry Shader at it requires GLSL version 4.10 or higher (available GLSL version is %d)", getAvailableShadingLanguageVersion()));
+			log.warn(String.format("Disabling Geometry Shader as it requires GLSL version 4.10 or higher (available GLSL version is %d)", getAvailableShadingLanguageVersion()));
 			useGeometryShader = false;
 		}
 		if (useGeometryShader) {
 			log.info("Using Geometry Shader for SPRITES");
+		}
+
+		if (useTessallationShader && getAvailableShadingLanguageVersion() < 410) {
+			log.warn(String.format("Disabling Tessallation Shader as it requires GLSL version 4.10 or higher (available GLSL version is %d)", getAvailableShadingLanguageVersion()));
+			useTessallationShader = false;
+		}
+		if (useTessallationShader) {
+			log.info("Using Tessallation Shader for Spline and Bezier curved surfaces");
 		}
 
 		if (!ShaderContextUBO.useUBO(re)) {
@@ -288,7 +302,13 @@ public class REShader extends BaseRenderingEngineFunction {
         	shaderVersion = Math.max(410, shaderVersion);
         }
 
+        if (useTessallationShader) {
+        	// Tessallation shader requires at least version 4.10 (for layout location)
+        	shaderVersion = Math.max(410, shaderVersion);
+        }
+
         addDefine(staticDefines, "USE_GEOMETRY_SHADER", useGeometryShader);
+        addDefine(staticDefines, "USE_TESSALLATION_SHADER", useTessallationShader);
 		addDefine(staticDefines, "USE_UBO", useUniformBufferObject);
 		if (useUniformBufferObject) {
 			// UBO requires at least shader version 1.40
@@ -325,7 +345,7 @@ public class REShader extends BaseRenderingEngineFunction {
         }
 	}
 
-	protected void preprocessShader(StringBuilder src, ShaderProgram shaderProgram) {
+	protected void preprocessShader(StringBuilder src, boolean hasGeometryShader, boolean hasTessallationShader, ShaderProgram shaderProgram) {
 		StringBuilder defines = new StringBuilder(shaderStaticDefines);
 
 		boolean useDynamicDefines;
@@ -336,6 +356,8 @@ public class REShader extends BaseRenderingEngineFunction {
 			// Set dummy values to the dynamic defines
 			// so that the preprocessor doesn't complain about undefined values
 			defines.append(shaderDummyDynamicDefines);
+			addDefine(defines, "HAS_GEOMETRY_SHADER", hasGeometryShader);
+			addDefine(defines, "HAS_TESSALLATION_SHADER", hasTessallationShader);
 			useDynamicDefines = false;
 		}
 		addDefine(defines, "USE_DYNAMIC_DEFINES", useDynamicDefines);
@@ -346,11 +368,32 @@ public class REShader extends BaseRenderingEngineFunction {
 		addDefine(defines, "USE_SHADER_BLEND_TEST", useShaderBlendTest);
 		addDefine(defines, "NUM_LIGHTS", NUM_LIGHTS);
 
+		// Process #include "xxx" directives
+		while (true) {
+			int startInclude = src.indexOf("#include \"");
+			if (startInclude < 0) {
+				break;
+			}
+			int endInclude = src.indexOf("\"", startInclude + 10);
+			String resourceName = src.substring(startInclude + 10, endInclude);
+
+	        try {
+	        	InputStream resourceStream = getClass().getResourceAsStream(resourceName);
+	        	if (resourceStream == null) {
+	        		break;
+	        	}
+	            src.replace(startInclude, endInclude + 1, Utilities.toString(resourceStream, true));
+	        } catch (IOException e) {
+	        	log.error(e);
+	        	break;
+	        }
+		}
+
 		replace(src, "// INSERT VERSION", String.format("#version %d%s", shaderVersion, shaderProfile));
 		replace(src, "// INSERT DEFINES", defines.toString());
 	}
 
-	protected boolean loadShader(int shader, String resourceName, boolean silentError, ShaderProgram shaderProgram) {
+	protected boolean loadShader(int shader, String resourceName, boolean silentError, boolean hasGeometryShader, boolean hasTessallationShader, ShaderProgram shaderProgram) {
 		StringBuilder src = new StringBuilder();
 
         try {
@@ -364,7 +407,7 @@ public class REShader extends BaseRenderingEngineFunction {
         	return false;
         }
 
-        preprocessShader(src, shaderProgram);
+        preprocessShader(src, hasGeometryShader, hasTessallationShader, shaderProgram);
 
         if (log.isTraceEnabled()) {
         	log.trace(String.format("Compiling shader %d from %s:\n%s", shader, resourceName, src.toString()));
@@ -388,6 +431,9 @@ public class REShader extends BaseRenderingEngineFunction {
 	protected boolean linkShaderProgram(int program) {
         boolean linked = re.linkProgram(program);
         addProgramInfoLog(program);
+        if (!linked) {
+        	return false;
+        }
 
         // Trying to avoid warning message from AMD drivers:
         // "Validation warning! - Sampler value tex has not been set."
@@ -408,22 +454,24 @@ public class REShader extends BaseRenderingEngineFunction {
         return linked && validated;
 	}
 
-	protected ShaderProgram createShader(boolean hasGeometryShader, ShaderProgram shaderProgram) {
+	protected ShaderProgram createShader(boolean hasGeometryShader, boolean hasTessallationShader, ShaderProgram shaderProgram) {
 		infoLogs = new StringBuilder();
 
-		int programId = tryCreateShader(hasGeometryShader, shaderProgram);
+		int programId = tryCreateShader(hasGeometryShader, hasTessallationShader, shaderProgram);
 		if (programId < 0) {
 			switch (programId) {
 				case -1: log.error("Error while compiling the vertex shader:"); break;
 				case -2: log.error("Error while compiling the fragment shader:"); break;
 				case -3: log.error("Error while compiling the geometry shader:"); break;
-				case -4: log.error("Error while linking the shader program:"); break;
+				case -4: log.error("Error while compiling the tessallation control shader:"); break;
+				case -5: log.error("Error while compiling the tessallation evalution shader:"); break;
+				case -6: log.error("Error while linking the shader program:"); break;
 			}
 			printInfoLog(true);
 			shaderProgram = null;
 		} else {
 			if (shaderProgram == null) {
-				shaderProgram = new ShaderProgram();
+				shaderProgram = new ShaderProgram(hasGeometryShader, hasTessallationShader);
 			}
 			shaderProgram.setProgramId(re, programId);
 			printInfoLog(false);
@@ -432,30 +480,39 @@ public class REShader extends BaseRenderingEngineFunction {
 		return shaderProgram;
 	}
 
-	private int tryCreateShader(boolean hasGeometryShader, ShaderProgram shaderProgram) {
-		int vertexShader = re.createShader(RE_VERTEX_SHADER);
-        if (!loadShader(vertexShader, "/jpcsp/graphics/shader.vert", false, shaderProgram)) {
+	private int tryCreateShader(boolean hasGeometryShader, boolean hasTessallationShader, ShaderProgram shaderProgram) {
+        int program = re.createProgram();
+
+        int vertexShader = re.createShader(RE_VERTEX_SHADER);
+        if (!loadShader(vertexShader, "/jpcsp/graphics/shader.vert", false, hasGeometryShader, hasTessallationShader, shaderProgram)) {
         	return -1;
         }
+        re.attachShader(program, vertexShader);
 
         int fragmentShader = re.createShader(RE_FRAGMENT_SHADER);
-        if (!loadShader(fragmentShader, "/jpcsp/graphics/shader.frag", false, shaderProgram)) {
+        if (!loadShader(fragmentShader, "/jpcsp/graphics/shader.frag", false, hasGeometryShader, hasTessallationShader, shaderProgram)) {
         	return -2;
         }
-
-        int program = re.createProgram();
-        re.attachShader(program, vertexShader);
         re.attachShader(program, fragmentShader);
 
         if (hasGeometryShader) {
 	        int geometryShader = re.createShader(RE_GEOMETRY_SHADER);
-	        if (!loadShader(geometryShader, "/jpcsp/graphics/shader.geom", false, shaderProgram)) {
+	        if (!loadShader(geometryShader, "/jpcsp/graphics/shader.geom", false, hasGeometryShader, hasTessallationShader, shaderProgram)) {
 	        	return -3;
 	        }
 	        re.attachShader(program, geometryShader);
 	        re.setProgramParameter(program, RE_GEOMETRY_INPUT_TYPE, spriteGeometryShaderInputType);
 	        re.setProgramParameter(program, RE_GEOMETRY_OUTPUT_TYPE, spriteGeometryShaderOutputType);
 	        re.setProgramParameter(program, RE_GEOMETRY_VERTICES_OUT, 4);
+        }
+
+        if (hasTessallationShader) {
+        	// Load the Tessallation Evaluation shader, a Tessallation Control shader is not required
+        	int tessallationEvaluationShader = re.createShader(RE_TESS_EVALUATION_SHADER);
+        	if (!loadShader(tessallationEvaluationShader, "/jpcsp/graphics/shader.tese", false, hasGeometryShader, hasTessallationShader, shaderProgram)) {
+        		return -5;
+        	}
+        	re.attachShader(program, tessallationEvaluationShader);
         }
 
         // Use the same attribute index values for all shader programs.
@@ -478,7 +535,7 @@ public class REShader extends BaseRenderingEngineFunction {
 
         boolean linked = linkShaderProgram(program);
         if (!linked) {
-        	return -4;
+        	return -6;
         }
 
         re.useProgram(program);
@@ -503,10 +560,13 @@ public class REShader extends BaseRenderingEngineFunction {
 	}
 
 	protected void loadShaders() {
-		defaultShaderProgram = createShader(false, null);
+		defaultShaderProgram = createShader(false, false, null);
 		if (defaultShaderProgram != null) {
 			if (useGeometryShader) {
-				defaultSpriteShaderProgram = createShader(true, null);
+				defaultSpriteShaderProgram = createShader(true, false, null);
+			}
+			if (useTessallationShader) {
+				defaultCurveShaderProgram = createShader(false, true, null);
 			}
 
 			defaultShaderProgram.use(re);
@@ -514,6 +574,9 @@ public class REShader extends BaseRenderingEngineFunction {
 
 		if (defaultSpriteShaderProgram == null) {
 			useGeometryShader = false;
+		}
+		if (defaultCurveShaderProgram == null) {
+			useTessallationShader = false;
 		}
 	}
 
@@ -636,6 +699,12 @@ public class REShader extends BaseRenderingEngineFunction {
 			case IRenderingEngine.GU_CLIP_PLANES:
 				shaderContext.setClipPlaneEnable(value);
 				setFlag = false;
+				break;
+			case IRenderingEngine.GU_PATCH_FACE:
+				if (useTessallationShader) {
+					shaderContext.setPatchFace(value);
+					setFlag = false;
+				}
 				break;
 		}
 
@@ -892,6 +961,12 @@ public class REShader extends BaseRenderingEngineFunction {
 	}
 
 	@Override
+	public boolean canNativeCurvePrimitive() {
+		// Tessallation shader supports native Spline and Bezier curves
+		return useTessallationShader;
+	}
+
+	@Override
 	public void setVertexInfo(VertexInfo vinfo, boolean allNativeVertexInfo, boolean useVertexColor, boolean useTexture, boolean useNormal, int type) {
 		if (allNativeVertexInfo) {
 			// Weight
@@ -936,13 +1011,34 @@ public class REShader extends BaseRenderingEngineFunction {
 		super.setVertexInfo(vinfo, allNativeVertexInfo, useVertexColor, useTexture, useNormal, type);
 	}
 
+	private static boolean isSpline(int type) {
+		return type == RE_SPLINE_TRIANGLES || type == RE_SPLINE_LINES || type == RE_SPLINE_POINTS;
+	}
+
+	private static boolean isBezier(int type) {
+		return type == RE_BEZIER_TRIANGLES || type == RE_BEZIER_LINES || type == RE_BEZIER_POINTS;
+	}
+
+	private static boolean isCurve(int type) {
+		return isSpline(type) || isBezier(type);
+	}
+
 	private void setCurrentShaderProgram(int type) {
+		int curvedSurfaceType = RE_NOT_CURVED_SURFACE;
+		if (isSpline(type)) {
+			curvedSurfaceType = RE_SPLINE;
+		} else if (isBezier(type)) {
+			curvedSurfaceType = RE_BEZIER;
+		}
+		shaderContext.setCurvedSurfaceType(curvedSurfaceType);
+
 		ShaderProgram shaderProgram;
 		boolean hasGeometryShader = (type == GU_SPRITES);
+		boolean hasTessallationShader = isCurve(type);
 		if (useDynamicShaders) {
-			shaderProgram = shaderProgramManager.getShaderProgram(shaderContext, hasGeometryShader);
+			shaderProgram = shaderProgramManager.getShaderProgram(shaderContext, hasGeometryShader, hasTessallationShader);
 			if (shaderProgram.getProgramId() == -1) {
-				shaderProgram = createShader(hasGeometryShader, shaderProgram);
+				shaderProgram = createShader(hasGeometryShader, hasTessallationShader, shaderProgram);
 				if (log.isDebugEnabled()) {
 					log.debug("Created shader " + shaderProgram);
 				}
@@ -951,6 +1047,8 @@ public class REShader extends BaseRenderingEngineFunction {
 					return;
 				}
 			}
+		} else if (hasTessallationShader) {
+			shaderProgram = defaultCurveShaderProgram;
 		} else if (hasGeometryShader) {
 			shaderProgram = defaultSpriteShaderProgram;
 		} else {
@@ -1114,9 +1212,32 @@ public class REShader extends BaseRenderingEngineFunction {
 	}
 
 	private int prepareDraw(int primitive, boolean burstMode) {
+		int polygonMode = RE_POLYGON_MODE_FILL;
+
 		if (primitive == GU_SPRITES) {
 			primitive = spriteGeometryShaderInputType;
+		} else if (isCurve(primitive)) {
+			if (primitive == RE_BEZIER_LINES || primitive == RE_SPLINE_LINES) {
+				// The OpenGL polygon mode LINE is not exactly matching the PSP
+				// behaviour, i.e. it is rendering more lines than the PSP.
+				// This is just an approximation used for debugging.
+				polygonMode = RE_POLYGON_MODE_LINE;
+			} else if (primitive == RE_BEZIER_POINTS || primitive == RE_SPLINE_POINTS) {
+				polygonMode = RE_POLYGON_MODE_POINT;
+			}
+
+			primitive = RE_PATCHES;
+
+			// 16 control points for one Spline or Bezier patch
+			re.setPatchParameter(RE_PATCH_VERTICES, 16);
+
+			float patchDivS = (float) context.patch_div_s;
+			float patchDivT = (float) context.patch_div_t;
+			re.setPatchParameter(RE_PATCH_DEFAULT_INNER_LEVEL, new float[] { patchDivT, patchDivS });
+			re.setPatchParameter(RE_PATCH_DEFAULT_OUTER_LEVEL, new float[] { patchDivS, patchDivT, patchDivS, patchDivT });
 		}
+
+		re.setPolygonMode(polygonMode);
 
 		if (modelMatrixChanged) {
 			shaderContext.setModelMatrix(modelMatrix);
@@ -1750,12 +1871,20 @@ public class REShader extends BaseRenderingEngineFunction {
 		}
 		System.arraycopy(values, 0, modelMatrix, 0, modelMatrix.length);
 		System.arraycopy(identityMatrix, 0, viewMatrix, 0, viewMatrix.length);
-		modelViewMatrixChanged = true;
+		modelMatrixChanged = true;
 		super.setModelViewMatrix(values);
 	}
 
 	@Override
 	public void setTextureEnvColor(float[] color) {
 		shaderContext.setTexEnvColor(color);
+	}
+
+	@Override
+	public void setSplineInfo(int ucount, int vcount, int utype, int vtype) {
+		if (useTessallationShader) {
+			shaderContext.setSplineInfo(ucount, vcount, utype, vtype);
+		}
+		super.setSplineInfo(ucount, vcount, utype, vtype);
 	}
 }

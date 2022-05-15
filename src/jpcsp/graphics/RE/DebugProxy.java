@@ -771,6 +771,15 @@ public class DebugProxy extends BaseRenderingEngineProxy {
 	}
 
 	@Override
+	public int createShader(int type) {
+		int shader = super.createShader(type);
+		if (isLogDebugEnabled) {
+			log.debug(String.format("createShader(%d) %d", type, shader));
+		}
+		return shader;
+	}
+
+	@Override
 	public void setVertexColor(float[] color) {
 		if (isLogDebugEnabled) {
 			log.debug(String.format("setVertexColor (r=%.3f, b=%.3f, g=%.3f, a=%.3f)", color[0], color[1], color[2], color[3]));
@@ -829,7 +838,7 @@ public class DebugProxy extends BaseRenderingEngineProxy {
 	@Override
 	public void drawElements(int primitive, int count, int indexType, Buffer indices, int indicesOffset) {
 		if (isLogDebugEnabled) {
-			log.debug(String.format("drawElements primitive=%d, count=%d, indexType=%d, indicesOffset=%d", primitive, count, indexType, indicesOffset));
+			log.debug(String.format("drawElements primitive=%d(%s), count=%d, indexType=%d, indicesOffset=%d", primitive, primitiveTypeNames[primitive], count, indexType, indicesOffset));
 		}
 		super.drawElements(primitive, count, indexType, indices, indicesOffset);
 	}
@@ -837,7 +846,7 @@ public class DebugProxy extends BaseRenderingEngineProxy {
 	@Override
 	public void drawElements(int primitive, int count, int indexType, long indicesOffset) {
 		if (isLogDebugEnabled) {
-			log.debug(String.format("drawElements primitive=%d, count=%d, indexType=%d, indicesOffset=%d", primitive, count, indexType, indicesOffset));
+			log.debug(String.format("drawElements primitive=%d(%s), count=%d, indexType=%d, indicesOffset=%d", primitive, primitiveTypeNames[primitive], count, indexType, indicesOffset));
 		}
 		super.drawElements(primitive, count, indexType, indicesOffset);
 	}
@@ -851,7 +860,7 @@ public class DebugProxy extends BaseRenderingEngineProxy {
 			for (int i = 0; i < n; i++) {
 				s.append(String.format(" (%d,%d)", first.get(p + i), count.get(p + i)));
 			}
-			log.debug(String.format("multiDrawElements primitive=%d, count=%d,%s, indexType=%d, indicesOffset=%d", primitive, n, s.toString(), indexType, indicesOffset));
+			log.debug(String.format("multiDrawElements primitive=%d(%s), count=%d,%s, indexType=%d, indicesOffset=%d", primitive, primitiveTypeNames[primitive], n, s.toString(), indexType, indicesOffset));
 		}
 		super.multiDrawElements(primitive, first, count, indexType, indicesOffset);
 	}
@@ -859,7 +868,7 @@ public class DebugProxy extends BaseRenderingEngineProxy {
 	@Override
 	public void drawElementsBurstMode(int primitive, int count, int indexType, long indicesOffset) {
 		if (isLogDebugEnabled) {
-			log.debug(String.format("drawElementsBurstMode primitive=%d, count=%d, indexType=%d, indicesOffset=%d", primitive, count, indexType, indicesOffset));
+			log.debug(String.format("drawElementsBurstMode primitive=%d(%s), count=%d, indexType=%d, indicesOffset=%d", primitive, primitiveTypeNames[primitive], count, indexType, indicesOffset));
 		}
 		super.drawElementsBurstMode(primitive, count, indexType, indicesOffset);
 	}
@@ -1059,5 +1068,46 @@ public class DebugProxy extends BaseRenderingEngineProxy {
 			log.debug(String.format("setVertexInfo vinfo=%s, allNativeVertexInfo=%b, useVertexColor=%b, useTexture=%b, useNormal=%b, type=%d(%s)", vinfo, allNativeVertexInfo, useVertexColor, useTexture, useNormal, type, primitiveTypeNames[type]));
 		}
 		super.setVertexInfo(vinfo, allNativeVertexInfo, useVertexColor, useTexture, useNormal, type);
+	}
+
+	@Override
+	public void setPatchParameter(int parameter, int value) {
+		if (isLogDebugEnabled) {
+			log.debug(String.format("setPatchParameter parameter=%d, value=%d", parameter, value));
+		}
+		super.setPatchParameter(parameter, value);
+	}
+
+	@Override
+	public int getAttribLocation(int program, String name) {
+		int value = super.getAttribLocation(program, name);
+		if (isLogDebugEnabled) {
+			log.debug(String.format("getAttribLocation program=%d, name='%s': %d", program, name, value));
+		}
+		return value;
+	}
+
+	@Override
+	public void bindAttribLocation(int program, int index, String name) {
+		if (isLogDebugEnabled) {
+			log.debug(String.format("bindAttribLocation program=%d, index=%d, name='%s'", program, index, name));
+		}
+		super.bindAttribLocation(program, index, name);
+	}
+
+	@Override
+	public void setPolygonMode(int mode) {
+		if (isLogDebugEnabled) {
+			log.debug(String.format("setPolygonMode mode=%d", mode));
+		}
+		super.setPolygonMode(mode);
+	}
+
+	@Override
+	public void setSplineInfo(int ucount, int vcount, int utype, int vtype) {
+		if (isLogDebugEnabled) {
+			log.debug(String.format("setSplineInfo ucount=%d, vcount=%d, utype=%d, vtype=%d", ucount, vcount, utype, vtype));
+		}
+		super.setSplineInfo(ucount, vcount, utype, vtype);
 	}
 }

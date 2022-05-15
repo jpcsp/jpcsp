@@ -126,6 +126,9 @@ public class ShaderContext {
 	private float[] modelMatrix = new float[16];
 	private float[] modelViewMatrix = new float[16];
 	private float[] modelViewProjectionMatrix = new float[16];
+	private int curvedSurfaceType;
+	private int[] splineInfo = new int[4];
+	private int patchFace;
 
 	public void setUniforms(IRenderingEngine re, int shaderProgram) {
 		re.setUniform3(Uniforms.matFlags.getId(shaderProgram), matFlags);
@@ -214,6 +217,9 @@ public class ShaderContext {
 		re.setUniformMatrix4(Uniforms.modelMatrix.getId(shaderProgram), 1, modelMatrix);
 		re.setUniformMatrix4(Uniforms.modelViewMatrix.getId(shaderProgram), 1, modelViewMatrix);
 		re.setUniformMatrix4(Uniforms.modelViewProjectionMatrix.getId(shaderProgram), 1, modelViewProjectionMatrix);
+		re.setUniform(Uniforms.curvedSurfaceType.getId(shaderProgram), curvedSurfaceType);
+		re.setUniform4(Uniforms.splineInfo.getId(shaderProgram), splineInfo);
+		re.setUniform(Uniforms.patchFace.getId(shaderProgram), patchFace);
 
 		setUniformsSamplers(re, shaderProgram);
 	}
@@ -1039,5 +1045,32 @@ public class ShaderContext {
 
 	public void setModelViewProjectionMatrix(float[] modelViewProjectionMatrix) {
 		System.arraycopy(modelViewProjectionMatrix, 0, this.modelViewProjectionMatrix, 0, this.modelViewProjectionMatrix.length);
+	}
+
+	public int getCurvedSurfaceType() {
+		return curvedSurfaceType;
+	}
+
+	public void setCurvedSurfaceType(int curvedSurfaceType) {
+		this.curvedSurfaceType = curvedSurfaceType;
+	}
+
+	public int[] getSplineInfo() {
+		return splineInfo;
+	}
+
+	public void setSplineInfo(int ucount, int vcount, int utype, int vtype) {
+		splineInfo[0] = ucount;
+		splineInfo[1] = vcount;
+		splineInfo[2] = utype;
+		splineInfo[3] = vtype;
+	}
+
+	public int getPatchFace() {
+		return patchFace;
+	}
+
+	public void setPatchFace(int patchFace) {
+		this.patchFace = patchFace;
 	}
 }

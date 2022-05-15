@@ -34,7 +34,8 @@ public class ShaderProgram {
 	private int shaderAttribTexture;
 	private int shaderAttribWeights1;
 	private int shaderAttribWeights2;
-	private boolean hasGeometryShader;
+	private final boolean hasGeometryShader;
+	private final boolean hasTessallationShader;
 	private int[] lightType = new int[VideoEngine.NUM_LIGHTS]; // values: [0..2]
 	private int[] lightKind = new int[VideoEngine.NUM_LIGHTS]; // values: [0..2]
 	private int[] lightEnabled = new int[VideoEngine.NUM_LIGHTS]; // values: [0..1]
@@ -75,6 +76,8 @@ public class ShaderProgram {
 	private int copyRedToAlpha; // values: [0..1]
 	private int fogEnable; // values: [0..1]
 	private int shadeModel; // values: [0..1]
+	private int curvedSurfaceType; // values: [0..2]
+	private int patchFace; // values: [0..1]
 
 	public static class ShaderProgramKey {
 		private long key1;
@@ -107,11 +110,14 @@ public class ShaderProgram {
 		}
 	}
 
-	public ShaderProgram() {
+	public ShaderProgram(boolean hasGeometryShader, boolean hasTessallationShader) {
+		this.hasGeometryShader = hasGeometryShader;
+		this.hasTessallationShader = hasTessallationShader;
 	}
 
-	public ShaderProgram(ShaderContext shaderContext, boolean hasGeometryShader) {
+	public ShaderProgram(ShaderContext shaderContext, boolean hasGeometryShader, boolean hasTessallationShader) {
 		this.hasGeometryShader = hasGeometryShader;
+		this.hasTessallationShader = hasTessallationShader;
 		for (int i = 0; i < lightType.length; i++) {
 			lightType[i] = shaderContext.getLightType(i);
 			lightKind[i] = shaderContext.getLightKind(i);
@@ -158,8 +164,10 @@ public class ShaderProgram {
 		copyRedToAlpha = shaderContext.getCopyRedToAlpha();
 		fogEnable = shaderContext.getFogEnable();
 		shadeModel = shaderContext.getShadeModel();
+		curvedSurfaceType = shaderContext.getCurvedSurfaceType();
+		patchFace = shaderContext.getPatchFace();
 
-		key = getKey(shaderContext, hasGeometryShader);
+		key = getKey(shaderContext, hasGeometryShader, hasTessallationShader);
 	}
 
 	public static String getDummyDynamicDefines() {
@@ -213,6 +221,8 @@ public class ShaderProgram {
 		REShader.addDefine(defines, "COPY_RED_TO_ALPHA", dummyValue);
 		REShader.addDefine(defines, "FOG_ENABLE", dummyValue);
 		REShader.addDefine(defines, "SHADE_MODEL", dummyValue);
+		REShader.addDefine(defines, "CURVED_SURFACE_TYPE", dummyValue);
+		REShader.addDefine(defines, "PATCH_FACE", dummyValue);
 
 		return defines.toString();
 	}
@@ -220,6 +230,8 @@ public class ShaderProgram {
 	public String getDynamicDefines() {
 		StringBuilder defines = new StringBuilder();
 
+		REShader.addDefine(defines, "HAS_GEOMETRY_SHADER", hasGeometryShader);
+		REShader.addDefine(defines, "HAS_TESSALLATION_SHADER", hasTessallationShader);
 		for (int i = 0; i < lightType.length; i++) {
 			// LightType and LightKind are currently not used as defines in the shaders
 			//REShader.addDefine(defines, "LIGHT_TYPE" + i, lightType[i]);
@@ -267,17 +279,21 @@ public class ShaderProgram {
 		REShader.addDefine(defines, "COPY_RED_TO_ALPHA", copyRedToAlpha);
 		REShader.addDefine(defines, "FOG_ENABLE", fogEnable);
 		REShader.addDefine(defines, "SHADE_MODEL", shadeModel);
+		REShader.addDefine(defines, "CURVED_SURFACE_TYPE", curvedSurfaceType);
+		REShader.addDefine(defines, "PATCH_FACE", patchFace);
 
 		return defines.toString();
 	}
 
-	public static ShaderProgramKey getKey(ShaderContext shaderContext, boolean hasGeometryShader) {
+	public static ShaderProgramKey getKey(ShaderContext shaderContext, boolean hasGeometryShader, boolean hasTessallationShader) {
 		long key = 0;
 		long key1;
 		long key2;
 		int shift = 0;
 
 		key += hasGeometryShader ? 1 : 0;
+		shift++;
+		key += hasTessallationShader ? 1 : 0;
 		shift++;
 		for (int i = 0; i < VideoEngine.NUM_LIGHTS; i++) {
 			// LightType and LightKind are currently not used as defines in the shaders
@@ -378,6 +394,10 @@ public class ShaderProgram {
 		shift++;
 		key += ((long) shaderContext.getShadeModel()) << shift;
 		shift++;
+		key += ((long) shaderContext.getCurvedSurfaceType()) << shift;
+		shift += 2;
+		key += ((long) shaderContext.getPatchFace()) << shift;
+		shift++;
 
 		if (shift > Long.SIZE) {
 			log.error(String.format("ShaderProgram: too long key2: %d bits", shift));
@@ -387,8 +407,8 @@ public class ShaderProgram {
 		return new ShaderProgramKey(key1, key2);
 	}
 
-	public boolean matches(ShaderContext shaderContext, boolean hasGeometryShader) {
-		ShaderProgramKey key = getKey(shaderContext, hasGeometryShader);
+	public boolean matches(ShaderContext shaderContext, boolean hasGeometryShader, boolean hasTessallationShader) {
+		ShaderProgramKey key = getKey(shaderContext, hasGeometryShader, hasTessallationShader);
 
 		return key.equals(this.key);
 	}
@@ -442,6 +462,6 @@ public class ShaderProgram {
 
 	@Override
 	public String toString() {
-		return String.format("ShaderProgram[%d, geometryShader=%b, %s]", programId, hasGeometryShader, getDynamicDefines().replace(System.getProperty("line.separator"), ", "));
+		return String.format("ShaderProgram[%d, geometryShader=%b, tessallationShader=%b, %s]", programId, hasGeometryShader, hasTessallationShader, getDynamicDefines().replace(System.getProperty("line.separator"), ", "));
 	}
 }

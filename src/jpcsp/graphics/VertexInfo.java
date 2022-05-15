@@ -178,17 +178,17 @@ public class VertexInfo {
 
     public int getAddress(Memory mem, int i) {
         if (ptr_index != 0 && index != 0) {
-            int addr = ptr_index + i * index;
+            int addr = ptr_index + i * size_mapping[index];
             switch (index) {
-                case 1:
+                case 1: // GU_INDEX_8BIT
                     i = mem.read8(addr);
-                    break; // GU_INDEX_8BIT
-                case 2:
+                    break;
+                case 2: // GU_INDEX_16BIT
                     i = mem.read16(addr);
-                    break; // GU_INDEX_16BIT
-                case 3:
+                    break;
+                case 3: // GU_INDEX_UNK3 (assume 32bit)
                     i = mem.read32(addr);
-                    break; // GU_INDEX_UNK3 (assume 32bit)
+                    break;
             }
         }
 

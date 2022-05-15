@@ -798,6 +798,11 @@ public class BaseRenderingEngineProxy implements IRenderingEngine {
 	}
 
 	@Override
+	public boolean canNativeCurvePrimitive() {
+		return proxy.canNativeCurvePrimitive();
+	}
+
+	@Override
 	public void setVertexInfo(VertexInfo vinfo, boolean allNativeVertexInfo, boolean useVertexColor, boolean useTexture, boolean useNormal, int type) {
 		proxy.setVertexInfo(vinfo, allNativeVertexInfo, useVertexColor, useTexture, useNormal, type);
 	}
@@ -1100,5 +1105,25 @@ public class BaseRenderingEngineProxy implements IRenderingEngine {
 	@Override
 	public int getTextureLevelParameter(int texture, int level, int parameter) {
 		return proxy.getTextureLevelParameter(texture, level, parameter);
+	}
+
+	@Override
+	public void setPatchParameter(int parameter, int value) {
+		proxy.setPatchParameter(parameter, value);
+	}
+
+	@Override
+	public void setPatchParameter(int parameter, float[] values) {
+		proxy.setPatchParameter(parameter, values);
+	}
+
+	@Override
+	public void setPolygonMode(int mode) {
+		proxy.setPolygonMode(mode);
+	}
+
+	@Override
+	public void setSplineInfo(int ucount, int vcount, int utype, int vtype) {
+		proxy.setSplineInfo(ucount, vcount, utype, vtype);
 	}
 }

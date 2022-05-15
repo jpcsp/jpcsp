@@ -139,6 +139,13 @@ public interface IRenderingEngine {
 	public static final int RE_LINES_ADJACENCY     = 8;
 	public static final int RE_TRIANGLES_ADJACENCY = 9;
 	public static final int RE_TRIANGLE_STRIP_ADJACENCY = 10;
+	public static final int RE_PATCHES             = 11;
+	public static final int RE_SPLINE_TRIANGLES    = 12;
+	public static final int RE_SPLINE_LINES        = 13;
+	public static final int RE_SPLINE_POINTS       = 14;
+	public static final int RE_BEZIER_TRIANGLES    = 15;
+	public static final int RE_BEZIER_LINES        = 16;
+	public static final int RE_BEZIER_POINTS       = 17;
 	public static final int[] numberVertexPerPrimitive = {
 			1, // GU_POINTS
 			2, // GU_LINES
@@ -150,7 +157,14 @@ public interface IRenderingEngine {
 			4, // RE_QUADS
 			4, // RE_LINES_ADJACENCY
 			6, // RE_TRIANGLES_ADJACENCY
-			6  // RE_TRIANGLE_STRIP_ADJACENCY
+			6, // RE_TRIANGLE_STRIP_ADJACENCY
+			0, // RE_PATCHES
+			0, // RE_SPLINE_TRIANGLES
+			0, // RE_SPLINE_LINES
+			0, // RE_SPLINE_POINTS
+			0, // RE_BEZIER_TRIANGLES
+			0, // RE_BEZIER_LINES
+			0  // RE_BEZIER_POINTS
 	};
 
 	// Matrix modes:
@@ -216,9 +230,12 @@ public interface IRenderingEngine {
 	public static final int RE_TEXENV_COMBINE      = 12;
 
 	// Shader types:
-	public static final int RE_VERTEX_SHADER       = 0;
-	public static final int RE_FRAGMENT_SHADER     = 1;
-	public static final int RE_GEOMETRY_SHADER     = 2;
+	public static final int RE_VERTEX_SHADER          = 0;
+	public static final int RE_FRAGMENT_SHADER        = 1;
+	public static final int RE_GEOMETRY_SHADER        = 2;
+	public static final int RE_TESS_CONTROL_SHADER    = 3;
+	public static final int RE_TESS_EVALUATION_SHADER = 4;
+	public static final int RE_COMPUTE_SHADER         = 5;
 
 	// Client State types:
 	public static final int RE_TEXTURE             = 0;
@@ -344,6 +361,21 @@ public interface IRenderingEngine {
 	public static final int RE_TEXTURE_COMPRESSED_IMAGE_SIZE = 15;
 	public static final int RE_TEXTURE_BUFFER_OFFSET         = 16;
 	public static final int RE_TEXTURE_BUFFER_SIZE           = 17;
+
+	// Patch parameters
+	public static final int RE_PATCH_VERTICES = 0;
+	public static final int RE_PATCH_DEFAULT_OUTER_LEVEL = 1;
+	public static final int RE_PATCH_DEFAULT_INNER_LEVEL = 2;
+
+	// Curved surface type
+	public static final int RE_NOT_CURVED_SURFACE = 0;
+	public static final int RE_BEZIER             = 1;
+	public static final int RE_SPLINE             = 2;
+
+	// Polygon mode
+	public static final int RE_POLYGON_MODE_FILL  = 0;
+	public static final int RE_POLYGON_MODE_LINE  = 1;
+	public static final int RE_POLYGON_MODE_POINT = 2;
 
 	public void setRenderingEngine(IRenderingEngine re);
 	public void setGeContext(GeContext context);
@@ -496,6 +528,7 @@ public interface IRenderingEngine {
 	public void setBufferManager(IREBufferManager bufferManager);
 	public boolean canAllNativeVertexInfo();
 	public boolean canNativeSpritesPrimitive();
+	public boolean canNativeCurvePrimitive();
 	public void setVertexInfo(VertexInfo vinfo, boolean allNativeVertexInfo, boolean useVertexColor, boolean useTexture, boolean useNormal, int type);
 	public void setProgramParameter(int program, int parameter, int value);
 	public boolean isQueryAvailable();
@@ -555,4 +588,8 @@ public interface IRenderingEngine {
 	public void deleteSync(long sync);
 	public void reset();
 	public int getTextureLevelParameter(int texture, int level, int parameter);
+	public void setPatchParameter(int parameter, int value);
+	public void setPatchParameter(int parameter, float[] values);
+	public void setPolygonMode(int mode);
+	public void setSplineInfo(int ucount, int vcount, int utype, int vtype);
 }

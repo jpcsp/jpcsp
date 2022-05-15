@@ -232,7 +232,7 @@ public class REFixedFunction extends BaseRenderingEngineFunction {
 	
 				Uniforms.tex.allocateId(re, stencilShaderProgramId);
 	
-				stencilShaderProgram = new ShaderProgram();
+				stencilShaderProgram = new ShaderProgram(false, false);
 				stencilShaderProgram.setProgramId(re, stencilShaderProgramId);
 	
 				if (!Settings.getInstance().readBool("emu.useshaders")) {

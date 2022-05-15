@@ -31,11 +31,11 @@ public class ShaderProgramManager {
 		shaderPrograms = new HashMap<ShaderProgramKey, ShaderProgram>();
 	}
 
-	public ShaderProgram getShaderProgram(ShaderContext shaderContext, boolean hasGeometryShader) {
-		ShaderProgramKey key = ShaderProgram.getKey(shaderContext, hasGeometryShader);
+	public ShaderProgram getShaderProgram(ShaderContext shaderContext, boolean hasGeometryShader, boolean hasTessallationShader) {
+		ShaderProgramKey key = ShaderProgram.getKey(shaderContext, hasGeometryShader, hasTessallationShader);
 		ShaderProgram shaderProgram = shaderPrograms.get(key);
 		if (shaderProgram == null) {
-			shaderProgram = new ShaderProgram(shaderContext, hasGeometryShader);
+			shaderProgram = new ShaderProgram(shaderContext, hasGeometryShader, hasTessallationShader);
 			shaderPrograms.put(key, shaderProgram);
 		}
 

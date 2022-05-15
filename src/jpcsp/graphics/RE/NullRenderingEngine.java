@@ -652,6 +652,11 @@ public class NullRenderingEngine implements IRenderingEngine {
 	}
 
 	@Override
+	public boolean canNativeCurvePrimitive() {
+		return false;
+	}
+
+	@Override
 	public void setVertexInfo(VertexInfo vinfo, boolean allNativeVertexInfo, boolean useVertexColor, boolean useTexture, boolean useNormal, int type) {
 	}
 
@@ -908,5 +913,21 @@ public class NullRenderingEngine implements IRenderingEngine {
 	@Override
 	public int getTextureLevelParameter(int texture, int level, int parameter) {
 		return 0;
+	}
+
+	@Override
+	public void setPatchParameter(int parameter, int value) {
+	}
+
+	@Override
+	public void setPatchParameter(int parameter, float[] values) {
+	}
+
+	@Override
+	public void setPolygonMode(int mode) {
+	}
+
+	@Override
+	public void setSplineInfo(int ucount, int vcount, int utype, int vtype) {
 	}
 }

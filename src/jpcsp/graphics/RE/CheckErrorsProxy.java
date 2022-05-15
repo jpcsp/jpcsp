@@ -1260,4 +1260,22 @@ public class CheckErrorsProxy extends BaseRenderingEngineProxy {
 		re.checkAndLogErrors("getTextureLevelParameter");
 		return value;
 	}
+
+	@Override
+	public void setPatchParameter(int parameter, int value) {
+		super.setPatchParameter(parameter, value);
+		re.checkAndLogErrors("setPatchParameter int");
+	}
+
+	@Override
+	public void setPatchParameter(int parameter, float[] values) {
+		super.setPatchParameter(parameter, values);
+		re.checkAndLogErrors("setPatchParameter float[]");
+	}
+
+	@Override
+	public void setPolygonMode(int mode) {
+		proxy.setPolygonMode(mode);
+		re.checkAndLogErrors("setPolygonMode");
+	}
 }

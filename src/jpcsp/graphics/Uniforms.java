@@ -115,7 +115,10 @@ public enum Uniforms {
 	pspTextureMatrix("pspTextureMatrix"),
 	modelMatrix("modelMatrix"),
 	modelViewMatrix("modelViewMatrix"),
-	modelViewProjectionMatrix("modelViewProjectionMatrix");
+	modelViewProjectionMatrix("modelViewProjectionMatrix"),
+	curvedSurfaceType("curvedSurfaceType"),
+	splineInfo("splineInfo"),
+	patchFace("patchFace");
 
 	String uniformString;
 	int[] uniformId = new int[StateProxy.maxProgramId];

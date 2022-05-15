@@ -46,6 +46,8 @@ import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL20;
 import org.lwjgl.opengl.GL30;
 import org.lwjgl.opengl.GL32;
+import org.lwjgl.opengl.GL40;
+import org.lwjgl.opengl.GL43;
 import org.lwjgl.opengl.GL45;
 import org.lwjgl.opengl.NVTextureBarrier;
 
@@ -209,7 +211,10 @@ public class RenderingEngineLwjgl extends NullRenderingEngine {
     protected static final int[] shaderTypeToGL = {
         GL20.GL_VERTEX_SHADER, // RE_VERTEX_SHADER
         GL20.GL_FRAGMENT_SHADER, // RE_FRAGMENT_SHADER
-        GL32.GL_GEOMETRY_SHADER // RE_GEOMETRY_SHADER
+        GL32.GL_GEOMETRY_SHADER, // RE_GEOMETRY_SHADER
+        GL40.GL_TESS_CONTROL_SHADER, // RE_TESS_CONTROL_SHADER
+        GL40.GL_TESS_EVALUATION_SHADER, // RE_TESS_EVALUATION_SHADER
+        GL43.GL_COMPUTE_SHADER // RE_COMPUTE_SHADER
     };
     protected static final int[] primitiveToGL = {
         GL11.GL_POINTS, // GU_POINTS / PRIM_POINT
@@ -222,7 +227,14 @@ public class RenderingEngineLwjgl extends NullRenderingEngine {
         GL11.GL_QUADS, // RE_QUADS
         GL32.GL_LINES_ADJACENCY, // RE_LINES_ADJACENCY
         GL32.GL_TRIANGLES_ADJACENCY, // RE_TRIANGLES_ADJACENCY
-        GL32.GL_TRIANGLE_STRIP_ADJACENCY // RE_TRIANGLE_STRIP_ADJACENCY
+        GL32.GL_TRIANGLE_STRIP_ADJACENCY, // RE_TRIANGLE_STRIP_ADJACENCY
+        GL40.GL_PATCHES, // RE_PATCHES
+        GL11.GL_TRIANGLE_STRIP, // RE_SPLINE_TRIANGLES
+        GL11.GL_LINE_STRIP, // RE_SPLINE_LINES
+        GL11.GL_POINTS, // RE_SPLINE_POINTS
+        GL11.GL_TRIANGLE_STRIP, // RE_BEZIER_TRIANGLES
+        GL11.GL_LINE_STRIP, // RE_BEZIER_LINES
+        GL11.GL_POINTS // RE_BEZIER_POINTS
     };
     protected static final int[] clientStateToGL = {
         GL11.GL_TEXTURE_COORD_ARRAY, // RE_TEXTURE
@@ -444,6 +456,16 @@ public class RenderingEngineLwjgl extends NullRenderingEngine {
     	GL45.GL_TEXTURE_COMPRESSED_IMAGE_SIZE, // RE_TEXTURE_COMPRESSED_IMAGE_SIZE
     	GL45.GL_TEXTURE_BUFFER_OFFSET, // RE_TEXTURE_BUFFER_OFFSET
     	GL45.GL_TEXTURE_BUFFER_SIZE // RE_TEXTURE_BUFFER_SIZE
+    };
+    protected static final int[] patchParameterToGL = {
+    	GL40.GL_PATCH_VERTICES, // RE_PATCH_VERTICES
+    	GL40.GL_PATCH_DEFAULT_OUTER_LEVEL, // RE_PATCH_DEFAULT_OUTER_LEVEL
+    	GL40.GL_PATCH_DEFAULT_INNER_LEVEL // RE_PATCH_DEFAULT_INNER_LEVEL
+    };
+    protected static final int[] polygonModeToGL = {
+		GL20.GL_FILL, // RE_POLYGON_MODE_FILL
+		GL20.GL_LINE, // RE_POLYGON_MODE_LINE
+    	GL20.GL_POINT // RE_POLYGON_MODE_POINT
     };
     protected boolean vendorIntel;
     protected boolean hasOpenGL30;
@@ -1241,6 +1263,11 @@ public class RenderingEngineLwjgl extends NullRenderingEngine {
     }
 
     @Override
+    public boolean canNativeCurvePrimitive() {
+        return false;
+    }
+
+    @Override
     public void setProgramParameter(int program, int parameter, int value) {
         if (parameter == RE_GEOMETRY_INPUT_TYPE || parameter == RE_GEOMETRY_OUTPUT_TYPE) {
             value = primitiveToGL[value];
@@ -1708,5 +1735,20 @@ public class RenderingEngineLwjgl extends NullRenderingEngine {
 		}
 
 		return value;
+	}
+
+	@Override
+	public void setPatchParameter(int parameter, int value) {
+		GL40.glPatchParameteri(patchParameterToGL[parameter], value);
+	}
+
+	@Override
+	public void setPatchParameter(int parameter, float[] values) {
+		GL40.glPatchParameterfv(patchParameterToGL[parameter], values);
+	}
+
+	@Override
+	public void setPolygonMode(int mode) {
+		GL20.glPolygonMode(GL20.GL_FRONT_AND_BACK, polygonModeToGL[mode]);
 	}
 }

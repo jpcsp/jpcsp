@@ -117,6 +117,7 @@ public class StateProxy extends BaseRenderingEngineProxy {
 	protected int sfix;
 	protected int bindFramebufferRead;
 	protected int bindFramebufferDraw;
+	protected int polygonMode;
 
 	protected static class StateBoolean {
 		private boolean undefined = true;
@@ -1213,5 +1214,13 @@ public class StateProxy extends BaseRenderingEngineProxy {
 			bindFramebufferRead = 0;
 		}
 		super.deleteFramebuffer(framebuffer);
+	}
+
+	@Override
+	public void setPolygonMode(int mode) {
+		if (polygonMode != mode) {
+			super.setPolygonMode(mode);
+			polygonMode = mode;
+		}
 	}
 }
