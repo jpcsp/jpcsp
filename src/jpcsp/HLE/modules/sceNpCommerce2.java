@@ -17,6 +17,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE.modules;
 
 import jpcsp.HLE.BufferInfo;
+import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.BufferInfo.LengthInfo;
 import jpcsp.HLE.BufferInfo.Usage;
 import jpcsp.HLE.HLEFunction;
@@ -360,8 +361,8 @@ public class sceNpCommerce2 extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x66EC0829, version = 150)
-    public int sceNpCommerce2_66EC0829() {
-    	return 0;
+    public int sceNpCommerce2UrlEncode(@CanBeNull TPointer escapedAddr, int escapedBufferLength, TPointer source, int unused, @CanBeNull TPointer32 escapedLengthAddr) {
+    	return Modules.sceParseUriModule.sceUriEscape(escapedAddr, escapedLengthAddr, escapedBufferLength, source);
     }
 
     @HLEUnimplemented
@@ -456,8 +457,8 @@ public class sceNpCommerce2 extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0xAE614CC6, version = 150)
-    public int sceNpCommerce2_AE614CC6(int unknown1, int unknown2, int unknown3) {
-    	return 0;
+    public int sceNpCommerce2_AE614CC6(int requestId, @CanBeNull @BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.in) TPointer data, int dataSize) {
+    	return Modules.sceHttpModule.sceHttpSendRequest(requestId, data, dataSize);
     }
 
     @HLEUnimplemented
