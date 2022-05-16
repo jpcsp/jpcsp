@@ -530,6 +530,10 @@ public class RenderingEngineLwjgl extends NullRenderingEngine {
             }
             log.info(s);
         }
+
+        if (log.isTraceEnabled()) {
+            log.trace(String.format("Supported extensions: %s", GL11.glGetString(GL11.GL_EXTENSIONS)));
+        }
     }
 
     @Override
