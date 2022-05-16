@@ -35,7 +35,7 @@ public class ShaderProgram {
 	private int shaderAttribWeights1;
 	private int shaderAttribWeights2;
 	private final boolean hasGeometryShader;
-	private final boolean hasTessallationShader;
+	private final boolean hasTessellationShader;
 	private int[] lightType = new int[VideoEngine.NUM_LIGHTS]; // values: [0..2]
 	private int[] lightKind = new int[VideoEngine.NUM_LIGHTS]; // values: [0..2]
 	private int[] lightEnabled = new int[VideoEngine.NUM_LIGHTS]; // values: [0..1]
@@ -110,14 +110,14 @@ public class ShaderProgram {
 		}
 	}
 
-	public ShaderProgram(boolean hasGeometryShader, boolean hasTessallationShader) {
+	public ShaderProgram(boolean hasGeometryShader, boolean hasTessellationShader) {
 		this.hasGeometryShader = hasGeometryShader;
-		this.hasTessallationShader = hasTessallationShader;
+		this.hasTessellationShader = hasTessellationShader;
 	}
 
-	public ShaderProgram(ShaderContext shaderContext, boolean hasGeometryShader, boolean hasTessallationShader) {
+	public ShaderProgram(ShaderContext shaderContext, boolean hasGeometryShader, boolean hasTessellationShader) {
 		this.hasGeometryShader = hasGeometryShader;
-		this.hasTessallationShader = hasTessallationShader;
+		this.hasTessellationShader = hasTessellationShader;
 		for (int i = 0; i < lightType.length; i++) {
 			lightType[i] = shaderContext.getLightType(i);
 			lightKind[i] = shaderContext.getLightKind(i);
@@ -167,7 +167,7 @@ public class ShaderProgram {
 		curvedSurfaceType = shaderContext.getCurvedSurfaceType();
 		patchFace = shaderContext.getPatchFace();
 
-		key = getKey(shaderContext, hasGeometryShader, hasTessallationShader);
+		key = getKey(shaderContext, hasGeometryShader, hasTessellationShader);
 	}
 
 	public static String getDummyDynamicDefines() {
@@ -231,7 +231,7 @@ public class ShaderProgram {
 		StringBuilder defines = new StringBuilder();
 
 		REShader.addDefine(defines, "HAS_GEOMETRY_SHADER", hasGeometryShader);
-		REShader.addDefine(defines, "HAS_TESSALLATION_SHADER", hasTessallationShader);
+		REShader.addDefine(defines, "HAS_TESSELLATION_SHADER", hasTessellationShader);
 		for (int i = 0; i < lightType.length; i++) {
 			// LightType and LightKind are currently not used as defines in the shaders
 			//REShader.addDefine(defines, "LIGHT_TYPE" + i, lightType[i]);
@@ -285,7 +285,7 @@ public class ShaderProgram {
 		return defines.toString();
 	}
 
-	public static ShaderProgramKey getKey(ShaderContext shaderContext, boolean hasGeometryShader, boolean hasTessallationShader) {
+	public static ShaderProgramKey getKey(ShaderContext shaderContext, boolean hasGeometryShader, boolean hasTessellationShader) {
 		long key = 0;
 		long key1;
 		long key2;
@@ -293,7 +293,7 @@ public class ShaderProgram {
 
 		key += hasGeometryShader ? 1 : 0;
 		shift++;
-		key += hasTessallationShader ? 1 : 0;
+		key += hasTessellationShader ? 1 : 0;
 		shift++;
 		for (int i = 0; i < VideoEngine.NUM_LIGHTS; i++) {
 			// LightType and LightKind are currently not used as defines in the shaders
@@ -407,8 +407,8 @@ public class ShaderProgram {
 		return new ShaderProgramKey(key1, key2);
 	}
 
-	public boolean matches(ShaderContext shaderContext, boolean hasGeometryShader, boolean hasTessallationShader) {
-		ShaderProgramKey key = getKey(shaderContext, hasGeometryShader, hasTessallationShader);
+	public boolean matches(ShaderContext shaderContext, boolean hasGeometryShader, boolean hasTessellationShader) {
+		ShaderProgramKey key = getKey(shaderContext, hasGeometryShader, hasTessellationShader);
 
 		return key.equals(this.key);
 	}
@@ -462,6 +462,6 @@ public class ShaderProgram {
 
 	@Override
 	public String toString() {
-		return String.format("ShaderProgram[%d, geometryShader=%b, tessallationShader=%b, %s]", programId, hasGeometryShader, hasTessallationShader, getDynamicDefines().replace(System.getProperty("line.separator"), ", "));
+		return String.format("ShaderProgram[%d, geometryShader=%b, tessellationShader=%b, %s]", programId, hasGeometryShader, hasTessellationShader, getDynamicDefines().replace(System.getProperty("line.separator"), ", "));
 	}
 }

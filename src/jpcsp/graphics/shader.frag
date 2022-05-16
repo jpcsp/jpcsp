@@ -11,7 +11,10 @@
 #if __VERSION__ >= 130 && __VERSION__ < 150 && defined(GL_ARB_compatibility)
     #extension GL_ARB_compatibility : enable
 #endif
-#if __VERSION__ >= 410
+#if __VERSION__ < 410 && defined(GL_ARB_separate_shader_objects)
+    #extension GL_ARB_separate_shader_objects : enable
+#endif
+#if __VERSION__ >= 410 || defined(GL_ARB_separate_shader_objects)
 	#define LOCATION(N) layout(location=N)
 #else
 	#define LOCATION(N)

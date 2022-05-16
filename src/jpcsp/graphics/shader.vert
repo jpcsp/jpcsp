@@ -13,7 +13,10 @@
 #if __VERSION__ >= 130 && __VERSION__ < 150 && defined(GL_ARB_compatibility)
     #extension GL_ARB_compatibility : enable
 #endif
-#if __VERSION__ >= 410
+#if __VERSION__ < 410 && defined(GL_ARB_separate_shader_objects)
+    #extension GL_ARB_separate_shader_objects : enable
+#endif
+#if __VERSION__ >= 410 || defined(GL_ARB_separate_shader_objects)
 	#define LOCATION(N) layout(location=N)
 #else
 	#define LOCATION(N)
@@ -70,9 +73,9 @@ LOCATION(2) out float fogDepth;
 
 ///////////////////////////////////////////////////////////////
 // Common functions
-// (shared with the Tessallation Evaluation shader)
+// (shared with the Tessellation Evaluation shader)
 ///////////////////////////////////////////////////////////////
-#if !HAS_TESSALLATION_SHADER
+#if !HAS_TESSELLATION_SHADER
 	#include "/jpcsp/graphics/shader-common.vert"
 #endif
 
@@ -391,8 +394,8 @@ void main()
     #endif
 
 	// Lighting and texture mapping are done in the
-	// Tessallation Evaluation Shader, if available
-	#if !HAS_TESSALLATION_SHADER
+	// Tessellation Evaluation Shader, if available
+	#if !HAS_TESSELLATION_SHADER
 		vec3 Ve = vec3(modelViewMatrix * V);
 
 		#if !USE_DYNAMIC_DEFINES || VINFO_NORMAL != 0
@@ -417,7 +420,7 @@ void main()
 		fogDepth                = (fogEnd + Ve.z) * fogScale;
 	    discarded               = getDiscarded(gl_Position);
 	#else
-		// The tessallation has to happen in the model coordinates,
+		// The tessellation has to happen in the model coordinates,
 		// specially to compute the normal
 		gl_Position             = V;
     #endif

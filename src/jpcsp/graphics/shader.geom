@@ -2,6 +2,10 @@
 
 // INSERT DEFINES
 
+#if __VERSION__ < 410
+    #extension GL_ARB_separate_shader_objects : enable
+#endif
+
 #define LOCATION(N) layout(location=N)
 
 layout(lines) in;

@@ -2,11 +2,19 @@
 
 // INSERT DEFINES
 
+#if USE_UBO
+    #extension GL_ARB_uniform_buffer_object : enable
+#endif
+#if __VERSION__ < 410
+    #extension GL_ARB_tessellation_shader : enable
+    #extension GL_ARB_separate_shader_objects : enable
+#endif
+
 #define LOCATION(N) layout(location=N)
 
 layout(quads) in;
 
-// The input locations must match those defined as output in the tessallation control shader
+// The input locations must match those defined as output in the tessellation control shader
 LOCATION(0) in vec3 in_texCoord[gl_MaxPatchVertices];
 #if !USE_DYNAMIC_DEFINES
 	LOCATION(3) smooth in vec4 in_pspPrimaryColorSmooth[gl_MaxPatchVertices];
