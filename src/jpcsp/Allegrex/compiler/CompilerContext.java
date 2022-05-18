@@ -92,6 +92,7 @@ import jpcsp.HLE.TPointer16;
 import jpcsp.HLE.TPointer32;
 import jpcsp.HLE.TPointer64;
 import jpcsp.HLE.TPointer8;
+import jpcsp.HLE.TPointerFunction;
 import jpcsp.HLE.kernel.Managers;
 import jpcsp.HLE.kernel.managers.IntrManager;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
@@ -1038,7 +1039,7 @@ public class CompilerContext implements ICompilerContext {
     		loadImm(canBeNull);
     		invokeStaticMethod(runtimeContextInternalName, "readPspStringNZ", "(IIZ)" + Type.getDescriptor(PspString.class));
     		parameterReader.incrementCurrentStackSize();
-    	} else if (parameterType == TPointer.class || parameterType == TPointer8.class || parameterType == TPointer16.class || parameterType == TPointer32.class || parameterType == TPointer64.class || parameterType == TErrorPointer32.class) {
+    	} else if (parameterType == TPointer.class || parameterType == TPointer8.class || parameterType == TPointer16.class || parameterType == TPointer32.class || parameterType == TPointer64.class || parameterType == TErrorPointer32.class || parameterType == TPointerFunction.class) {
     		// if (checkMemoryAccess()) {
     		//     if (canBeNullParam && address == 0) {
     		//         goto addressGood;
