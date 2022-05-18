@@ -31,6 +31,7 @@ import jpcsp.HLE.Modules;
 import jpcsp.HLE.PspString;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.TPointer32;
+import jpcsp.HLE.TPointerFunction;
 import jpcsp.HLE.BufferInfo.LengthInfo;
 import jpcsp.HLE.BufferInfo.Usage;
 import jpcsp.HLE.VFS.IVirtualFile;
@@ -266,4 +267,10 @@ public class ModuleMgrForKernel extends HLEModule {
 
         return Modules.ModuleMgrForUserModule.hleKernelLoadModule(loadModuleContext);
 	}
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xA40EC254, version = 150)
+    public int sceKernelSetNpDrmGetModuleKeyFunction(@CanBeNull TPointerFunction function) {
+    	return 0;
+    }
 }
