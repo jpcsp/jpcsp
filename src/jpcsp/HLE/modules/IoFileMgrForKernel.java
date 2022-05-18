@@ -68,8 +68,9 @@ public class IoFileMgrForKernel extends HLEModule {
     }
 
     @HLEUnimplemented
-    @HLEFunction(nid = 0x2B6A9B21, version = 150)
-    public int IoFileMgrForKernel_30E8ABB3() {
+    @HLEFunction(nid = 0x2B6A9B21, version = 660)
+    @HLEFunction(nid = 0x30E8ABB3, version = 150)
+    public int sceIoValidateFd(int fd, int unknownFlags) {
     	return 0;
     }
 }
