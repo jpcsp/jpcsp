@@ -1612,21 +1612,21 @@ private void DeleteBreakpointActionPerformed(java.awt.event.ActionEvent evt) {//
 
     private void removeTemporaryBreakpoints() {
         if (temporaryBreakpoint1 != 0) {
-            breakpoints.remove(new Integer(temporaryBreakpoint1));
+            breakpoints.remove(Integer.valueOf(temporaryBreakpoint1));
             temporaryBreakpoint1 = 0;
         }
         if (temporaryBreakpoint2 != 0) {
-            breakpoints.remove(new Integer(temporaryBreakpoint2));
+            breakpoints.remove(Integer.valueOf(temporaryBreakpoint2));
             temporaryBreakpoint2 = 0;
         }
     }
 
     private void addTemporaryBreakpoints() {
         if (temporaryBreakpoint1 != 0) {
-            breakpoints.add(new Integer(temporaryBreakpoint1));
+            breakpoints.add(Integer.valueOf(temporaryBreakpoint1));
         }
         if (temporaryBreakpoint2 != 0) {
-            breakpoints.add(new Integer(temporaryBreakpoint2));
+            breakpoints.add(Integer.valueOf(temporaryBreakpoint2));
         }
     }
 
@@ -2075,7 +2075,7 @@ private void ImportBreaksActionPerformed(java.awt.event.ActionEvent evt) {//GEN-
 
                 // just use the text portion here
                 if (insn.disasm(position, opcode).contains(search)) {
-                    return new Integer(position);
+                    return Integer.valueOf(position);
                 }
                 position += 4;
 

@@ -380,8 +380,8 @@ public class PSF {
         String psp_system_ver = getString("PSP_SYSTEM_VER");
         Integer parental_level = (Integer)get("PARENTAL_LEVEL");
 
-        Integer ref_one = new Integer(1);
-        Integer ref_region = new Integer(32768);
+        Integer ref_one = 1;
+        Integer ref_region = 32768;
 
         if (safeEquals(disc_version, "1.00") &&
             safeEquals(disc_id, "UCJS10041") && // loco roco demo, should not false positive since that demo has sys ver 3.40

@@ -292,7 +292,7 @@ public class ThreadManForUser extends HLEModule {
 
             @Override
 			public int compareTo(ThreadStatistics o) {
-				return -(new Long(runClocks).compareTo(o.runClocks));
+				return -(Long.valueOf(runClocks).compareTo(o.runClocks));
 			}
 
             public String getQuotedName() {

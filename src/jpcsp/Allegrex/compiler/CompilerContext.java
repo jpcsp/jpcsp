@@ -339,7 +339,7 @@ public class CompilerContext implements ICompilerContext {
 			log.trace(String.format("PFX    %08X - getPfxSrcCstValue %d -> %f", getCodeInstruction().getAddress(), n, value));
 		}
 
-		return new Float(value);
+		return Float.valueOf(value);
     }
 
     private void convertVFloatToInt() {
@@ -2128,7 +2128,7 @@ public class CompilerContext implements ICompilerContext {
 	        	storeRegister(_t8, deadbeef);
 	        	storeRegister(_t9, deadbeef);
 	        	prepareHiloForStore();
-	        	mv.visitLdcInsn(new Long(0xDEADBEEFDEADBEEFL));
+	        	mv.visitLdcInsn(Long.valueOf(0xDEADBEEFDEADBEEFL));
 	        	storeHilo();
     		}
     	}
@@ -2683,7 +2683,7 @@ public class CompilerContext implements ICompilerContext {
 				} else if (Short.MIN_VALUE <= imm && imm < Short.MAX_VALUE) {
 					mv.visitIntInsn(Opcodes.SIPUSH, imm);
 				} else {
-					mv.visitLdcInsn(new Integer(imm));
+					mv.visitLdcInsn(Integer.valueOf(imm));
 				}
 				break;
 		}

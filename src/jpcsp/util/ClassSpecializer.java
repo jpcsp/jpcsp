@@ -758,7 +758,7 @@ public class ClassSpecializer {
 						} else if (Short.MIN_VALUE <= n && n < Short.MAX_VALUE) {
 							constantInsn = new IntInsnNode(Opcodes.SIPUSH, n);
 						} else {
-							constantInsn = new LdcInsnNode(new Integer(n));
+							constantInsn = new LdcInsnNode(Integer.valueOf(n));
 						}
 						break;
 				}
