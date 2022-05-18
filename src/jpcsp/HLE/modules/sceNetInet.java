@@ -2283,7 +2283,7 @@ public class sceNetInet extends HLEModule {
 										selectionKey.interestOps(selectionKey.interestOps() | registeredOperation);
 									} else {
 										try {
-											selectableChannel.register(socketSelector, registeredOperation, new Integer(socket));
+											selectableChannel.register(socketSelector, registeredOperation, Integer.valueOf(socket));
 										} catch (ClosedChannelException e) {
 											closedChannels.add(socket);
 											if (log.isDebugEnabled()) {
@@ -3023,7 +3023,7 @@ public class sceNetInet extends HLEModule {
 								log.warn(String.format("sceNetInetPoll channel already registered pollFd[%d]=%s", i, pollFd));
 							} else {
 								try {
-									selectableChannel.register(selector, registeredOperations, new Integer(pollFd.fd));
+									selectableChannel.register(selector, registeredOperations, Integer.valueOf(pollFd.fd));
 									pollFd.revents = 0;
 								} catch (ClosedChannelException e) {
 									pollFd.revents = POLLHUP;

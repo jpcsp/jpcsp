@@ -54,7 +54,7 @@ public abstract class ThreadWaitingList {
 	public abstract void addWaitingThread(SceKernelThreadInfo thread);
 
 	public void removeWaitingThread(SceKernelThreadInfo thread) {
-		waitingThreads.remove(new Integer(thread.uid));
+		waitingThreads.remove(Integer.valueOf(thread.uid));
 	}
 
 	public SceKernelThreadInfo getNextWaitingThread(SceKernelThreadInfo baseThread) {

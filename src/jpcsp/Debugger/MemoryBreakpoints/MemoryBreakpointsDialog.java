@@ -90,10 +90,10 @@ public class MemoryBreakpointsDialog extends javax.swing.JDialog {
                         int end = Integer.decode(mbpm.getValueAt(i, COL_ENDADDRESS).toString());
                         
                         if (tme.getColumn() == COL_STARTADDRESS && start > end) {
-                            mbpm.setValueAt(new Integer(start), i, COL_ENDADDRESS);
+                            mbpm.setValueAt(Integer.valueOf(start), i, COL_ENDADDRESS);
                         }
                         if (tme.getColumn() == COL_ENDADDRESS && end < start) {
-                            mbpm.setValueAt(new Integer(end), i, COL_STARTADDRESS);
+                            mbpm.setValueAt(Integer.valueOf(end), i, COL_STARTADDRESS);
                         }
                     }
                 }

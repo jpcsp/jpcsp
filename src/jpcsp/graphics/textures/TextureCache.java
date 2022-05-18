@@ -69,7 +69,7 @@ public class TextureCache {
 		// Keep a combination of both texture address and clut address in the cache.
 		// Also, use the clutStart as this parameter can be used to offset the clut address.
 		int clutEntrySize = clutMode == GeCommands.CMODE_FORMAT_32BIT_ABGR8888 ? 4 : 2;
-		return new Integer(addr + clutAddr + (clutStart << 4) * clutEntrySize);
+		return Integer.valueOf(addr + clutAddr + (clutStart << 4) * clutEntrySize);
 	}
 
 	public boolean hasTexture(int addr, int clutAddr, int clutStart, int clutMode) {

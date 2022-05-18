@@ -389,7 +389,7 @@ private void btnSaveActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
                 ((DefaultTableModel) OpcodeTable.getModel()).addRow(new Object[]{
                     insn.name(),
                     insn.category(),
-                    new Integer(insn.getCount())
+                    Integer.valueOf(insn.getCount())
                 });
             }
         }
