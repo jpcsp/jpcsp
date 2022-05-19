@@ -132,7 +132,7 @@ public class SettingsGUI extends javax.swing.JFrame {
         setIntFromSettings(modelBox, "emu.model");
         setBoolFromSettings(umdBrowser, classicUmdDialog, "emu.umdbrowser");
         setStringFromSettings(metaServerTextField, "network.ProOnline.metaServer");
-        setStringFromSettings(XLinkKaiServerTextField, "network.XLinkKai.server");
+        setStringFromSettings(XLinKKaiServerTextField, "network.XLinkKai.server");
         setStringFromSettings(broadcastAddressTextField, "network.broadcastAddress");
         setStringFromSettings(primaryDNSTextField, "network.primaryDNS");
         setBoolFromSettings(lanMultiPlayerRadioButton, "emu.lanMultiPlayer");
@@ -141,7 +141,7 @@ public class SettingsGUI extends javax.swing.JFrame {
         setBoolFromSettings(enableChatCheck, BaseNetworkAdapter.settingsEnableChat);
 
         // special handling for UMD paths
-        DefaultListModel dlm = (DefaultListModel) lbUMDPaths.getModel();
+        DefaultListModel<String> dlm = (DefaultListModel<String>) lbUMDPaths.getModel();
         dlm.clear();
         dlm.addElement(settings.readString("emu.umdpath"));
         for (int i = 1; true; i++) {
@@ -258,7 +258,7 @@ public class SettingsGUI extends javax.swing.JFrame {
         setIntToSettings(modelBox, "emu.model");
         setBoolToSettings(umdBrowser, "emu.umdbrowser");
         setStringToSettings(metaServerTextField, "network.ProOnline.metaServer");
-        setStringToSettings(XLinkKaiServerTextField, "network.XLinkKai.server");
+        setStringToSettings(XLinKKaiServerTextField, "network.XLinkKai.server");
         setStringToSettings(broadcastAddressTextField,"network.broadcastAddress");
         setStringToSettings(primaryDNSTextField,"network.primaryDNS");
         setBoolToSettings(lanMultiPlayerRadioButton, "emu.lanMultiPlayer");
@@ -325,8 +325,8 @@ public class SettingsGUI extends javax.swing.JFrame {
         }
     }
 
-    private ComboBoxModel makeComboBoxModel(String[] items) {
-        MutableComboBoxModel comboBox = new DefaultComboBoxModel();
+    private ComboBoxModel<String> makeComboBoxModel(String[] items) {
+        MutableComboBoxModel<String> comboBox = new DefaultComboBoxModel<>();
         for (String item : items) {
             comboBox.addElement(item);
         }
@@ -408,8 +408,8 @@ public class SettingsGUI extends javax.swing.JFrame {
     	};
     }
 
-    private ComboBoxModel makeResolutions() {
-        MutableComboBoxModel comboBox = new DefaultComboBoxModel();
+    private ComboBoxModel<String> makeResolutions() {
+        MutableComboBoxModel<String> comboBox = new DefaultComboBoxModel<>();
         comboBox.addElement("Native");
 
         Set<String> resolutions = new HashSet<String>();
@@ -454,33 +454,33 @@ public class SettingsGUI extends javax.swing.JFrame {
         tmppath = new javax.swing.JTextField();
         tmpPathBrowseButton = new javax.swing.JButton();
         jScrollPane1 = new javax.swing.JScrollPane();
-        lbUMDPaths = new javax.swing.JList();
+        lbUMDPaths = new javax.swing.JList<String>();
         btnUMDPathRemove = new javax.swing.JButton();
         btnUMDPathAdd = new javax.swing.JButton();
         modelLabel = new javax.swing.JLabel();
-        modelBox = new javax.swing.JComboBox();
+        modelBox = new javax.swing.JComboBox<>();
         RegionPanel = new javax.swing.JPanel();
         jPanel1 = new javax.swing.JPanel();
         imposeLabel = new javax.swing.JLabel();
         jPanel2 = new javax.swing.JPanel();
         languageLabel = new javax.swing.JLabel();
-        languageBox = new javax.swing.JComboBox();
+        languageBox = new javax.swing.JComboBox<String>();
         buttonLabel = new javax.swing.JLabel();
-        buttonBox = new javax.swing.JComboBox();
+        buttonBox = new javax.swing.JComboBox<>();
         jPanel4 = new javax.swing.JPanel();
         jPanel5 = new javax.swing.JPanel();
         sysParmLabel = new javax.swing.JLabel();
         jPanel3 = new javax.swing.JPanel();
         daylightLabel = new javax.swing.JLabel();
-        daylightBox = new javax.swing.JComboBox();
+        daylightBox = new javax.swing.JComboBox<>();
         timeFormatLabel = new javax.swing.JLabel();
-        timeFormatBox = new javax.swing.JComboBox();
+        timeFormatBox = new javax.swing.JComboBox<>();
         dateFormatLabel = new javax.swing.JLabel();
-        dateFormatBox = new javax.swing.JComboBox();
+        dateFormatBox = new javax.swing.JComboBox<>();
         wlanPowerLabel = new javax.swing.JLabel();
-        wlanPowerBox = new javax.swing.JComboBox();
+        wlanPowerBox = new javax.swing.JComboBox<>();
         adhocChannelLabel = new javax.swing.JLabel();
-        adhocChannelBox = new javax.swing.JComboBox();
+        adhocChannelBox = new javax.swing.JComboBox<>();
         timezoneLabel = new javax.swing.JLabel();
         timezoneSpinner = new javax.swing.JSpinner();
         nicknamelLabel = new javax.swing.JLabel();
@@ -510,15 +510,15 @@ public class SettingsGUI extends javax.swing.JFrame {
         useDebugMemory = new javax.swing.JCheckBox();
         CompilerPanel = new javax.swing.JPanel();
         useCompiler = new javax.swing.JCheckBox();
-        methodMaxInstructionsBox = new javax.swing.JComboBox();
+        methodMaxInstructionsBox = new javax.swing.JComboBox<>();
         profilerCheck = new javax.swing.JCheckBox();
         accurateVfpuDotCheck = new javax.swing.JCheckBox();
         methodMaxInstructionsLabel = new javax.swing.JLabel();
         DisplayPanel = new javax.swing.JPanel();
         antiAliasLabel = new javax.swing.JLabel();
-        antiAliasingBox = new javax.swing.JComboBox();
+        antiAliasingBox = new javax.swing.JComboBox<>();
         resolutionLabel = new javax.swing.JLabel();
-        resolutionBox = new javax.swing.JComboBox();
+        resolutionBox = new javax.swing.JComboBox<String>();
         fullscreenCheck = new javax.swing.JCheckBox();
         MiscPanel = new javax.swing.JPanel();
         useDebugFont = new javax.swing.JCheckBox();
@@ -531,6 +531,7 @@ public class SettingsGUI extends javax.swing.JFrame {
         networkPanel = new javax.swing.JPanel();
         lanMultiPlayerRadioButton = new javax.swing.JRadioButton();
         XlinkaiSupportRadioButton = new javax.swing.JRadioButton();
+        enableChatCheck = new javax.swing.JCheckBox();
         enableProOnlineRadioButton = new javax.swing.JRadioButton();
         lanMultiPlayerLabel = new javax.swing.JLabel();
         XlinKaiLabel = new javax.swing.JLabel();
@@ -539,14 +540,13 @@ public class SettingsGUI extends javax.swing.JFrame {
         metaServerTextField = new javax.swing.JTextField();
         metaServerRemindLabel = new javax.swing.JLabel();
         XLinkKaiServerLabel = new javax.swing.JLabel();
-        XLinkKaiServerTextField = new javax.swing.JTextField();
+        XLinKKaiServerTextField = new javax.swing.JTextField();
         XLinkKaiServerRemindLabel = new javax.swing.JLabel();
         broadcastAddressLabel = new javax.swing.JLabel();
         broadcastAddressTextField = new javax.swing.JTextField();
         broadcastAddressRemindLabel = new javax.swing.JLabel();
         primaryDNSLabel = new javax.swing.JLabel();
         primaryDNSTextField = new javax.swing.JTextField();
-        enableChatCheck = new javax.swing.JCheckBox();
         cancelButton = new jpcsp.GUI.CancelButton();
 
         java.util.ResourceBundle bundle = java.util.ResourceBundle.getBundle("jpcsp/languages/jpcsp"); // NOI18N
@@ -594,7 +594,7 @@ public class SettingsGUI extends javax.swing.JFrame {
         });
 
         lbUMDPaths.setFont(new java.awt.Font("Dialog", 0, 12)); // NOI18N
-        lbUMDPaths.setModel(new DefaultListModel());
+        lbUMDPaths.setModel(new DefaultListModel<String>());
         lbUMDPaths.setSelectionMode(javax.swing.ListSelectionModel.SINGLE_SELECTION);
         jScrollPane1.setViewportView(lbUMDPaths);
 
@@ -617,7 +617,7 @@ public class SettingsGUI extends javax.swing.JFrame {
 
         modelLabel.setText(bundle.getString("SettingsGUI.modelLabel.text")); // NOI18N
 
-        modelBox.setModel(new javax.swing.DefaultComboBoxModel(getModelNames()));
+        modelBox.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "PSP-1000", "PSP-2000", "PSP-3000", "PSP-3000 (V2)", "PSP-N1000 (GO)" }));
 
         javax.swing.GroupLayout GeneralPanelLayout = new javax.swing.GroupLayout(GeneralPanel);
         GeneralPanel.setLayout(GeneralPanelLayout);
@@ -798,7 +798,7 @@ public class SettingsGUI extends javax.swing.JFrame {
         adhocChannelLabel.setText(bundle.getString("SettingsGUI.adhocChannel.text")); // NOI18N
         jPanel1.add(adhocChannelLabel);
 
-        adhocChannelBox.setModel(new javax.swing.DefaultComboBoxModel(new String[] { "Auto", "1", "6", "11" }));
+        adhocChannelBox.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Auto", "1", "6", "11" }));
         jPanel1.add(adhocChannelBox);
 
         timezoneLabel.setText(bundle.getString("SettingsGUI.timezoneLabel.text")); // NOI18N
@@ -861,7 +861,7 @@ public class SettingsGUI extends javax.swing.JFrame {
 
         saveStencilToMemory.setText(bundle.getString("SettingsGUI.saveStencilToMemory.text")); // NOI18N
 
-        renderPanel.setBorder(javax.swing.BorderFactory.createTitledBorder(null, bundle.getString("SettingsGUI.renderPanel.border.title"), javax.swing.border.TitledBorder.DEFAULT_JUSTIFICATION, javax.swing.border.TitledBorder.DEFAULT_POSITION, null, new java.awt.Color(51, 51, 255))); // NOI18N
+        renderPanel.setBorder(javax.swing.BorderFactory.createTitledBorder(null, bundle.getString("SettingsGUI.renderPanel.border.title"), javax.swing.border.TitledBorder.DEFAULT_JUSTIFICATION, javax.swing.border.TitledBorder.DEFAULT_POSITION, new java.awt.Font("Segoe UI", 0, 12), new java.awt.Color(51, 51, 255))); // NOI18N
 
         buttonGroup2.add(useOpenglRenderer);
         useOpenglRenderer.setText(bundle.getString("SettingsGUI.useOpenglRenderer.text")); // NOI18N
@@ -1019,7 +1019,7 @@ public class SettingsGUI extends javax.swing.JFrame {
 
         useCompiler.setText(bundle.getString("SettingsGUI.useCompiler.text")); // NOI18N
 
-        methodMaxInstructionsBox.setModel(new javax.swing.DefaultComboBoxModel(new String[] { "50", "100", "500", "1000", "3000" }));
+        methodMaxInstructionsBox.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "50", "100", "500", "1000", "3000" }));
 
         profilerCheck.setText(bundle.getString("SettingsGUI.profileCheck.text")); // NOI18N
 
@@ -1063,7 +1063,7 @@ public class SettingsGUI extends javax.swing.JFrame {
 
         antiAliasLabel.setText(bundle.getString("SettingsGUI.antiAliasLabel.text")); // NOI18N
 
-        antiAliasingBox.setModel(new javax.swing.DefaultComboBoxModel(new String[] { "OFF", "x4", "x8", "x16" }));
+        antiAliasingBox.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "OFF", "x4", "x8", "x16" }));
 
         resolutionLabel.setText(bundle.getString("SettingsGUI.resolutionLabel.text")); // NOI18N
 
@@ -1183,6 +1183,8 @@ public class SettingsGUI extends javax.swing.JFrame {
             }
         });
 
+        enableChatCheck.setText(bundle.getString("SettingsGUI.enableChat.text")); // NOI18N
+
         buttonGroup3.add(enableProOnlineRadioButton);
         enableProOnlineRadioButton.setText(bundle.getString("SettingsGUI.enableProOnlineRadioButton.text")); // NOI18N
 
@@ -1200,7 +1202,7 @@ public class SettingsGUI extends javax.swing.JFrame {
 
         XLinkKaiServerLabel.setText(bundle.getString("SettingsGUI.XLinkKaiServerLabel.text")); // NOI18N
 
-        XLinkKaiServerTextField.setText(bundle.getString("SettingsGUI.XLinkKaiServerTextField.text")); // NOI18N
+        XLinKKaiServerTextField.setText(bundle.getString("SettingsGUI.XLinkKaiServerTextField.text")); // NOI18N
 
         XLinkKaiServerRemindLabel.setText(bundle.getString("SettingsGUI.XLinkKaiServerRemindLabel.text")); // NOI18N
 
@@ -1214,8 +1216,6 @@ public class SettingsGUI extends javax.swing.JFrame {
 
         primaryDNSTextField.setText(bundle.getString("SettingsGUI.primaryDNSTextField.text")); // NOI18N
 
-        enableChatCheck.setText(bundle.getString("SettingsGUI.enableChat.text")); // NOI18N
-
         javax.swing.GroupLayout networkPanelLayout = new javax.swing.GroupLayout(networkPanel);
         networkPanel.setLayout(networkPanelLayout);
         networkPanelLayout.setHorizontalGroup(
@@ -1228,8 +1228,8 @@ public class SettingsGUI extends javax.swing.JFrame {
                             .addComponent(metaServerLabel)
                             .addComponent(XLinkKaiServerLabel)
                             .addComponent(broadcastAddressLabel)
-                            .addComponent(primaryDNSLabel)
-                        .addComponent(enableChatCheck))
+                            .addComponent(primaryDNSLabel))
+                        .addComponent(enableChatCheck)
                         .addGap(39, 39, 39))
                     .addGroup(networkPanelLayout.createSequentialGroup()
                         .addGroup(networkPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -1255,13 +1255,13 @@ public class SettingsGUI extends javax.swing.JFrame {
                         .addGap(31, 31, 31)
                         .addComponent(metaServerRemindLabel))
                     .addGroup(networkPanelLayout.createSequentialGroup()
-                            .addComponent(XLinkKaiServerTextField, javax.swing.GroupLayout.PREFERRED_SIZE, 154, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addGap(31, 31, 31)
-                            .addComponent(XLinkKaiServerRemindLabel))
+                        .addComponent(XLinKKaiServerTextField, javax.swing.GroupLayout.PREFERRED_SIZE, 154, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGap(31, 31, 31)
+                        .addComponent(XLinkKaiServerRemindLabel))
                     .addGroup(networkPanelLayout.createSequentialGroup()
-                            .addComponent(broadcastAddressTextField, javax.swing.GroupLayout.PREFERRED_SIZE, 154, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addGap(31, 31, 31)
-                            .addComponent(broadcastAddressRemindLabel))
+                        .addComponent(broadcastAddressTextField, javax.swing.GroupLayout.PREFERRED_SIZE, 154, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGap(31, 31, 31)
+                        .addComponent(broadcastAddressRemindLabel))
                     .addComponent(primaryDNSTextField, javax.swing.GroupLayout.PREFERRED_SIZE, 154, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addGap(150, 150, 150))
         );
@@ -1287,21 +1287,19 @@ public class SettingsGUI extends javax.swing.JFrame {
                     .addComponent(metaServerRemindLabel))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addGroup(networkPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                        .addComponent(XLinkKaiServerLabel)
-                        .addComponent(XLinkKaiServerTextField, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addComponent(XLinkKaiServerRemindLabel))
+                    .addComponent(XLinkKaiServerLabel)
+                    .addComponent(XLinKKaiServerTextField, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(XLinkKaiServerRemindLabel))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addGroup(networkPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                        .addComponent(broadcastAddressLabel)
-                        .addComponent(broadcastAddressTextField, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addComponent(broadcastAddressRemindLabel))
+                    .addComponent(broadcastAddressLabel)
+                    .addComponent(broadcastAddressTextField, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(broadcastAddressRemindLabel))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addGroup(networkPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(primaryDNSLabel)
                     .addComponent(primaryDNSTextField, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                .addGroup(networkPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                        .addComponent(enableChatCheck, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addComponent(enableChatCheck)
                 .addGap(271, 271, 271))
         );
 
@@ -1368,7 +1366,7 @@ public class SettingsGUI extends javax.swing.JFrame {
         FolderChooser folderChooser = new FolderChooser(bundle.getString("SettingsGUI.strSelectUMDPath.text"));
         int result = folderChooser.showSaveDialog(lbUMDPaths.getTopLevelAncestor());
         if (result == FolderChooser.APPROVE_OPTION) {
-            DefaultListModel dlm = (DefaultListModel) lbUMDPaths.getModel();
+            DefaultListModel<String> dlm = (DefaultListModel<String>) lbUMDPaths.getModel();
             File pathtoadd = folderChooser.getSelectedFile();
 
             // avoid double entries
@@ -1407,21 +1405,22 @@ public class SettingsGUI extends javax.swing.JFrame {
     private javax.swing.JPanel MiscPanel;
     private javax.swing.JPanel RegionPanel;
     private javax.swing.JPanel VideoPanel;
+    private javax.swing.JTextField XLinKKaiServerTextField;
+    private javax.swing.JLabel XLinkKaiServerLabel;
+    private javax.swing.JLabel XLinkKaiServerRemindLabel;
     private javax.swing.JLabel XlinKaiLabel;
     private javax.swing.JRadioButton XlinkaiSupportRadioButton;
     private javax.swing.JCheckBox accurateVfpuDotCheck;
-    private javax.swing.JComboBox adhocChannelBox;
+    private javax.swing.JComboBox<String> adhocChannelBox;
     private javax.swing.JLabel adhocChannelLabel;
     private javax.swing.JLabel antiAliasLabel;
-    private javax.swing.JComboBox antiAliasingBox;
+    private javax.swing.JComboBox<String> antiAliasingBox;
     private javax.swing.JLabel broadcastAddressLabel;
     private javax.swing.JLabel broadcastAddressRemindLabel;
     private javax.swing.JTextField broadcastAddressTextField;
-    private javax.swing.JLabel primaryDNSLabel;
-    private javax.swing.JTextField primaryDNSTextField;
     private javax.swing.JButton btnUMDPathAdd;
     private javax.swing.JButton btnUMDPathRemove;
-    private javax.swing.JComboBox buttonBox;
+    private javax.swing.JComboBox<String> buttonBox;
     private javax.swing.ButtonGroup buttonGroup1;
     private javax.swing.ButtonGroup buttonGroup2;
     private javax.swing.ButtonGroup buttonGroup3;
@@ -1429,14 +1428,15 @@ public class SettingsGUI extends javax.swing.JFrame {
     private jpcsp.GUI.CancelButton cancelButton;
     private javax.swing.JRadioButton classicUmdDialog;
     private javax.swing.JCheckBox cryptoSavedata;
-    private javax.swing.JComboBox dateFormatBox;
+    private javax.swing.JComboBox<String> dateFormatBox;
     private javax.swing.JLabel dateFormatLabel;
-    private javax.swing.JComboBox daylightBox;
+    private javax.swing.JComboBox<String> daylightBox;
     private javax.swing.JLabel daylightLabel;
     private javax.swing.JCheckBox disableDLC;
     private javax.swing.JCheckBox disableOptimizedVertexInfoReading;
     private javax.swing.JCheckBox disableUBOCheck;
     private javax.swing.JCheckBox disableVBOCheck;
+    private javax.swing.JCheckBox enableChatCheck;
     private javax.swing.JCheckBox enableDynamicShadersCheck;
     private javax.swing.JCheckBox enableGETextureCheck;
     private javax.swing.JCheckBox enableNativeCLUTCheck;
@@ -1450,6 +1450,7 @@ public class SettingsGUI extends javax.swing.JFrame {
     private javax.swing.JCheckBox extractSavedataKey;
     private javax.swing.JCheckBox fullscreenCheck;
     private javax.swing.JCheckBox geometryShaderCheck;
+    private javax.swing.JCheckBox hideEffectsCheck;
     private javax.swing.JCheckBox ignoreUnmappedImports;
     private javax.swing.JLabel imposeLabel;
     private javax.swing.JCheckBox invalidMemoryCheck;
@@ -1464,35 +1465,32 @@ public class SettingsGUI extends javax.swing.JFrame {
     private javax.swing.JTabbedPane jTabbedPane1;
     private javax.swing.JLabel lanMultiPlayerLabel;
     private javax.swing.JRadioButton lanMultiPlayerRadioButton;
-    private javax.swing.JComboBox languageBox;
+    private javax.swing.JComboBox<String> languageBox;
     private javax.swing.JLabel languageLabel;
-    private javax.swing.JList lbUMDPaths;
+    private javax.swing.JList<String> lbUMDPaths;
     private javax.swing.JCheckBox loadAndRunCheck;
     private javax.swing.JLabel metaServerLabel;
     private javax.swing.JLabel metaServerRemindLabel;
     private javax.swing.JTextField metaServerTextField;
-    private javax.swing.JLabel XLinkKaiServerLabel;
-    private javax.swing.JLabel XLinkKaiServerRemindLabel;
-    private javax.swing.JTextField XLinkKaiServerTextField;
-    private javax.swing.JCheckBox enableChatCheck;
-    private javax.swing.JComboBox methodMaxInstructionsBox;
+    private javax.swing.JComboBox<String> methodMaxInstructionsBox;
     private javax.swing.JLabel methodMaxInstructionsLabel;
-    private javax.swing.JComboBox modelBox;
+    private javax.swing.JComboBox<String> modelBox;
     private javax.swing.JLabel modelLabel;
     private javax.swing.JPanel networkPanel;
     private javax.swing.JTextField nicknameTextField;
     private javax.swing.JLabel nicknamelLabel;
-    private javax.swing.JCheckBox hideEffectsCheck;
     private javax.swing.JCheckBox pbpunpackcheck;
+    private javax.swing.JLabel primaryDNSLabel;
+    private javax.swing.JTextField primaryDNSTextField;
     private javax.swing.JCheckBox profilerCheck;
     private javax.swing.JPanel renderPanel;
-    private javax.swing.JComboBox resolutionBox;
+    private javax.swing.JComboBox<String> resolutionBox;
     private javax.swing.JLabel resolutionLabel;
     private javax.swing.JCheckBox saveStencilToMemory;
     private javax.swing.JCheckBox saveWindowPosCheck;
     private javax.swing.JCheckBox shadersCheck;
     private javax.swing.JLabel sysParmLabel;
-    private javax.swing.JComboBox timeFormatBox;
+    private javax.swing.JComboBox<String> timeFormatBox;
     private javax.swing.JLabel timeFormatLabel;
     private javax.swing.JLabel timezoneLabel;
     private javax.swing.JSpinner timezoneSpinner;
@@ -1508,7 +1506,7 @@ public class SettingsGUI extends javax.swing.JFrame {
     private javax.swing.JRadioButton useOpenglRenderer;
     private javax.swing.JRadioButton useSoftwareRenderer;
     private javax.swing.JCheckBox useVertexCache;
-    private javax.swing.JComboBox wlanPowerBox;
+    private javax.swing.JComboBox<String> wlanPowerBox;
     private javax.swing.JLabel wlanPowerLabel;
     // End of variables declaration//GEN-END:variables
 }
