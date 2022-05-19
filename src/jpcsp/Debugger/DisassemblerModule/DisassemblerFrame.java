@@ -91,8 +91,8 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
     private int DebuggerPC;
     private int SelectedPC;
     private Emulator emu;
-    private DefaultListModel listmodel = new DefaultListModel();
-    private ArrayList<Integer> breakpoints = new ArrayList<Integer>();
+    private DefaultListModel<String> listmodel = new DefaultListModel<>();
+    private ArrayList<Integer> breakpoints = new ArrayList<>();
     private int temporaryBreakpoint1;
     private int temporaryBreakpoint2;
     private boolean stepOut;
@@ -114,7 +114,7 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
      */
     public DisassemblerFrame(Emulator emu) {
         this.emu = emu;
-        listmodel = new DefaultListModel();
+        listmodel = new DefaultListModel<>();
 
         initComponents();
         RefreshButtons();
@@ -500,7 +500,7 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
         jSeparator7 = new javax.swing.JToolBar.Separator();
         ImportBreaks = new javax.swing.JButton();
         ExportBreaks = new javax.swing.JButton();
-        disasmList = new javax.swing.JList(listmodel);
+        disasmList = new javax.swing.JList<String>(listmodel);
         disasmTabs = new javax.swing.JTabbedPane();
         gprTable = new jpcsp.Debugger.DisassemblerModule.RegisterTable();
         cop0Table = new javax.swing.JTable();
@@ -602,7 +602,6 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
         setMinimumSize(new java.awt.Dimension(800, 700));
         setName("frmDebugger"); // NOI18N
 
-        tbDisasm.setFloatable(false);
         tbDisasm.setRollover(true);
         tbDisasm.setOpaque(false);
 
@@ -714,7 +713,6 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
         });
         tbDisasm.add(DumpCodeToText);
 
-        tbBreakpoints.setFloatable(false);
         tbBreakpoints.setRollover(true);
         tbBreakpoints.setOpaque(false);
 
@@ -916,7 +914,6 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
 
         gpiButton1.setText("1"); // NOI18N
         gpiButton1.setBorder(null);
-        gpiButton1.setPreferredSize(new java.awt.Dimension(16, 16));
         gpiButton1.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 gpiButton1ActionPerformed(evt);
@@ -925,7 +922,6 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
 
         gpiButton2.setText("2"); // NOI18N
         gpiButton2.setBorder(null);
-        gpiButton2.setPreferredSize(new java.awt.Dimension(16, 16));
         gpiButton2.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 gpiButton2ActionPerformed(evt);
@@ -934,7 +930,6 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
 
         gpiButton3.setText("3"); // NOI18N
         gpiButton3.setBorder(null);
-        gpiButton3.setPreferredSize(new java.awt.Dimension(16, 16));
         gpiButton3.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 gpiButton3ActionPerformed(evt);
@@ -943,7 +938,6 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
 
         gpiButton4.setText("4"); // NOI18N
         gpiButton4.setBorder(null);
-        gpiButton4.setPreferredSize(new java.awt.Dimension(16, 16));
         gpiButton4.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 gpiButton4ActionPerformed(evt);
@@ -952,7 +946,6 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
 
         gpiButton5.setText("5"); // NOI18N
         gpiButton5.setBorder(null);
-        gpiButton5.setPreferredSize(new java.awt.Dimension(16, 16));
         gpiButton5.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 gpiButton5ActionPerformed(evt);
@@ -961,7 +954,6 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
 
         gpiButton6.setText("6"); // NOI18N
         gpiButton6.setBorder(null);
-        gpiButton6.setPreferredSize(new java.awt.Dimension(16, 16));
         gpiButton6.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 gpiButton6ActionPerformed(evt);
@@ -970,7 +962,6 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
 
         gpiButton7.setText("7"); // NOI18N
         gpiButton7.setBorder(null);
-        gpiButton7.setPreferredSize(new java.awt.Dimension(16, 16));
         gpiButton7.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 gpiButton7ActionPerformed(evt);
@@ -979,7 +970,6 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
 
         gpiButton8.setText("8"); // NOI18N
         gpiButton8.setBorder(null);
-        gpiButton8.setPreferredSize(new java.awt.Dimension(16, 16));
         gpiButton8.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 gpiButton8ActionPerformed(evt);
@@ -1059,35 +1049,35 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
                     .addGroup(miscPanelLayout.createSequentialGroup()
                         .addGroup(miscPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addComponent(gpoLabel1)
-                            .addComponent(gpiButton1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                            .addComponent(gpiButton1))
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addGroup(miscPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(gpiButton2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(gpiButton2)
                             .addComponent(gpoLabel2))
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addGroup(miscPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(gpiButton3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(gpiButton3)
                             .addComponent(gpoLabel3))
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addGroup(miscPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(gpiButton4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(gpiButton4)
                             .addComponent(gpoLabel4))
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addGroup(miscPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(gpiButton5, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(gpiButton5)
                             .addComponent(gpoLabel5))
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addGroup(miscPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(gpiButton6, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(gpiButton6)
                             .addComponent(gpoLabel6))
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addGroup(miscPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(gpiButton7, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(gpiButton7)
                             .addComponent(gpoLabel7))
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addGroup(miscPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addComponent(gpoLabel8)
-                            .addComponent(gpiButton8, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                            .addComponent(gpiButton8)))
                     .addComponent(txtSearch)
                     .addComponent(lblSearch)
                     .addComponent(gpioLabel)
@@ -1116,14 +1106,14 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
                             .addComponent(gpoLabel7))
                         .addGap(11, 11, 11)
                         .addGroup(miscPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.CENTER)
-                            .addComponent(gpiButton1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(gpiButton2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(gpiButton3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(gpiButton4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(gpiButton5, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(gpiButton6, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(gpiButton7, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(gpiButton8, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                            .addComponent(gpiButton1)
+                            .addComponent(gpiButton2)
+                            .addComponent(gpiButton3)
+                            .addComponent(gpiButton4)
+                            .addComponent(gpiButton5)
+                            .addComponent(gpiButton6)
+                            .addComponent(gpiButton7)
+                            .addComponent(gpiButton8)))
                     .addComponent(gpoLabel8))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(btnDumpFrame)
@@ -1218,7 +1208,7 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
         mDebug.add(miStepOut);
         mDebug.add(jSeparator10);
 
-        miResetToPC.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_P, java.awt.event.InputEvent.CTRL_MASK));
+        miResetToPC.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_P, java.awt.event.InputEvent.CTRL_DOWN_MASK));
         miResetToPC.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/ResetToPc.png"))); // NOI18N
         miResetToPC.setText(bundle.getString("DisassemblerFrame.miResetToPC.text")); // NOI18N
         miResetToPC.addActionListener(new java.awt.event.ActionListener() {
@@ -1228,7 +1218,7 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
         });
         mDebug.add(miResetToPC);
 
-        miJumpTo.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_J, java.awt.event.InputEvent.CTRL_MASK));
+        miJumpTo.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_J, java.awt.event.InputEvent.CTRL_DOWN_MASK));
         miJumpTo.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/JumpTo.png"))); // NOI18N
         miJumpTo.setText(bundle.getString("DisassemblerFrame.miJumpTo.text")); // NOI18N
         miJumpTo.addActionListener(new java.awt.event.ActionListener() {
@@ -1242,7 +1232,7 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
 
         mBreakpoints.setText(bundle.getString("DisassemblerFrame.mBreakpoints.text")); // NOI18N
 
-        miNewBreakpoint.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_B, java.awt.event.InputEvent.CTRL_MASK));
+        miNewBreakpoint.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_B, java.awt.event.InputEvent.CTRL_DOWN_MASK));
         miNewBreakpoint.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/NewBreakpointIcon.png"))); // NOI18N
         miNewBreakpoint.setText(bundle.getString("DisassemblerFrame.miNewBreakpoint.text")); // NOI18N
         miNewBreakpoint.addActionListener(new java.awt.event.ActionListener() {
@@ -1289,7 +1279,7 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
         mBreakpoints.add(miExportBreakpoints);
         mBreakpoints.add(jSeparator11);
 
-        miManageMemoryBreakpoints.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_M, java.awt.event.InputEvent.CTRL_MASK));
+        miManageMemoryBreakpoints.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_M, java.awt.event.InputEvent.CTRL_DOWN_MASK));
         miManageMemoryBreakpoints.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/SettingsIcon.png"))); // NOI18N
         miManageMemoryBreakpoints.setText(bundle.getString("DisassemblerFrame.miManageMemoryBreakpoints.text")); // NOI18N
         miManageMemoryBreakpoints.addActionListener(new java.awt.event.ActionListener() {
@@ -1303,7 +1293,7 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
 
         mDisassembler.setText(bundle.getString("DisassemblerFrame.mDisassembler.text")); // NOI18N
 
-        miDumpCode.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_D, java.awt.event.InputEvent.CTRL_MASK));
+        miDumpCode.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_D, java.awt.event.InputEvent.CTRL_DOWN_MASK));
         miDumpCode.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/Dump.png"))); // NOI18N
         miDumpCode.setText(bundle.getString("DisassemblerFrame.miDumpCode.text")); // NOI18N
         miDumpCode.addActionListener(new java.awt.event.ActionListener() {
@@ -2190,14 +2180,14 @@ private void ImportBreaksActionPerformed(java.awt.event.ActionEvent evt) {//GEN-
     private javax.swing.JToggleButton RunDebugger;
     private javax.swing.JMenuItem SetPCToCursor;
     private javax.swing.JButton btnCancelSearch;
-    private javax.swing.JToggleButton btnDumpFrame;
     private javax.swing.JButton btnDumpDebugState;
+    private javax.swing.JToggleButton btnDumpFrame;
     private javax.swing.JButton btnStepInto;
     private javax.swing.JButton btnStepOut;
     private javax.swing.JButton btnStepOver;
     private javax.swing.JTable cop0Table;
     private javax.swing.JTable cop1Table;
-    private javax.swing.JList disasmList;
+    private javax.swing.JList<String> disasmList;
     private javax.swing.JTabbedPane disasmTabs;
     private javax.swing.JToggleButton gpiButton1;
     private javax.swing.JToggleButton gpiButton2;
