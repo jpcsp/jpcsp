@@ -34,14 +34,14 @@ import jpcsp.HLE.kernel.types.SceUid;
 public class SceUidManager {
 	public static Logger log = Emulator.log;
 	// UID is a unique identifier across all purposes
-    private static HashMap<Integer, SceUid> uidMap = new HashMap<Integer, SceUid>();
+    private static HashMap<Integer, SceUid> uidMap = new HashMap<>();
     private static int uidNext = 0x1; // LocoRoco expects UID to be 8bit
     public static final int INVALID_ID = Integer.MIN_VALUE;
 
     // ID is an identifier only unique for the same purpose.
     // Different purposes can share the save ID values.
     // An ID has always a range of valid values, e.g. [0..255]
-    private static HashMap<Object, LinkedList<Integer>> freeIdsMap = new HashMap<Object, LinkedList<Integer>>();
+    private static HashMap<String, LinkedList<Integer>> freeIdsMap = new HashMap<>();
 
     static public void reset() {
     	uidMap.clear();
@@ -50,7 +50,7 @@ public class SceUidManager {
     }
 
     /** classes should call getUid to get a new unique SceUID */
-    static public int getNewUid(Object purpose) {
+    static public int getNewUid(String purpose) {
         SceUid uid = new SceUid(purpose, uidNext++);
         uidMap.put(uid.getUid(), uid);
         return uid.getUid();
@@ -58,7 +58,7 @@ public class SceUidManager {
 
     /** classes should call checkUidPurpose before using a SceUID
      * @return true is the uid is ok. */
-    static public boolean checkUidPurpose(int uid, Object purpose, boolean allowUnknown) {
+    static public boolean checkUidPurpose(int uid, String purpose, boolean allowUnknown) {
         SceUid found = uidMap.get(uid);
 
         if (found == null) {
@@ -80,7 +80,7 @@ public class SceUidManager {
 
     /** classes should call releaseUid when they are finished with a SceUID
      * @return true on success. */
-    static public boolean releaseUid(int uid, Object purpose) {
+    static public boolean releaseUid(int uid, String purpose) {
         SceUid found = uidMap.get(uid);
 
         if (found == null) {
@@ -119,7 +119,7 @@ public class SceUidManager {
      * @param maximumId  The highest possible value for the ID
      * @return           The lowest possible free ID for the given purpose
      */
-    static public int getNewId(Object purpose, int minimumId, int maximumId) {
+    static public int getNewId(String purpose, int minimumId, int maximumId) {
     	LinkedList<Integer> freeIds = freeIdsMap.get(purpose);
     	if (freeIds == null) {
     		freeIds = new LinkedList<Integer>();
@@ -139,7 +139,7 @@ public class SceUidManager {
     	return freeIds.remove();
     }
 
-    static public void resetIds(Object purpose) {
+    static public void resetIds(String purpose) {
     	freeIdsMap.remove(purpose);
     }
 
@@ -156,7 +156,7 @@ public class SceUidManager {
      *                       (because the purpose was not exiting or
      *                        the ID was already released)
      */
-    static public boolean releaseId(int id, Object purpose) {
+    static public boolean releaseId(int id, String purpose) {
     	LinkedList<Integer> freeIds = freeIdsMap.get(purpose);
 
     	if (freeIds == null) {
