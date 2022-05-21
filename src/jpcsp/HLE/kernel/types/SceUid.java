@@ -22,15 +22,15 @@ package jpcsp.HLE.kernel.types;
  */
 public class SceUid {
 
-    private Object purpose;
+    private String purpose;
     private int uid;
 
-    public SceUid(Object purpose, int uid) {
+    public SceUid(String purpose, int uid) {
         this.purpose = purpose;
         this.uid = uid;
     }
 
-    public Object getPurpose() {
+    public String getPurpose() {
         return purpose;
     }
 
