@@ -358,7 +358,11 @@ public class Loader {
 
     /** @return true on success */
     private boolean LoadPSP(ByteBuffer f, SceModule module, TPointer baseAddress, boolean analyzeOnly, boolean allocMem, boolean fromSyscall, boolean isSignChecked, byte[] key) throws IOException {
+    	int position = f.position();
         PSP psp = new PSP(f);
+        // Reset the position after reading the header
+        f.position(position);
+
         if (!psp.isValid()) {
             // Not a valid PSP
         	return false;

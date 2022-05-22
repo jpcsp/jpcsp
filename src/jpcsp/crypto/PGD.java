@@ -100,11 +100,11 @@ public class PGD {
         byte[] dnasKey = new byte[0x10];
         if ((pgdFlag & 0x2) == 0x2) {
             for (int i = 0; i < KeyVault.drmDNASKey1.length; i++) {
-                dnasKey[i] = (byte) (KeyVault.drmDNASKey1[i] & 0xFF);
+                dnasKey[i] = (byte) KeyVault.drmDNASKey1[i];
             }
         } else if ((pgdFlag & 0x1) == 0x1) {
             for (int i = 0; i < KeyVault.drmDNASKey2.length; i++) {
-                dnasKey[i] = (byte) (KeyVault.drmDNASKey2[i] & 0xFF);
+                dnasKey[i] = (byte) KeyVault.drmDNASKey2[i];
             }
         } else {
             return null;
@@ -134,19 +134,19 @@ public class PGD {
     public boolean CheckEDATRenameKey(byte[] fileName, byte[] hash, byte[] data) {
         // Set up MAC context.
         pgdMacContext = new AMCTRL.BBMac_Ctx();
-        
+
         // Perform hash check.
         amctrl.hleDrmBBMacInit(pgdMacContext, 3);
         amctrl.hleDrmBBMacUpdate(pgdMacContext, data, 0x30);
-        amctrl.hleDrmBBMacUpdate(pgdMacContext, fileName, fileName.length);     
-        
+        amctrl.hleDrmBBMacUpdate(pgdMacContext, fileName, fileName.length);
+
         // Get the fixed rename key.
         byte[] renameKey = new byte[0x10];
         for (int i = 0; i < 0x10; i++) {
-            renameKey[i] = (byte) (KeyVault.drmRenameKey[i] & 0xFF);
+            renameKey[i] = (byte) KeyVault.drmRenameKey[i];
         }
-        
+
         // Compare and return.
-        return (amctrl.hleDrmBBMacFinal2(pgdMacContext, hash, renameKey) == 0);
+        return amctrl.hleDrmBBMacFinal2(pgdMacContext, hash, renameKey) == 0;
     }
 }

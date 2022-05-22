@@ -21,9 +21,11 @@ import static jpcsp.Allegrex.Common._a1;
 import static jpcsp.Allegrex.Common._ra;
 import static jpcsp.Allegrex.Common._sp;
 import static jpcsp.Allegrex.compiler.RuntimeContextLLE.getFirmwareVersion;
+import static jpcsp.HLE.Modules.IoFileMgrForUserModule;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_ERRNO_DEVICE_NOT_FOUND;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_ERRNO_FILE_NOT_FOUND;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_UNKNOWN_MODULE;
+import static jpcsp.HLE.modules.IoFileMgrForUser.PSP_O_RDONLY;
 import static jpcsp.HLE.modules.SysMemUserForUser.KERNEL_PARTITION_ID;
 import static jpcsp.util.HLEUtilities.ADDIU;
 import static jpcsp.util.HLEUtilities.J;
@@ -31,6 +33,10 @@ import static jpcsp.util.HLEUtilities.JAL;
 import static jpcsp.util.HLEUtilities.LUI;
 import static jpcsp.util.HLEUtilities.LW;
 import static jpcsp.util.HLEUtilities.SW;
+import static jpcsp.util.Utilities.hasBit;
+import static jpcsp.util.Utilities.read8;
+import static jpcsp.util.Utilities.readUnaligned32;
+
 import jpcsp.Allegrex.compiler.RuntimeContext;
 import jpcsp.HLE.BufferInfo;
 import jpcsp.HLE.BufferInfo.LengthInfo;
@@ -65,6 +71,8 @@ import jpcsp.HLE.kernel.types.SceKernelSMOption;
 import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
 import jpcsp.HLE.kernel.types.SceModule;
 import jpcsp.HLE.modules.SysMemUserForUser.SysMemInfo;
+import jpcsp.crypto.CryptoEngine;
+import jpcsp.crypto.KeyVault;
 import jpcsp.filesystems.SeekableDataInput;
 import jpcsp.filesystems.umdiso.UmdIsoFile;
 import jpcsp.format.PSP;
@@ -73,6 +81,8 @@ import jpcsp.memory.IMemoryWriter;
 import jpcsp.memory.MemoryReader;
 import jpcsp.memory.MemoryWriter;
 import jpcsp.util.Utilities;
+import libkirk.AES;
+import libkirk.AES.AES_ctx;
 
 import org.apache.log4j.Logger;
 
@@ -1156,11 +1166,44 @@ public class ModuleMgrForUser extends HLEModule {
             }
         }
 
-        // SPRX modules can't be decrypted yet.
-        if (!Modules.scePspNpDrm_userModule.getDisableDLCStatus()) {
-            log.warn(String.format("sceKernelLoadModuleNpDrm detected encrypted DLC module: %s", path.getString()));
-            return SceKernelErrors.ERROR_NPDRM_INVALID_PERM;
+        IVirtualFile vFile = IoFileMgrForUserModule.getVirtualFile(path.getString(), PSP_O_RDONLY, 0);
+        if (vFile == null) {
+        	return -1;
         }
+
+        byte[] header = new byte[0x90];
+        int length = vFile.ioRead(header, 0, header.length);
+        vFile.ioClose();
+        if (length != header.length) {
+        	return -1;
+        }
+
+        int type = readUnaligned32(header, 8);
+        byte[] data = new byte[0x30];
+        System.arraycopy(header, 0x10, data, 0, 0x30);
+        byte[] hash = new byte[0x10];
+        byte[] key = new CryptoEngine().getDRMEngine().hleNpDrmGetFixedKey(hash, data, type & 0xFF);
+
+        if (hasBit(read8(header, 15), 0)) {
+        	byte[] npDrmLicenseeKey = Modules.scePspNpDrm_userModule.getNpDrmKey();
+        	for (int i = 0; i < 16; i++) {
+        		key[i] ^= npDrmLicenseeKey[i];
+        	}
+        }
+
+        if (hasBit(read8(header, 15), 1)) {
+        	for (int i = 0; i < 16; i++) {
+        		key[i] ^= read8(header, 64 + i);
+        	}
+        }
+
+        byte[] initKey = new byte[0x10];
+        for (int i = 0; i < 16; i++) {
+        	initKey[i] = (byte) KeyVault.drmModuleKey[i];
+        }
+        AES_ctx ctx = new AES_ctx();
+        AES.AES_set_key(ctx, initKey, 128);
+        AES.AES_cbc_decrypt(ctx, key, key, 16);
 
         LoadModuleContext loadModuleContext = new LoadModuleContext();
         loadModuleContext.fileName = path.getString();
@@ -1168,6 +1211,7 @@ public class ModuleMgrForUser extends HLEModule {
         loadModuleContext.lmOption = lmOption;
         loadModuleContext.needModuleInfo = true;
         loadModuleContext.allocMem = true;
+        loadModuleContext.key = key;
 
         return hleKernelLoadModule(loadModuleContext);
     }

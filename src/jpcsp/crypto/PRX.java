@@ -63,6 +63,7 @@ public class PRX {
     public static final int DECRYPT_MODE_APP_MODULE        = 14;
     public static final int DECRYPT_MODE_INSTALL_EXEC      = 18;
     public static final int DECRYPT_MODE_POPS_EXEC         = 20;
+    public static final int DECRYPT_MODE_SPRX              = 23;
 
     public PRX() {
     }
@@ -384,6 +385,7 @@ public class PRX {
     		log.debug(String.format("DecryptAndUncompressPRX size=0x%X, compAttribute=0x%X, pspSize=0x%X, elfSize=0x%X, decryptMode=0x%X, tag=0x%08X, key=%s", size, compAttribute, pspSize, elfSize, decryptMode, tag, Utilities.getMemoryDump(key)));
     	}
 
+    	byte[] xor = null;
     	int type;
         switch (decryptMode) {
         	case DECRYPT_MODE_VSH_MODULE:
@@ -452,6 +454,13 @@ public class PRX {
         	case DECRYPT_MODE_INSTALL_EXEC:
         		type = 3;
         		break;
+        	case DECRYPT_MODE_SPRX:
+        		xor = new byte[0x10];
+        		for (int i = 0; i < xor.length; i++) {
+        			xor[i] = (byte) KeyVault.xor_91E0A9AD[i];
+        		}
+        		type = 5;
+        		break;
     		default:
     			log.error(String.format("DecryptAndUncompressPRX unknown decryptMode=0x%X", decryptMode));
         		log.error(String.format("%s", Utilities.getMemoryDump(buf, 0, size)));
@@ -459,7 +468,7 @@ public class PRX {
     			break;
         }
 
-        int resultSize = DecryptPRX(resultBuffer, size, type, null, key);
+        int resultSize = DecryptPRX(resultBuffer, size, type, xor, key);
         if (resultSize < 0) {
         	log.error(String.format("DecryptPRX returning %d", resultSize));
         	return null;

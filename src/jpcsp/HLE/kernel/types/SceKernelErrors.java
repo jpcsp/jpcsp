@@ -496,6 +496,7 @@ public class SceKernelErrors {
     public final static int ERROR_FONT_FILE_NOT_FOUND                           = 0x80460005;
     public final static int ERROR_FONT_TOO_MANY_OPEN_FONTS                      = 0x80460009;
 
+    public final static int ERROR_PGD_INVALID_PARAMETER                         = 0x80510201;
     public final static int ERROR_PGD_INVALID_HEADER                            = 0x80510204;
     public final static int ERROR_PGD_INVALID_DATA                              = 0x80510207;
 

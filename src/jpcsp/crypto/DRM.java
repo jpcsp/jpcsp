@@ -34,27 +34,25 @@ public class DRM {
         AES128 aes = new AES128("AES/CBC/NoPadding");
 
         // Get the encryption key.
+        int[] drmEncKey = null;
+        switch (mode) {
+        	case 1: drmEncKey = KeyVault.drmEncKey1; break;
+        	case 2: drmEncKey = KeyVault.drmEncKey2; break;
+        	case 3: drmEncKey = KeyVault.drmEncKey3; break;
+        }
+        if (drmEncKey == null) {
+        	return null;
+        }
+
         byte[] encKey = new byte[0x10];
-        if ((mode & 0x1) == 0x1) {
-            for (int i = 0; i < 0x10; i++) {
-                encKey[i] = (byte) (KeyVault.drmEncKey1[i] & 0xFF);
-            }
-        } else if ((mode & 0x2) == 0x2) {
-            for (int i = 0; i < 0x10; i++) {
-                encKey[i] = (byte) (KeyVault.drmEncKey2[i] & 0xFF);
-            }
-        } else if ((mode & 0x3) == 0x3) {
-            for (int i = 0; i < 0x10; i++) {
-                encKey[i] = (byte) (KeyVault.drmEncKey3[i] & 0xFF);
-            }
-        } else {
-            return null;
+        for (int i = 0; i < 0x10; i++) {
+            encKey[i] = (byte) drmEncKey[i];
         }
 
         // Get the fixed key.
         byte[] fixedKey = new byte[0x10];
         for (int i = 0; i < 0x10; i++) {
-            fixedKey[i] = (byte) (KeyVault.drmFixedKey[i] & 0xFF);
+            fixedKey[i] = (byte) KeyVault.drmFixedKey[i];
         }
 
         // Call the BBMac functions.

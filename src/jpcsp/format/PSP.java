@@ -157,11 +157,10 @@ public class PSP {
 
         CryptoEngine crypto = new CryptoEngine();
         byte[] inBuf;
-        if (f.hasArray() && f.position() <= PSP_HEADER_SIZE) {
+        if (f.hasArray() && f.position() == 0 && f.arrayOffset() == 0) {
     		inBuf = f.array();
         } else {
         	int currentPosition = f.position();
-        	f.position(currentPosition - PSP_HEADER_SIZE);
         	int size = Math.min(Math.max(psp_size, elf_size), f.remaining());
         	inBuf = new byte[size];
         	f.get(inBuf);

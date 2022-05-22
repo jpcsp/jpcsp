@@ -16,7 +16,14 @@
  */
 package jpcsp.HLE.modules;
 
-import java.io.FileNotFoundException;
+import static jpcsp.HLE.Modules.IoFileMgrForUserModule;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_NPDRM_INVALID_FILE;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_NPDRM_NO_FILENAME_MATCH;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_NPDRM_NO_K_LICENSEE_SET;
+import static jpcsp.HLE.modules.IoFileMgrForUser.PSP_O_RDONLY;
+import static jpcsp.util.Utilities.notHasBit;
+import static jpcsp.util.Utilities.readUnaligned32;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
@@ -35,18 +42,15 @@ import jpcsp.Emulator;
 import jpcsp.Loader;
 import jpcsp.crypto.CryptoEngine;
 import jpcsp.filesystems.SeekableDataInput;
-import jpcsp.filesystems.SeekableRandomFile;
 import jpcsp.HLE.BufferInfo.Usage;
 import jpcsp.HLE.VFS.IVirtualFile;
 import jpcsp.HLE.VFS.SeekableDataInputVirtualFile;
 import jpcsp.HLE.VFS.crypto.EDATVirtualFile;
 import jpcsp.HLE.VFS.crypto.PGDVirtualFile;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
-import jpcsp.HLE.kernel.types.SceKernelLMOption;
 import jpcsp.HLE.kernel.types.SceModule;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.modules.IoFileMgrForUser.IoInfo;
-import jpcsp.HLE.modules.ModuleMgrForUser.LoadModuleContext;
 import jpcsp.settings.AbstractBoolSettingsListener;
 
 import org.apache.log4j.Logger;
@@ -60,9 +64,9 @@ public class scePspNpDrm_user extends HLEModule {
         setSettingsListener("emu.disableDLC", new DisableDLCSettingsListerner());
         super.start();
     }
-    
-    public static final int PSP_NPDRM_KEY_LENGHT = 0x10;
-    private byte npDrmKey[] = new byte[PSP_NPDRM_KEY_LENGHT];
+
+    public static final int PSP_NPDRM_KEY_LENGTH = 0x10;
+    private byte npDrmKey[] = new byte[PSP_NPDRM_KEY_LENGTH];
     private boolean isNpDrmKeySet = false;
     private boolean disableDLCDecryption;
     
@@ -89,10 +93,14 @@ public class scePspNpDrm_user extends HLEModule {
         }
     }
 
+    public byte[] getNpDrmKey() {
+    	return npDrmKey;
+    }
+
     @HLEFunction(nid = 0xA1336091, version = 150, checkInsideInterrupt = true)
-    public int sceNpDrmSetLicenseeKey(TPointer npDrmKeyAddr) {
+    public int sceNpDrmSetLicenseeKey(@BufferInfo(lengthInfo = LengthInfo.fixedLength, length = 16, usage = Usage.in) TPointer npDrmKeyAddr) {
         StringBuilder key = new StringBuilder();
-        for (int i = 0; i < PSP_NPDRM_KEY_LENGHT; i++) {
+        for (int i = 0; i < PSP_NPDRM_KEY_LENGTH; i++) {
             npDrmKey[i] = (byte) npDrmKeyAddr.getValue8(i);
             key.append(String.format("%02X", npDrmKey[i] & 0xFF));
         }
@@ -118,39 +126,37 @@ public class scePspNpDrm_user extends HLEModule {
         int result = 0;
 
         if (!getNpDrmKeyStatus()) {
-            result = SceKernelErrors.ERROR_NPDRM_NO_K_LICENSEE_SET;
+            result = ERROR_NPDRM_NO_K_LICENSEE_SET;
         } else {
-            try {
-                String pcfilename = Modules.IoFileMgrForUserModule.getDeviceFilePath(fileName.getString());
-                SeekableRandomFile file = new SeekableRandomFile(pcfilename, "r");
-
-                String[] name = pcfilename.split("/");
-                String fName = name[name.length - 1];
-                for (int i = 0; i < name.length; i++) {
-                    if (name[i].toUpperCase().contains("EDAT")) {
-                        fName = name[i];
-                    }
+        	IVirtualFile vFile = IoFileMgrForUserModule.getVirtualFile(fileName.getString(), PSP_O_RDONLY, 0777);
+        	if (vFile == null) {
+                result = ERROR_NPDRM_INVALID_FILE;
+                if (log.isDebugEnabled()) {
+                    log.debug(String.format("sceNpDrmRenameCheck: file '%s' not found", fileName.getString()));
+                }
+        	} else {
+                String fName = fileName.getString();
+                int lastFileNamePart = fName.lastIndexOf('/');
+                if (lastFileNamePart > 0) {
+                	fName = fName.substring(lastFileNamePart + 1);
                 }
 
-                // The file must contain a valid PSPEDAT header.
-                if (file.length() < 0x80) {
+                // Setup the buffers.
+                byte[] inBuf = new byte[0x80];
+                byte[] srcData = new byte[0x30];
+                byte[] srcHash = new byte[0x10];
+
+                int length = vFile.ioRead(inBuf, 0, inBuf.length);
+                vFile.ioClose();
+
+                if (length != inBuf.length || readUnaligned32(inBuf, 0) != 0x50535000 || readUnaligned32(inBuf, 4) != 0x54414445) {
                     // Test if we're using already decrypted DLC.
-                    // Discard the error in this situatuion.
+                    // Discard the error in this situation.
                     if (!getDisableDLCStatus()) {
                         log.warn("sceNpDrmRenameCheck: invalid file size");
-                        result = SceKernelErrors.ERROR_NPDRM_INVALID_FILE;
+                        result = ERROR_NPDRM_INVALID_FILE;
                     }
-                    file.close();
                 } else {
-                    // Setup the buffers.
-                    byte[] inBuf = new byte[0x80];
-                    byte[] srcData = new byte[0x30];
-                    byte[] srcHash = new byte[0x10];
-
-                    // Read the header.
-                    file.readFully(inBuf);
-                    file.close();
-
                     // The data seed is stored at offset 0x10 of the PSPEDAT header.
                     System.arraycopy(inBuf, 0x10, srcData, 0, 0x30);
 
@@ -160,19 +166,12 @@ public class scePspNpDrm_user extends HLEModule {
                     // If the CryptoEngine fails to find a match, then the file has been renamed.
                     if (!crypto.getPGDEngine().CheckEDATRenameKey(fName.getBytes(), srcHash, srcData)) {
                         if (!getDisableDLCStatus()) {
-                            result = SceKernelErrors.ERROR_NPDRM_NO_FILENAME_MATCH;
+                            result = ERROR_NPDRM_NO_FILENAME_MATCH;
                             log.warn("sceNpDrmRenameCheck: the file has been renamed");
                         }
                     }
                 }
-            } catch (FileNotFoundException e) {
-                result = SceKernelErrors.ERROR_NPDRM_INVALID_FILE;
-                if (log.isDebugEnabled()) {
-                    log.debug(String.format("sceNpDrmRenameCheck: file '%s' not found: %s", fileName.getString(), e.toString()));
-                }
-            } catch (Exception e) {
-                log.error("sceNpDrmRenameCheck", e);
-            }
+        	}
         }
 
         return result;
@@ -237,33 +236,6 @@ public class scePspNpDrm_user extends HLEModule {
         // Open the file with flags ORed with PSP_O_FGAMEDATA and send it to the IoFileMgr.
         int fd = Modules.IoFileMgrForUserModule.hleIoOpen(name, flags | 0x40000000, permissions, true);
         return sceNpDrmEdataSetupKey(fd);
-    }
-
-    @HLEFunction(nid = 0xC618D0B1, version = 150, checkInsideInterrupt = true)
-    public int sceKernelLoadModuleNpDrm(PspString path, int flags, @CanBeNull TPointer optionAddr) {
-        SceKernelLMOption lmOption = null;
-        if (optionAddr.isNotNull()) {
-            lmOption = new SceKernelLMOption();
-            lmOption.read(optionAddr);
-            if (log.isInfoEnabled()) {
-                log.info(String.format("sceKernelLoadModuleNpDrm options: %s", lmOption));
-            }
-        }
-
-        // SPRX modules can't be decrypted yet.
-        if (!getDisableDLCStatus()) {
-            log.warn(String.format("sceKernelLoadModuleNpDrm detected encrypted DLC module: %s", path.getString()));
-            return SceKernelErrors.ERROR_NPDRM_INVALID_PERM;
-        }
-
-        LoadModuleContext loadModuleContext = new LoadModuleContext();
-        loadModuleContext.fileName = path.getString();
-        loadModuleContext.flags = flags;
-        loadModuleContext.lmOption = lmOption;
-        loadModuleContext.needModuleInfo = true;
-        loadModuleContext.allocMem = true;
-
-        return Modules.ModuleMgrForUserModule.hleKernelLoadModule(loadModuleContext);
     }
 
     @HLEFunction(nid = 0xAA5FC85B, version = 150, checkInsideInterrupt = true)
@@ -391,7 +363,23 @@ public class scePspNpDrm_user extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0xD36B4E6D, version = 150)
-    public int sceNpDrmGetModuleKey() {
+    public int sceNpDrmGetModuleKey(int fileId, @BufferInfo(lengthInfo = LengthInfo.fixedLength, length = 16, usage = Usage.out) TPointer key) {
         return 0;
+    }
+
+    @HLEFunction(nid = 0x00AD67F8, version = 150)
+    public int sceNpDrmGetFixedKey(@BufferInfo(lengthInfo = LengthInfo.fixedLength, length = 16, usage = Usage.out) TPointer key, PspString data, int type) {
+    	if (notHasBit(type, 24)) {
+    		return ERROR_NPDRM_INVALID_FILE;
+    	}
+
+    	byte[] hash = new byte[0x10];
+    	byte[] dataBuffer = new byte[0x30];
+    	data.getPointer().getArray8(0, dataBuffer, 0, data.getString().length());
+
+    	hash = new CryptoEngine().getDRMEngine().hleNpDrmGetFixedKey(hash, dataBuffer, type & 0xFF);
+    	key.setArray(hash);
+
+    	return 0;
     }
 }

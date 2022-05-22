@@ -16,6 +16,8 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.VFS.local;
 
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_PGD_INVALID_PARAMETER;
+
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.Map;
@@ -109,6 +111,41 @@ public class LocalVirtualFile extends AbstractVirtualFile {
             	// Result == 0: PRX type allowed
             	// Result != 0: PRX type prohibited
             	result = 0;
+            	break;
+            // Used by sceNpDrmEdataSetupKey, setup key?
+            case 0x04100001:
+	        	if (inputLength != 16 || outputLength != 0) {
+	        		result = ERROR_PGD_INVALID_PARAMETER;
+	        	} else {
+	        		result = 0;
+	        	}
+            	break;
+            // Used by sceNpDrmEdataSetupKey
+            case 0x04100002:
+	        	if (inputLength != 4 || outputLength != 0 || inputPointer.getValue32(0) != 0x90) {
+	        		result = ERROR_PGD_INVALID_PARAMETER;
+	        	} else {
+	        		result = 0;
+	        	}
+            	break;
+            // Used by sceNpDrmEdataSetupKey, read PSPEDAT header?
+            case 0x04100005:
+            	if (inputLength != 8) {
+	        		result = ERROR_PGD_INVALID_PARAMETER;
+            	} else {
+            		result = ioRead(outputPointer, outputLength);
+            	}
+            	break;
+        	// Used by sceNpDrmEdataSetupKey, has the file already a key setup?
+            case 0x04100006:
+        		result = 1;
+            	break;
+        	// Used by sceNpDrmEdataGetDataSize, returning the size of the DRM file
+            case 0x04100010:
+            	result = (int) length();
+            	if (log.isDebugEnabled()) {
+            		log.debug(String.format("Returning the size of the DRM file '%s': 0x%X", this, result));
+            	}
             	break;
 			default:
 				result = super.ioIoctl(command, inputPointer, inputLength, outputPointer, outputLength);
