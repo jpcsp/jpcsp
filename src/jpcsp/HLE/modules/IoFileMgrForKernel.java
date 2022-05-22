@@ -21,11 +21,15 @@ import java.util.Map;
 
 import org.apache.log4j.Logger;
 
+import jpcsp.HLE.BufferInfo;
+import jpcsp.HLE.BufferInfo.LengthInfo;
+import jpcsp.HLE.BufferInfo.Usage;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLEModule;
 import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.PspString;
+import jpcsp.HLE.TPointer;
 import jpcsp.HLE.kernel.types.pspIoDrv;
 
 public class IoFileMgrForKernel extends HLEModule {
@@ -71,6 +75,13 @@ public class IoFileMgrForKernel extends HLEModule {
     @HLEFunction(nid = 0x2B6A9B21, version = 660)
     @HLEFunction(nid = 0x30E8ABB3, version = 150)
     public int sceIoValidateFd(int fd, int unknownFlags) {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x42F954D4, version = 150)
+    @HLEFunction(nid = 0x22F15793, version = 660)
+    public int sceIoAddHook(@BufferInfo(lengthInfo = LengthInfo.fixedLength, length = 20, usage = Usage.in) TPointer hook) {
     	return 0;
     }
 }
