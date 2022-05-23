@@ -561,7 +561,7 @@ public class PRX {
         }
 
         // Truncate the resultBuffer if too long
-        if (resultBuffer.length > resultSize) {
+        if (resultSize >= 0 && resultBuffer.length > resultSize) {
         	byte[] newBuffer = new byte[resultSize];
         	System.arraycopy(resultBuffer, 0, newBuffer, 0, resultSize);
         	resultBuffer = newBuffer;

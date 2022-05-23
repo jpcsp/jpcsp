@@ -23,7 +23,13 @@ import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLEModule;
 import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.TPointer;
+import libkirk.KirkEngine;
 import jpcsp.HLE.Modules;
+
+import static jpcsp.HLE.kernel.types.SceKernelErrors.SCE_DNAS_ERROR_OPERATION_FAILED;
+import static jpcsp.util.Utilities.writeUnaligned32;
+import static libkirk.KirkEngine.KIRK_CMD_ECDSA_VERIFY;
+import static libkirk.KirkEngine.KIRK_CMD_SHA1_HASH;
 
 import org.apache.log4j.Logger;
 
@@ -91,9 +97,19 @@ public class sceOpenPSID extends HLEModule {
      *
      * @return 0 on success, otherwise < 0.
      */
-    @HLEUnimplemented
     @HLEFunction(nid = 0x40CB752A, version = 150)
     public int sceDdrdbHash(@BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.in) TPointer srcData, int size, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=20, usage=Usage.out) TPointer digest) {
+    	byte[] kirkBuffer = new byte[KirkEngine.KIRK_SHA1_HEADER.SIZEOF + size];
+    	byte[] digestBuffer = new byte[20];
+    	writeUnaligned32(kirkBuffer, 0, size);
+    	srcData.getArray8(0, kirkBuffer, 4, size);
+    	int result = Modules.semaphoreModule.hleUtilsBufferCopyWithRange(digestBuffer, digestBuffer.length, kirkBuffer, kirkBuffer.length, KIRK_CMD_SHA1_HASH);
+    	if (result != 0) {
+    		return SCE_DNAS_ERROR_OPERATION_FAILED;
+    	}
+
+    	digest.setArray(digestBuffer);
+
     	return 0;
     }
 
@@ -161,9 +177,17 @@ public class sceOpenPSID extends HLEModule {
      *
      * @return 0 on success, otherwise < 0.
      */
-    @HLEUnimplemented
     @HLEFunction(nid = 0xE27CE4CB, version = 150)
-    public int sceDdrdbSigvry(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=40, usage=Usage.in) TPointer pubKey, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=20, usage=Usage.in) TPointer data, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=40, usage=Usage.in) TPointer sig) {
+    public int sceDdrdbSigvry(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=KirkEngine.ECDSA_POINT.SIZEOF, usage=Usage.in) TPointer pubKey, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=20, usage=Usage.in) TPointer data, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=KirkEngine.ECDSA_SIG.SIZEOF, usage=Usage.in) TPointer sig) {
+    	byte[] kirkBuffer = new byte[KirkEngine.KIRK_CMD17_BUFFER.SIZEOF];
+    	pubKey.getArray8(0, kirkBuffer, 0, KirkEngine.ECDSA_POINT.SIZEOF);
+    	data.getArray8(0, kirkBuffer, KirkEngine.ECDSA_POINT.SIZEOF, 0x14);
+    	sig.getArray8(0, kirkBuffer, KirkEngine.ECDSA_POINT.SIZEOF + 0x14, KirkEngine.ECDSA_SIG.SIZEOF);
+    	int result = Modules.semaphoreModule.hleUtilsBufferCopyWithRange(null, 0, kirkBuffer, kirkBuffer.length, KIRK_CMD_ECDSA_VERIFY);
+    	if (result != 0) {
+    		return SCE_DNAS_ERROR_OPERATION_FAILED;
+    	}
+
     	return 0;
     }
 

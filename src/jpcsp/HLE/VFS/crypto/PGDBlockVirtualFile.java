@@ -82,10 +82,13 @@ public class PGDBlockVirtualFile extends AbstractProxyVirtualFile {
         System.arraycopy(inBuf, 0x30, headerBuf, 0x10, 0x30);
         if (key == null) {
         	key = pgd.GetEDATPGDKey(inBuf, pgdHeaderSize);
+        	if (log.isDebugEnabled()) {
+        		log.debug(String.format("Using PGD key from EDAT: %s", Utilities.getMemoryDump(key)));
+        	}
         }
-        int unknown = readUnaligned32(inBuf, 4);
-        if (unknown != 1) {
-        	log.error(String.format("Unimplemented PGD unknown=0x%X", unknown));
+        int version = readUnaligned32(inBuf, 4);
+        if (version != 1) {
+        	log.error(String.format("Unimplemented PGD version=%d", version));
         }
         headerMode = readUnaligned32(inBuf, 8);
         header = pgd.DecryptPGD(headerBuf, headerBuf.length, key, 0, headerMode);

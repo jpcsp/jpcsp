@@ -500,6 +500,8 @@ public class SceKernelErrors {
     public final static int ERROR_PGD_INVALID_HEADER                            = 0x80510204;
     public final static int ERROR_PGD_INVALID_DATA                              = 0x80510207;
 
+    public final static int SCE_DNAS_ERROR_OPERATION_FAILED                     = 0x80530300;
+
     public final static int ERROR_NPAUTH_NOT_INIT                               = 0x80550302;
     public final static int ERROR_NPSERVICE_NOT_INIT                            = 0x80550502;
     public final static int ERROR_NP_MANAGER_INVALID_ARGUMENT                   = 0x80550503;

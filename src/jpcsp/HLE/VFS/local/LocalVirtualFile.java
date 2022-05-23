@@ -25,6 +25,8 @@ import java.util.Map;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.VFS.AbstractVirtualFile;
 import jpcsp.HLE.VFS.IVirtualFile;
+import jpcsp.HLE.VFS.SeekableDataInputVirtualFile;
+import jpcsp.HLE.VFS.crypto.PGDVirtualFile;
 import jpcsp.HLE.modules.IoFileMgrForUser;
 import jpcsp.HLE.modules.IoFileMgrForUser.IoOperation;
 import jpcsp.HLE.modules.IoFileMgrForUser.IoOperationTiming;
@@ -34,6 +36,8 @@ import jpcsp.util.Utilities;
 public class LocalVirtualFile extends AbstractVirtualFile {
 	protected SeekableRandomFile file;
 	protected boolean truncateAtNextWrite;
+	protected IVirtualFile proxyFile;
+	protected int proxyFileOffset;
 
 	public LocalVirtualFile(SeekableRandomFile file) {
 		super(file);
@@ -112,31 +116,43 @@ public class LocalVirtualFile extends AbstractVirtualFile {
             	// Result != 0: PRX type prohibited
             	result = 0;
             	break;
-            // Used by sceNpDrmEdataSetupKey, setup key?
+            // Called from sceNpDrmEdataSetupKey, setup key?
             case 0x04100001:
 	        	if (inputLength != 16 || outputLength != 0) {
 	        		result = ERROR_PGD_INVALID_PARAMETER;
 	        	} else {
-	        		result = 0;
+	        		byte[] key = inputPointer.getArray8(16);
+	        		key = null;
+	        		PGDVirtualFile pgdVirtualFile = new PGDVirtualFile(key, new SeekableDataInputVirtualFile(file), proxyFileOffset);
+	        		if (pgdVirtualFile.isValid()) {
+	        			proxyFile = pgdVirtualFile;
+	        			result = 0;
+	        		} else {
+	        			result = ERROR_PGD_INVALID_PARAMETER;
+	        		}
 	        	}
             	break;
-            // Used by sceNpDrmEdataSetupKey
+            // Called from sceNpDrmEdataSetupKey, set the PGD offset
             case 0x04100002:
-	        	if (inputLength != 4 || outputLength != 0 || inputPointer.getValue32(0) != 0x90) {
+	        	if (inputLength != 4 || outputLength != 0) {
 	        		result = ERROR_PGD_INVALID_PARAMETER;
 	        	} else {
+	        		proxyFileOffset = inputPointer.getValue32(0);
 	        		result = 0;
 	        	}
             	break;
-            // Used by sceNpDrmEdataSetupKey, read PSPEDAT header?
+            // Called from sceNpDrmEdataSetupKey, read PSPEDAT header
             case 0x04100005:
             	if (inputLength != 8) {
 	        		result = ERROR_PGD_INVALID_PARAMETER;
             	} else {
-            		result = ioRead(outputPointer, outputLength);
+            		int seekPosition = inputPointer.getValue32(0);
+            		int readLength = inputPointer.getValue32(4);
+            		result = (int) ioLseek((long) seekPosition);
+            		result = ioRead(outputPointer, readLength);
             	}
             	break;
-        	// Used by sceNpDrmEdataSetupKey, has the file already a key setup?
+        	// Called from sceNpDrmEdataSetupKey, has the file already a key setup?
             case 0x04100006:
         		result = 1;
             	break;
@@ -181,5 +197,64 @@ public class LocalVirtualFile extends AbstractVirtualFile {
 	@Override
 	public String toString() {
 		return String.format("LocalVirtualFile %s", file);
+	}
+
+	@Override
+	public long getPosition() {
+		if (proxyFile != null) {
+			return proxyFile.getPosition();
+		}
+		return super.getPosition();
+	}
+
+	@Override
+	public int ioClose() {
+		if (proxyFile != null) {
+			IVirtualFile vFile = proxyFile;
+			proxyFile = null;
+			proxyFileOffset = 0;
+			return vFile.ioClose();
+		}
+		return super.ioClose();
+	}
+
+	@Override
+	public int ioRead(TPointer outputPointer, int outputLength) {
+		if (proxyFile != null) {
+			return proxyFile.ioRead(outputPointer, outputLength);
+		}
+		return super.ioRead(outputPointer, outputLength);
+	}
+
+	@Override
+	public int ioRead(byte[] outputBuffer, int outputOffset, int outputLength) {
+		if (proxyFile != null) {
+			return proxyFile.ioRead(outputBuffer, outputOffset, outputLength);
+		}
+		return super.ioRead(outputBuffer, outputOffset, outputLength);
+	}
+
+	@Override
+	public long ioLseek(long offset) {
+		if (proxyFile != null) {
+			return proxyFile.ioLseek(offset);
+		}
+		return super.ioLseek(offset);
+	}
+
+	@Override
+	public long length() {
+		if (proxyFile != null) {
+			return proxyFile.length();
+		}
+		return super.length();
+	}
+
+	@Override
+	public boolean isSectorBlockMode() {
+		if (proxyFile != null) {
+			return proxyFile.isSectorBlockMode();
+		}
+		return super.isSectorBlockMode();
 	}
 }

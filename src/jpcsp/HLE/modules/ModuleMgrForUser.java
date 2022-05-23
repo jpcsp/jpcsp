@@ -21,12 +21,16 @@ import static jpcsp.Allegrex.Common._a1;
 import static jpcsp.Allegrex.Common._ra;
 import static jpcsp.Allegrex.Common._sp;
 import static jpcsp.Allegrex.compiler.RuntimeContextLLE.getFirmwareVersion;
+import static jpcsp.AllegrexOpcodes.ADDIU;
+import static jpcsp.AllegrexOpcodes.LUI;
 import static jpcsp.HLE.Modules.IoFileMgrForUserModule;
+import static jpcsp.HLE.Modules.scePspNpDrm_userModule;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_ERRNO_DEVICE_NOT_FOUND;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_ERRNO_FILE_NOT_FOUND;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_UNKNOWN_MODULE;
 import static jpcsp.HLE.modules.IoFileMgrForUser.PSP_O_RDONLY;
 import static jpcsp.HLE.modules.SysMemUserForUser.KERNEL_PARTITION_ID;
+import static jpcsp.HLE.modules.scePspNpDrm_user.isEncrypted;
 import static jpcsp.util.HLEUtilities.ADDIU;
 import static jpcsp.util.HLEUtilities.J;
 import static jpcsp.util.HLEUtilities.JAL;
@@ -57,6 +61,7 @@ import jpcsp.Emulator;
 import jpcsp.Loader;
 import jpcsp.Memory;
 import jpcsp.MemoryMap;
+import jpcsp.NIDMapper;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.VFS.IVirtualFile;
 import jpcsp.HLE.VFS.IVirtualFileSystem;
@@ -1174,36 +1179,73 @@ public class ModuleMgrForUser extends HLEModule {
         byte[] header = new byte[0x90];
         int length = vFile.ioRead(header, 0, header.length);
         vFile.ioClose();
-        if (length != header.length) {
-        	return -1;
-        }
 
-        int type = readUnaligned32(header, 8);
-        byte[] data = new byte[0x30];
-        System.arraycopy(header, 0x10, data, 0, 0x30);
-        byte[] hash = new byte[0x10];
-        byte[] key = new CryptoEngine().getDRMEngine().hleNpDrmGetFixedKey(hash, data, type & 0xFF);
+        byte[] key;
+        if (length == header.length && isEncrypted(header)) {
+	        int type = readUnaligned32(header, 8);
+	        byte[] data = new byte[0x30];
+	        System.arraycopy(header, 0x10, data, 0, 0x30);
+	        byte[] hash = new byte[0x10];
+	        if (log.isDebugEnabled()) {
+	        	log.debug(String.format("hleNpDrmGetFixedKey data: %s, type=0x%X", Utilities.getMemoryDump(data), type));
+	        }
+	        key = new CryptoEngine().getDRMEngine().hleNpDrmGetFixedKey(hash, data, type & 0xFF);
+	        if (log.isDebugEnabled()) {
+	        	log.debug(String.format("hleNpDrmGetFixedKey hash: %s", Utilities.getMemoryDump(hash)));
+	        	log.debug(String.format("hleNpDrmGetFixedKey key: %s", Utilities.getMemoryDump(key)));
+	        }
 
-        if (hasBit(read8(header, 15), 0)) {
-        	byte[] npDrmLicenseeKey = Modules.scePspNpDrm_userModule.getNpDrmKey();
-        	for (int i = 0; i < 16; i++) {
-        		key[i] ^= npDrmLicenseeKey[i];
-        	}
-        }
+	        if (hasBit(read8(header, 15), 0)) {
+	        	byte[] npDrmLicenseeKey = scePspNpDrm_userModule.getLicenseeKey();
 
-        if (hasBit(read8(header, 15), 1)) {
-        	for (int i = 0; i < 16; i++) {
-        		key[i] ^= read8(header, 64 + i);
-        	}
-        }
+	        	// If flash0:/kd/npdrm.prx has been loaded, we need to find
+	        	// the licensee key into that module
+	        	int sceNpDrmSetLicenseeKey = NIDMapper.getInstance().getAddressByName("sceNpDrmSetLicenseeKey");
+	        	if (sceNpDrmSetLicenseeKey != 0) {
+	        		// sceNpDrmSetLicenseeKey() is calling sceKernelMemcpy() to copy
+	        		// the received licensee key into an internal buffer.
+	        		// Search for the value loaded to $a0 (which is the address of the internal buffer)
+	        		Memory mem = getMemory();
+	        		int licenseeKeyAddr = 0;
+	        		for (int i = 0; i < 200; i += 4) {
+	        			int opcode = mem.internalRead32(sceNpDrmSetLicenseeKey + i);
+	        			if ((opcode >> 26) == LUI && ((opcode >> 16) & 0x1F) == _a0) {
+	        				licenseeKeyAddr = (opcode & 0xFFFF) << 16;
+	        			} else if ((opcode >> 26) == ADDIU && ((opcode >> 16) & 0x1F) == _a0) {
+	        				licenseeKeyAddr += (short) (opcode & 0xFFFF);
+	        			}
+	        		}
 
-        byte[] initKey = new byte[0x10];
-        for (int i = 0; i < 16; i++) {
-        	initKey[i] = (byte) KeyVault.drmModuleKey[i];
+	        		if (licenseeKeyAddr != 0) {
+	        			npDrmLicenseeKey = new TPointer(getMemory(), licenseeKeyAddr).getArray8(16);
+		        		if (log.isDebugEnabled()) {
+		            		log.debug(String.format("sceNpDrmSetLicenseeKey at 0x%08X, found $a0=0x%08X: %s", sceNpDrmSetLicenseeKey, licenseeKeyAddr, Utilities.getMemoryDump(npDrmLicenseeKey)));
+		        		}
+	        		}
+	        	}
+
+	        	for (int i = 0; i < 16; i++) {
+	        		key[i] ^= npDrmLicenseeKey[i];
+	        	}
+	        }
+
+	        if (hasBit(read8(header, 15), 1)) {
+	        	for (int i = 0; i < 16; i++) {
+	        		key[i] ^= read8(header, 64 + i);
+	        	}
+	        }
+
+	        byte[] initKey = new byte[0x10];
+	        for (int i = 0; i < 16; i++) {
+	        	initKey[i] = (byte) KeyVault.drmModuleKey[i];
+	        }
+	        AES_ctx ctx = new AES_ctx();
+	        AES.AES_set_key(ctx, initKey, 128);
+	        AES.AES_cbc_decrypt(ctx, key, key, 16);
+        } else {
+        	// The file is not DRM-encrypted
+        	key = null;
         }
-        AES_ctx ctx = new AES_ctx();
-        AES.AES_set_key(ctx, initKey, 128);
-        AES.AES_cbc_decrypt(ctx, key, key, 16);
 
         LoadModuleContext loadModuleContext = new LoadModuleContext();
         loadModuleContext.fileName = path.getString();

@@ -56,8 +56,19 @@ import jpcsp.settings.AbstractBoolSettingsListener;
 import org.apache.log4j.Logger;
 
 public class scePspNpDrm_user extends HLEModule {
-
     public static Logger log = Modules.getLogger("scePspNpDrm_user");
+
+    public static final int PSP_NPDRM_LICENSEE_KEY_LENGTH = 0x10;
+    private byte licenseeKey[] = new byte[PSP_NPDRM_LICENSEE_KEY_LENGTH];
+    private boolean isLicenseeKeySet = false;
+    private boolean isDLCDecryptionDisabled;
+
+    private class DisableDLCSettingsListerner extends AbstractBoolSettingsListener {
+        @Override
+        protected void settingsValueChanged(boolean value) {
+        	setDLCDecryptionDisabled(value);
+        }
+    }
 
     @Override
     public void start() {
@@ -65,57 +76,69 @@ public class scePspNpDrm_user extends HLEModule {
         super.start();
     }
 
-    public static final int PSP_NPDRM_KEY_LENGTH = 0x10;
-    private byte npDrmKey[] = new byte[PSP_NPDRM_KEY_LENGTH];
-    private boolean isNpDrmKeySet = false;
-    private boolean disableDLCDecryption;
-    
-    public void setDisableDLCStatus(boolean status) {
-        disableDLCDecryption = status;
+	public boolean isLicenseeKeySet() {
+		return isLicenseeKeySet;
+	}
+
+	public void setLicenseeKeySet(boolean isLicenseeKeySet) {
+		this.isLicenseeKeySet = isLicenseeKeySet;
+	}
+
+	public boolean isDLCDecryptionDisabled() {
+		return isDLCDecryptionDisabled;
+	}
+
+	public boolean isDLCDecryptionEnabled() {
+		return !isDLCDecryptionDisabled;
+	}
+
+	public void setDLCDecryptionDisabled(boolean isDLCDecryptionDisabled) {
+		this.isDLCDecryptionDisabled = isDLCDecryptionDisabled;
+	}
+
+    public byte[] getLicenseeKey() {
+    	return licenseeKey;
     }
 
-    public boolean getDisableDLCStatus() {
-        return disableDLCDecryption;
+    public static boolean isEncrypted(byte[] header) {
+    	// "\0PSPEDAT"
+    	if (readUnaligned32(header, 0) == 0x50535000 && readUnaligned32(header, 4) == 0x54414445) {
+    		return true;
+    	}
+
+    	return false;
     }
 
-    protected void setNpDrmKeyStatus(boolean status) {
-        isNpDrmKeySet = status;
+    private boolean isEncrypted(IVirtualFile vFile) {
+    	if (vFile == null) {
+    		return false;
+    	}
+
+    	long position = vFile.getPosition();
+    	byte[] header = new byte[8];
+    	int length = vFile.ioRead(header, 0, header.length);
+    	vFile.ioLseek(position);
+
+    	if (length != header.length) {
+    		return false;
+    	}
+
+    	return isEncrypted(header);
     }
 
-    protected boolean getNpDrmKeyStatus() {
-        return isNpDrmKeySet;
-    }
-    
-    private class DisableDLCSettingsListerner extends AbstractBoolSettingsListener {
-        @Override
-        protected void settingsValueChanged(boolean value) {
-            setDisableDLCStatus(value);
-        }
-    }
-
-    public byte[] getNpDrmKey() {
-    	return npDrmKey;
-    }
-
+    @HLELogging(level = "info")
     @HLEFunction(nid = 0xA1336091, version = 150, checkInsideInterrupt = true)
-    public int sceNpDrmSetLicenseeKey(@BufferInfo(lengthInfo = LengthInfo.fixedLength, length = 16, usage = Usage.in) TPointer npDrmKeyAddr) {
-        StringBuilder key = new StringBuilder();
-        for (int i = 0; i < PSP_NPDRM_KEY_LENGTH; i++) {
-            npDrmKey[i] = (byte) npDrmKeyAddr.getValue8(i);
-            key.append(String.format("%02X", npDrmKey[i] & 0xFF));
-        }
-        setNpDrmKeyStatus(true);
-        if (log.isInfoEnabled()) {
-        	log.info(String.format("NPDRM Encryption key detected: 0x%s", key.toString()));
-        }
+    public int sceNpDrmSetLicenseeKey(@BufferInfo(lengthInfo = LengthInfo.fixedLength, length = PSP_NPDRM_LICENSEE_KEY_LENGTH, usage = Usage.in) TPointer licenseeKeyAddr) {
+    	licenseeKeyAddr.getArray8(licenseeKey);
+        setLicenseeKeySet(true);
 
         return 0;
     }
 
     @HLEFunction(nid = 0x9B745542, version = 150, checkInsideInterrupt = true)
     public int sceNpDrmClearLicenseeKey() {
-        Arrays.fill(npDrmKey, (byte) 0);
-        setNpDrmKeyStatus(false);
+        Arrays.fill(licenseeKey, (byte) 0);
+        setLicenseeKeySet(false);
 
         return 0;
     }
@@ -125,7 +148,7 @@ public class scePspNpDrm_user extends HLEModule {
         CryptoEngine crypto = new CryptoEngine();
         int result = 0;
 
-        if (!getNpDrmKeyStatus()) {
+        if (!isLicenseeKeySet()) {
             result = ERROR_NPDRM_NO_K_LICENSEE_SET;
         } else {
         	IVirtualFile vFile = IoFileMgrForUserModule.getVirtualFile(fileName.getString(), PSP_O_RDONLY, 0777);
@@ -149,14 +172,7 @@ public class scePspNpDrm_user extends HLEModule {
                 int length = vFile.ioRead(inBuf, 0, inBuf.length);
                 vFile.ioClose();
 
-                if (length != inBuf.length || readUnaligned32(inBuf, 0) != 0x50535000 || readUnaligned32(inBuf, 4) != 0x54414445) {
-                    // Test if we're using already decrypted DLC.
-                    // Discard the error in this situation.
-                    if (!getDisableDLCStatus()) {
-                        log.warn("sceNpDrmRenameCheck: invalid file size");
-                        result = ERROR_NPDRM_INVALID_FILE;
-                    }
-                } else {
+                if (length == inBuf.length && isEncrypted(inBuf)) {
                     // The data seed is stored at offset 0x10 of the PSPEDAT header.
                     System.arraycopy(inBuf, 0x10, srcData, 0, 0x30);
 
@@ -165,11 +181,14 @@ public class scePspNpDrm_user extends HLEModule {
 
                     // If the CryptoEngine fails to find a match, then the file has been renamed.
                     if (!crypto.getPGDEngine().CheckEDATRenameKey(fName.getBytes(), srcHash, srcData)) {
-                        if (!getDisableDLCStatus()) {
+                        if (isDLCDecryptionEnabled()) {
                             result = ERROR_NPDRM_NO_FILENAME_MATCH;
                             log.warn("sceNpDrmRenameCheck: the file has been renamed");
                         }
                     }
+                } else {
+                	// File is not encrypted
+                	result = 0;
                 }
         	}
         }
@@ -182,7 +201,7 @@ public class scePspNpDrm_user extends HLEModule {
     public int sceNpDrmEdataSetupKey(int edataFd) {
         // Return an error if the key has not been set.
         // Note: An empty key is valid, as long as it was set with sceNpDrmSetLicenseeKey.
-        if (!getNpDrmKeyStatus()) {
+        if (!isLicenseeKeySet()) {
             return SceKernelErrors.ERROR_NPDRM_NO_K_LICENSEE_SET;
         }
 
@@ -193,12 +212,12 @@ public class scePspNpDrm_user extends HLEModule {
 
         int result = 0;
 
-        // Check if the DLC decryption is enabled
-        if (!getDisableDLCStatus()) {
-        	IVirtualFile vFile = info.vFile;
-        	if (vFile == null && info.readOnlyFile != null) {
-        		vFile = new SeekableDataInputVirtualFile(info.readOnlyFile);
-        	}
+    	IVirtualFile vFile = info.vFile;
+    	if (vFile == null && info.readOnlyFile != null) {
+    		vFile = new SeekableDataInputVirtualFile(info.readOnlyFile);
+    	}
+
+    	if (isEncrypted(vFile)) {
     		PGDVirtualFile pgdFile = new EDATVirtualFile(vFile);
     		if (pgdFile.isValid()) {
     			info.vFile = pgdFile;
@@ -230,7 +249,7 @@ public class scePspNpDrm_user extends HLEModule {
     @HLEUnimplemented
     @HLEFunction(nid = 0x2BAA4294, version = 150, checkInsideInterrupt = true)
     public int sceNpDrmOpen(PspString name, int flags, int permissions) {
-        if (!getNpDrmKeyStatus()) {
+        if (!isLicenseeKeySet()) {
             return SceKernelErrors.ERROR_NPDRM_NO_K_LICENSEE_SET;
         }
         // Open the file with flags ORed with PSP_O_FGAMEDATA and send it to the IoFileMgr.
@@ -260,8 +279,8 @@ public class scePspNpDrm_user extends HLEModule {
         }
 
         // SPRX modules can't be decrypted yet.
-        if (!getDisableDLCStatus()) {
-            log.warn(String.format("sceKernelLoadModuleNpDrm detected encrypted DLC module: %s", fileName.getString()));
+        if (isDLCDecryptionEnabled()) {
+            log.warn(String.format("sceKernelLoadExecNpDrm detected encrypted DLC module: %s", fileName.getString()));
             return SceKernelErrors.ERROR_NPDRM_INVALID_PERM;
         }
 
