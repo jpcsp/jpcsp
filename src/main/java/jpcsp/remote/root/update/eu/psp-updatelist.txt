@@ -1,0 +1,56 @@
+#SystemSoftwareVersion=6.60;
+# JP
+Dest=00;ImageVersion=0000154f;CDN=http://dj01.psp.update.playstation.org/update/psp/image/jp/2014_1212_6be8878f475ac5b1a499b95ab2f7d301/EBOOT.PBP?0;CDN_Timeout=30;
+Dest=10;ImageVersion=0000154f;CDN=http://dj01.psp.update.playstation.org/update/psp/image/jp/2014_1212_6be8878f475ac5b1a499b95ab2f7d301/EBOOT.PBP?1;CDN_Timeout=30;
+Dest=20;ImageVersion=0000154f;CDN=http://dj01.psp.update.playstation.org/update/psp/image/jp/2014_1212_6be8878f475ac5b1a499b95ab2f7d301/EBOOT.PBP?2;CDN_Timeout=30;
+Dest=30;ImageVersion=0000154f;CDN=http://dj01.psp.update.playstation.org/update/psp/image/jp/2014_1212_6be8878f475ac5b1a499b95ab2f7d301/EBOOT.PBP?3;CDN_Timeout=30;
+# US
+Dest=01;ImageVersion=0000154f;CDN=http://du01.psp.update.playstation.org/update/psp/image/us/2014_1212_6be8878f475ac5b1a499b95ab2f7d301/EBOOT.PBP?0;CDN_Timeout=30;
+Dest=11;ImageVersion=0000154f;CDN=http://du01.psp.update.playstation.org/update/psp/image/us/2014_1212_6be8878f475ac5b1a499b95ab2f7d301/EBOOT.PBP?1;CDN_Timeout=30;
+Dest=21;ImageVersion=0000154f;CDN=http://du01.psp.update.playstation.org/update/psp/image/us/2014_1212_6be8878f475ac5b1a499b95ab2f7d301/EBOOT.PBP?2;CDN_Timeout=30;
+Dest=31;ImageVersion=0000154f;CDN=http://du01.psp.update.playstation.org/update/psp/image/us/2014_1212_6be8878f475ac5b1a499b95ab2f7d301/EBOOT.PBP?3;CDN_Timeout=30;
+# EU
+Dest=02;ImageVersion=0000154f;CDN=http://de01.psp.update.playstation.org/update/psp/image/eu/2014_1212_6be8878f475ac5b1a499b95ab2f7d301/EBOOT.PBP?0;CDN_Timeout=30;
+Dest=12;ImageVersion=0000154f;CDN=http://de01.psp.update.playstation.org/update/psp/image/eu/2014_1212_6be8878f475ac5b1a499b95ab2f7d301/EBOOT.PBP?1;CDN_Timeout=30;
+Dest=22;ImageVersion=0000154f;CDN=http://de01.psp.update.playstation.org/update/psp/image/eu/2014_1212_6be8878f475ac5b1a499b95ab2f7d301/EBOOT.PBP?2;CDN_Timeout=30;
+Dest=32;ImageVersion=0000154f;CDN=http://de01.psp.update.playstation.org/update/psp/image/eu/2014_1212_6be8878f475ac5b1a499b95ab2f7d301/EBOOT.PBP?3;CDN_Timeout=30;
+# KR
+Dest=03;ImageVersion=0000154f;CDN=http://do01a.psp.update.playstation.org/update/psp/image/oa/2014_1212_6be8878f475ac5b1a499b95ab2f7d301/EBOOT.PBP?0;CDN_Timeout=30;
+Dest=13;ImageVersion=0000154f;CDN=http://do01a.psp.update.playstation.org/update/psp/image/oa/2014_1212_6be8878f475ac5b1a499b95ab2f7d301/EBOOT.PBP?1;CDN_Timeout=30;
+Dest=23;ImageVersion=0000154f;CDN=http://do01a.psp.update.playstation.org/update/psp/image/oa/2014_1212_6be8878f475ac5b1a499b95ab2f7d301/EBOOT.PBP?2;CDN_Timeout=30;
+Dest=33;ImageVersion=0000154f;CDN=http://do01a.psp.update.playstation.org/update/psp/image/oa/2014_1212_6be8878f475ac5b1a499b95ab2f7d301/EBOOT.PBP?3;CDN_Timeout=30;
+# UK
+Dest=04;ImageVersion=0000154f;CDN=http://do01b.psp.update.playstation.org/update/psp/image/ob/2014_1212_6be8878f475ac5b1a499b95ab2f7d301/EBOOT.PBP?0;CDN_Timeout=30;
+Dest=14;ImageVersion=0000154f;CDN=http://do01b.psp.update.playstation.org/update/psp/image/ob/2014_1212_6be8878f475ac5b1a499b95ab2f7d301/EBOOT.PBP?1;CDN_Timeout=30;
+Dest=24;ImageVersion=0000154f;CDN=http://do01b.psp.update.playstation.org/update/psp/image/ob/2014_1212_6be8878f475ac5b1a499b95ab2f7d301/EBOOT.PBP?2;CDN_Timeout=30;
+Dest=34;ImageVersion=0000154f;CDN=http://do01b.psp.update.playstation.org/update/psp/image/ob/2014_1212_6be8878f475ac5b1a499b95ab2f7d301/EBOOT.PBP?3;CDN_Timeout=30;
+# MX
+Dest=05;ImageVersion=0000154f;CDN=http://do01c.psp.update.playstation.org/update/psp/image/oc/2014_1212_6be8878f475ac5b1a499b95ab2f7d301/EBOOT.PBP?0;CDN_Timeout=30;
+Dest=15;ImageVersion=0000154f;CDN=http://do01c.psp.update.playstation.org/update/psp/image/oc/2014_1212_6be8878f475ac5b1a499b95ab2f7d301/EBOOT.PBP?1;CDN_Timeout=30;
+Dest=25;ImageVersion=0000154f;CDN=http://do01c.psp.update.playstation.org/update/psp/image/oc/2014_1212_6be8878f475ac5b1a499b95ab2f7d301/EBOOT.PBP?2;CDN_Timeout=30;
+Dest=35;ImageVersion=0000154f;CDN=http://do01c.psp.update.playstation.org/update/psp/image/oc/2014_1212_6be8878f475ac5b1a499b95ab2f7d301/EBOOT.PBP?3;CDN_Timeout=30;
+# AU/NZ
+Dest=06;ImageVersion=0000154f;CDN=http://do01d.psp.update.playstation.org/update/psp/image/od/2014_1212_6be8878f475ac5b1a499b95ab2f7d301/EBOOT.PBP?0;CDN_Timeout=30;
+Dest=16;ImageVersion=0000154f;CDN=http://do01d.psp.update.playstation.org/update/psp/image/od/2014_1212_6be8878f475ac5b1a499b95ab2f7d301/EBOOT.PBP?1;CDN_Timeout=30;
+Dest=26;ImageVersion=0000154f;CDN=http://do01d.psp.update.playstation.org/update/psp/image/od/2014_1212_6be8878f475ac5b1a499b95ab2f7d301/EBOOT.PBP?2;CDN_Timeout=30;
+Dest=36;ImageVersion=0000154f;CDN=http://do01d.psp.update.playstation.org/update/psp/image/od/2014_1212_6be8878f475ac5b1a499b95ab2f7d301/EBOOT.PBP?3;CDN_Timeout=30;
+# E/HK
+Dest=07;ImageVersion=0000154f;CDN=http://do01e.psp.update.playstation.org/update/psp/image/oe/2014_1212_6be8878f475ac5b1a499b95ab2f7d301/EBOOT.PBP?0;CDN_Timeout=30;
+Dest=17;ImageVersion=0000154f;CDN=http://do01e.psp.update.playstation.org/update/psp/image/oe/2014_1212_6be8878f475ac5b1a499b95ab2f7d301/EBOOT.PBP?1;CDN_Timeout=30;
+Dest=27;ImageVersion=0000154f;CDN=http://do01e.psp.update.playstation.org/update/psp/image/oe/2014_1212_6be8878f475ac5b1a499b95ab2f7d301/EBOOT.PBP?2;CDN_Timeout=30;
+Dest=37;ImageVersion=0000154f;CDN=http://do01e.psp.update.playstation.org/update/psp/image/oe/2014_1212_6be8878f475ac5b1a499b95ab2f7d301/EBOOT.PBP?3;CDN_Timeout=30;
+# TW
+Dest=08;ImageVersion=0000154f;CDN=http://do01f.psp.update.playstation.org/update/psp/image/of/2014_1212_6be8878f475ac5b1a499b95ab2f7d301/EBOOT.PBP?0;CDN_Timeout=30;
+Dest=18;ImageVersion=0000154f;CDN=http://do01f.psp.update.playstation.org/update/psp/image/of/2014_1212_6be8878f475ac5b1a499b95ab2f7d301/EBOOT.PBP?1;CDN_Timeout=30;
+Dest=28;ImageVersion=0000154f;CDN=http://do01f.psp.update.playstation.org/update/psp/image/of/2014_1212_6be8878f475ac5b1a499b95ab2f7d301/EBOOT.PBP?2;CDN_Timeout=30;
+Dest=38;ImageVersion=0000154f;CDN=http://do01f.psp.update.playstation.org/update/psp/image/of/2014_1212_6be8878f475ac5b1a499b95ab2f7d301/EBOOT.PBP?3;CDN_Timeout=30;
+# RU
+Dest=09;ImageVersion=0000154f;CDN=http://do01g.psp.update.playstation.org/update/psp/image/og/2014_1212_6be8878f475ac5b1a499b95ab2f7d301/EBOOT.PBP?0;CDN_Timeout=30;
+Dest=19;ImageVersion=0000154f;CDN=http://do01g.psp.update.playstation.org/update/psp/image/og/2014_1212_6be8878f475ac5b1a499b95ab2f7d301/EBOOT.PBP?1;CDN_Timeout=30;
+Dest=29;ImageVersion=0000154f;CDN=http://do01g.psp.update.playstation.org/update/psp/image/og/2014_1212_6be8878f475ac5b1a499b95ab2f7d301/EBOOT.PBP?2;CDN_Timeout=30;
+Dest=39;ImageVersion=0000154f;CDN=http://do01g.psp.update.playstation.org/update/psp/image/og/2014_1212_6be8878f475ac5b1a499b95ab2f7d301/EBOOT.PBP?3;CDN_Timeout=30;
+# CN
+Dest=0A;ImageVersion=0000154f;CDN=http://do01h.psp.update.playstation.org/update/psp/image/oh/2014_1212_6be8878f475ac5b1a499b95ab2f7d301/EBOOT.PBP?0;CDN_Timeout=30;
+Dest=1A;ImageVersion=0000154f;CDN=http://do01h.psp.update.playstation.org/update/psp/image/oh/2014_1212_6be8878f475ac5b1a499b95ab2f7d301/EBOOT.PBP?1;CDN_Timeout=30;
+Dest=2A;ImageVersion=0000154f;CDN=http://do01h.psp.update.playstation.org/update/psp/image/oh/2014_1212_6be8878f475ac5b1a499b95ab2f7d301/EBOOT.PBP?2;CDN_Timeout=30;
+Dest=3A;ImageVersion=0000154f;CDN=http://do01h.psp.update.playstation.org/update/psp/image/oh/2014_1212_6be8878f475ac5b1a499b95ab2f7d301/EBOOT.PBP?3;CDN_Timeout=30;

@@ -1,0 +1,1113 @@
+/*
+This file is part of jpcsp.
+
+Jpcsp is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+Jpcsp is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
+ */
+package jpcsp.graphics.RE;
+
+import static jpcsp.graphics.VideoEngine.primitiveTypeNames;
+
+import java.nio.Buffer;
+import java.nio.IntBuffer;
+
+import jpcsp.graphics.Uniforms;
+import jpcsp.graphics.VertexInfo;
+import jpcsp.graphics.VideoEngine;
+import jpcsp.graphics.RE.software.PixelColor;
+
+/**
+ * @author gid15
+ *
+ */
+public class DebugProxy extends BaseRenderingEngineProxy {
+	protected int useProgram;
+	protected boolean isLogDebugEnabled;
+
+	public DebugProxy(IRenderingEngine proxy) {
+		super(proxy);
+		isLogDebugEnabled = log.isDebugEnabled();
+	}
+
+	protected String getEnabledDisabled(boolean enabled) {
+		return enabled ? "enabled" : "disabled";
+	}
+
+	@Override
+	public void enableFlag(int flag) {
+		if (isLogDebugEnabled) {
+			if (flag < context.flags.size()) {
+				log.debug(String.format("enableFlag %s", context.flags.get(flag).toString()));
+			} else {
+				log.debug(String.format("enableFlag %d", flag));
+			}
+		}
+		super.enableFlag(flag);
+	}
+
+	@Override
+	public void disableFlag(int flag) {
+		if (isLogDebugEnabled) {
+			if (flag < context.flags.size()) {
+				log.debug(String.format("disableFlag %s", context.flags.get(flag).toString()));
+			} else {
+				log.debug(String.format("disableFlag %d", flag));
+			}
+		}
+		super.disableFlag(flag);
+	}
+
+	@Override
+	public void setAlphaFunc(int func, int ref, int mask) {
+		if (isLogDebugEnabled) {
+			log.debug(String.format("setAlphaFunc func=%d, ref=0x%02X, mask=0x%02X", func, ref, mask));
+		}
+		super.setAlphaFunc(func, ref, mask);
+	}
+
+	@Override
+	public void setTextureFunc(int func, boolean alphaUsed, boolean colorDoubled) {
+		if (isLogDebugEnabled) {
+			log.debug(String.format("setTextureFunc func=%d%s%s", func, alphaUsed ? " ALPHA" : "", colorDoubled ? " COLORx2" : ""));
+		}
+		super.setTextureFunc(func, alphaUsed, colorDoubled);
+	}
+
+	@Override
+	public void setBlendFunc(int src, int dst) {
+		if (isLogDebugEnabled) {
+			log.debug(String.format("setBlendFunc src=%d, dst=%d", src, dst));
+		}
+		super.setBlendFunc(src, dst);
+	}
+
+	@Override
+	public void setBlendColor(float[] color) {
+		if (isLogDebugEnabled) {
+			log.debug(String.format("setBlendColor color=0x%08X", PixelColor.getColor(color)));
+		}
+		super.setBlendColor(color);
+	}
+
+	@Override
+	public void setBlendEquation(int mode) {
+		if (isLogDebugEnabled) {
+			log.debug(String.format("setBlendEquation mode=%d", mode));
+		}
+		super.setBlendEquation(mode);
+	}
+
+	protected void debugMatrix3(String name, float[] matrix, int offset) {
+		if (matrix == null) {
+			matrix = identityMatrix;
+		}
+        for (int y = 0; y < 3; y++) {
+            log.debug(String.format("%s %.4f %.4f %.4f", name, matrix[offset + 0 + y * 3], matrix[offset + 1 + y * 3], matrix[offset + 2 + y * 3]));
+        }
+	}
+
+	protected void debugMatrix4(String name, float[] matrix, int offset) {
+		if (matrix == null) {
+			matrix = identityMatrix;
+		}
+        for (int y = 0; y < 4; y++) {
+            log.debug(String.format("%s %.4f %.4f %.4f %.4f", name, matrix[offset + 0 + y * 4], matrix[offset + 1 + y * 4], matrix[offset + 2 + y * 4], matrix[offset + 3 + y * 4]));
+        }
+	}
+
+	protected void debugMatrix(String name, float[] matrix) {
+		debugMatrix4(name, matrix, 0);
+	}
+
+	@Override
+	public void setModelMatrix(float[] values) {
+		if (isLogDebugEnabled) {
+			debugMatrix("setModelMatrix", values);
+		}
+		super.setModelMatrix(values);
+	}
+
+	@Override
+	public void setModelViewMatrix(float[] values) {
+		if (isLogDebugEnabled) {
+			debugMatrix("setModelViewMatrix", values);
+		}
+		super.setModelViewMatrix(values);
+	}
+
+	@Override
+	public void setProjectionMatrix(float[] values) {
+		if (isLogDebugEnabled) {
+			debugMatrix("setProjectionMatrix", values);
+		}
+		super.setProjectionMatrix(values);
+	}
+
+	@Override
+	public void setTextureMatrix(float[] values) {
+		if (isLogDebugEnabled) {
+			debugMatrix("setTextureMatrix", values);
+		}
+		super.setTextureMatrix(values);
+	}
+
+	@Override
+	public void setViewMatrix(float[] values) {
+		if (isLogDebugEnabled) {
+			debugMatrix("setViewMatrix", values);
+		}
+		super.setViewMatrix(values);
+	}
+
+	@Override
+	public void setTextureMipmapMinLevel(int level) {
+		if (isLogDebugEnabled) {
+			log.debug(String.format("setTextureMipmapMinLevel %d", level));
+		}
+		super.setTextureMipmapMinLevel(level);
+	}
+
+	@Override
+	public void setTextureMipmapMaxLevel(int level) {
+		if (isLogDebugEnabled) {
+			log.debug(String.format("setTextureMipmapMaxLevel %d", level));
+		}
+		super.setTextureMipmapMaxLevel(level);
+	}
+
+	@Override
+	public void setTextureMipmapMinFilter(int filter) {
+		if (isLogDebugEnabled) {
+			log.debug(String.format("setTextureMipmapMinFilter %d", filter));
+		}
+		super.setTextureMipmapMinFilter(filter);
+	}
+
+	@Override
+	public void setTextureMipmapMagFilter(int filter) {
+		if (isLogDebugEnabled) {
+			log.debug(String.format("setTextureMipmapMagFilter %d", filter));
+		}
+		super.setTextureMipmapMagFilter(filter);
+	}
+
+	@Override
+	public void setPixelStore(int rowLength, int alignment) {
+		if (isLogDebugEnabled) {
+			log.debug(String.format("setPixelStore rowLength=%d, alignment=%d", rowLength, alignment));
+		}
+		super.setPixelStore(rowLength, alignment);
+	}
+
+	@Override
+	public void setCompressedTexImage(int level, int internalFormat, int width, int height, int compressedSize, Buffer buffer) {
+		if (isLogDebugEnabled) {
+			log.debug(String.format("setCompressedTexImage level=%d, internalFormat=%d, %dx%d, compressedSize=0x%X", level, internalFormat, width, height, compressedSize));
+		}
+		super.setCompressedTexImage(level, internalFormat, width, height, compressedSize, buffer);
+	}
+
+	@Override
+	public void setTexImage(int level, int internalFormat, int width, int height, int format, int type, int textureSize, Buffer buffer) {
+		if (isLogDebugEnabled) {
+			log.debug(String.format("setTexImage level=%d, internalFormat=%d, %dx%d, format=%d, type=%d, textureSize=%d", level, internalFormat, width, height, format, type, textureSize));
+		}
+		super.setTexImage(level, internalFormat, width, height, format, type, textureSize, buffer);
+	}
+
+	@Override
+	public void startClearMode(boolean color, boolean stencil, boolean depth) {
+		isLogDebugEnabled = log.isDebugEnabled();
+		if (isLogDebugEnabled) {
+			log.debug(String.format("startClearMode color=%b, stencil=%b, depth=%b", color, stencil, depth));
+		}
+		super.startClearMode(color, stencil, depth);
+	}
+
+	@Override
+	public void endClearMode() {
+		if (isLogDebugEnabled) {
+			log.debug("endClearMode");
+		}
+		super.endClearMode();
+	}
+
+	@Override
+	public void startDirectRendering(boolean textureEnabled, boolean depthWriteEnabled, boolean colorWriteEnabled, boolean setOrthoMatrix, boolean orthoInverted, int width, int height) {
+		if (isLogDebugEnabled) {
+			log.debug(String.format("startDirectRendering texture=%b, depth=%b, color=%b, ortho=%b, inverted=%b, %dx%d", textureEnabled, depthWriteEnabled, colorWriteEnabled, setOrthoMatrix, orthoInverted, width, height));
+		}
+		super.startDirectRendering(textureEnabled, depthWriteEnabled, colorWriteEnabled, setOrthoMatrix, orthoInverted, width, height);
+	}
+
+	@Override
+	public void endDirectRendering() {
+		if (isLogDebugEnabled) {
+			log.debug("endDirectRendering");
+		}
+		super.endDirectRendering();
+	}
+
+	@Override
+	public void bindTexture(int texture) {
+		if (isLogDebugEnabled) {
+			log.debug(String.format("bindTexture %d", texture));
+		}
+		super.bindTexture(texture);
+	}
+
+	@Override
+	public void drawArrays(int type, int first, int count) {
+		isLogDebugEnabled = log.isDebugEnabled();
+		if (isLogDebugEnabled) {
+			log.debug(String.format("drawArrays type=%d(%s), first=%d, count=%d", type, primitiveTypeNames[type], first, count));
+		}
+		super.drawArrays(type, first, count);
+	}
+
+	@Override
+	public void drawArraysBurstMode(int type, int first, int count) {
+		if (isLogDebugEnabled) {
+			log.debug(String.format("drawArraysBurstMode type=%d(%s), first=%d, count=%d", type, primitiveTypeNames[type], first, count));
+		}
+		super.drawArraysBurstMode(type, first, count);
+	}
+
+	@Override
+	public void setDepthFunc(int func) {
+		if (isLogDebugEnabled) {
+			log.debug(String.format("setDepthFunc %d", func));
+		}
+		super.setDepthFunc(func);
+	}
+
+	@Override
+	public void setDepthMask(boolean depthWriteEnabled) {
+		if (isLogDebugEnabled) {
+			log.debug(String.format("setDepthMask %s", getEnabledDisabled(depthWriteEnabled)));
+		}
+		super.setDepthMask(depthWriteEnabled);
+	}
+
+	@Override
+	public void setDepthRange(float zpos, float zscale, int near, int far) {
+		if (isLogDebugEnabled) {
+			log.debug(String.format("setDepthRange zpos=%f, zscale=%f, near=0x%04X, far=0x%04X", zpos, zscale, near, far));
+		}
+		super.setDepthRange(zpos, zscale, near, far);
+	}
+
+	@Override
+	public void setStencilFunc(int func, int ref, int mask) {
+		if (isLogDebugEnabled) {
+			log.debug(String.format("setStencilFunc func=%d, ref=0x%02X, mask=0x%02X", func, ref, mask));
+		}
+		super.setStencilFunc(func, ref, mask);
+	}
+
+	@Override
+	public void setStencilOp(int fail, int zfail, int zpass) {
+		if (isLogDebugEnabled) {
+			log.debug(String.format("setStencilOp fail=%d, zfail=%d, zpass=%d", fail, zfail, zpass));
+		}
+		super.setStencilOp(fail, zfail, zpass);
+	}
+
+	@Override
+	public int setBones(int count, float[] values) {
+		if (isLogDebugEnabled) {
+			log.debug(String.format("setBones count=%d", count));
+			for (int i = 0; i < count; i++) {
+				debugMatrix4("setBones[" + i + "]", values, i * 16);
+			}
+		}
+		return super.setBones(count, values);
+	}
+
+	@Override
+	public void setUniformMatrix3(int id, int count, float[] values) {
+		if (isLogDebugEnabled) {
+			log.debug(String.format("setUniformMatrix3 %s, count=%d", getUniformName(id), count));
+			for (int i = 0; i < count; i++) {
+				debugMatrix3("setUniformMatrix3[" + i + "]", values, i * 16);
+			}
+		}
+		super.setUniformMatrix3(id, count, values);
+	}
+
+	@Override
+	public void setUniformMatrix4(int id, int count, float[] values) {
+		if (isLogDebugEnabled) {
+			log.debug(String.format("setUniformMatrix4 %s, count=%d", getUniformName(id), count));
+			for (int i = 0; i < count; i++) {
+				debugMatrix4("setUniformMatrix4[" + i + "]", values, i * 16);
+			}
+		}
+		super.setUniformMatrix4(id, count, values);
+	}
+
+	protected String getUniformName(int id) {
+		if (id < 0) {
+			return "Unused Uniform";
+		}
+
+		for (Uniforms uniform : Uniforms.values()) {
+			if (uniform.getId(useProgram) == id) {
+				return uniform.name();
+			}
+		}
+
+		return "Uniform " + id;
+	}
+
+	@Override
+	public void enableVertexAttribArray(int id) {
+		if (isLogDebugEnabled) {
+			log.debug(String.format("enableVertexAttribArray %d", id));
+		}
+		super.enableVertexAttribArray(id);
+	}
+
+	@Override
+	public void disableVertexAttribArray(int id) {
+		if (isLogDebugEnabled) {
+			log.debug(String.format("disableVertexAttribArray %d", id));
+		}
+		super.disableVertexAttribArray(id);
+	}
+
+	@Override
+	public void setUniform(int id, float value) {
+		if (isLogDebugEnabled) {
+			log.debug(String.format("setUniform %s=%f", getUniformName(id), value));
+		}
+		super.setUniform(id, value);
+	}
+
+	@Override
+	public void setUniform1v(int id, float[] values) {
+		if (isLogDebugEnabled) {
+			StringBuilder s = new StringBuilder();
+			for (int i = 0; i < values.length; i++) {
+				if (i > 0) {
+					s.append(", ");
+				}
+				s.append(String.format("%f", values[i]));
+			}
+			log.debug(String.format("setUniform1v %s=%s", getUniformName(id), s.toString()));
+		}
+		super.setUniform1v(id, values);
+	}
+
+	@Override
+	public void setUniform(int id, int value1, int value2) {
+		if (isLogDebugEnabled) {
+			log.debug(String.format("setUniform %s=%d, %d", getUniformName(id), value1, value2));
+		}
+		super.setUniform(id, value1, value2);
+	}
+
+	@Override
+	public void setUniform2(int id, int[] values) {
+		if (isLogDebugEnabled) {
+			log.debug(String.format("setUniform2 %s=%d, %d", getUniformName(id), values[0], values[1]));
+		}
+		super.setUniform2(id, values);
+	}
+
+	@Override
+	public void setUniform3(int id, int[] values) {
+		if (isLogDebugEnabled) {
+			log.debug(String.format("setUniform3 %s=%d, %d, %d", getUniformName(id), values[0], values[1], values[2]));
+		}
+		super.setUniform3(id, values);
+	}
+
+	@Override
+	public void setUniform3v(int id, float[] values) {
+		if (isLogDebugEnabled) {
+			StringBuilder s = new StringBuilder();
+			for (int i = 0; i < values.length; i++) {
+				if (i > 0) {
+					s.append(", ");
+				}
+				s.append(String.format("%f", values[i]));
+			}
+			log.debug(String.format("setUniform3v %s=%s", getUniformName(id), s.toString()));
+		}
+		super.setUniform3v(id, values);
+	}
+
+	@Override
+	public void setUniform4(int id, int[] values) {
+		if (isLogDebugEnabled) {
+			log.debug(String.format("setUniform4 %s=%d, %d, %d, %d", getUniformName(id), values[0], values[1], values[2], values[3]));
+		}
+		super.setUniform4(id, values);
+	}
+
+	@Override
+	public void setUniform(int id, int value) {
+		if (isLogDebugEnabled) {
+			log.debug(String.format("setUniform %s=%d", getUniformName(id), value));
+		}
+		super.setUniform(id, value);
+	}
+
+	@Override
+	public void setVertexAttribPointer(int id, int size, int type, boolean normalized, int stride, int bufferSize, Buffer buffer) {
+		if (isLogDebugEnabled) {
+			log.debug(String.format("setVertexAttribPointer id=%d, size=%d, type=%d, normalized=%b, stride=%d, bufferSize=%d", id, size, type, normalized, stride, bufferSize));
+		}
+		super.setVertexAttribPointer(id, size, type, normalized, stride, bufferSize, buffer);
+	}
+
+	@Override
+	public void setVertexAttribPointer(int id, int size, int type, boolean normalized, int stride, long offset) {
+		if (isLogDebugEnabled) {
+			log.debug(String.format("setVertexAttribPointer id=%d, size=%d, type=%d, normalized=%b, stride=%d, offset=%d", id, size, type, normalized, stride, offset));
+		}
+		super.setVertexAttribPointer(id, size, type, normalized, stride, offset);
+	}
+
+	@Override
+	public void enableClientState(int type) {
+		if (isLogDebugEnabled) {
+			log.debug(String.format("enableClientState %d", type));
+		}
+		super.enableClientState(type);
+	}
+
+	@Override
+	public void disableClientState(int type) {
+		if (isLogDebugEnabled) {
+			log.debug(String.format("disableClientState %d", type));
+		}
+		super.disableClientState(type);
+	}
+
+	@Override
+	public void setColorMask(boolean redWriteEnabled, boolean greenWriteEnabled, boolean blueWriteEnabled, boolean alphaWriteEnabled) {
+		if (isLogDebugEnabled) {
+			log.debug(String.format("setColorMask red %s, green %s, blue %s, alpha %s", getEnabledDisabled(redWriteEnabled), getEnabledDisabled(greenWriteEnabled), getEnabledDisabled(blueWriteEnabled), getEnabledDisabled(alphaWriteEnabled)));
+		}
+		super.setColorMask(redWriteEnabled, greenWriteEnabled, blueWriteEnabled, alphaWriteEnabled);
+	}
+
+	@Override
+	public void setColorMask(int redMask, int greenMask, int blueMask, int alphaMask) {
+		if (isLogDebugEnabled) {
+			log.debug(String.format("setColorMask red 0x%02X, green 0x%02X, blue 0x%02X, alpha 0x%02X", redMask, greenMask, blueMask, alphaMask));
+		}
+		super.setColorMask(redMask, greenMask, blueMask, alphaMask);
+	}
+
+	@Override
+	public void setTextureWrapMode(int s, int t) {
+		if (isLogDebugEnabled) {
+			log.debug(String.format("setTextureWrapMode %d, %d", s, t));
+		}
+		super.setTextureWrapMode(s, t);
+	}
+
+	@Override
+	public void deleteTexture(int texture) {
+		if (isLogDebugEnabled) {
+			log.debug(String.format("deleteTexture %d", texture));
+		}
+		super.deleteTexture(texture);
+	}
+
+	@Override
+	public void endDisplay() {
+		if (isLogDebugEnabled) {
+			log.debug(String.format("endDisplay"));
+		}
+		super.endDisplay();
+	}
+
+	@Override
+	public int genTexture() {
+		int value = super.genTexture();
+		if (isLogDebugEnabled) {
+			log.debug(String.format("genTexture %d", value));
+		}
+		return value;
+	}
+
+	@Override
+	public void startDisplay() {
+		isLogDebugEnabled = log.isDebugEnabled();
+		if (isLogDebugEnabled) {
+			log.debug(String.format("startDisplay"));
+		}
+		super.startDisplay();
+	}
+
+	@Override
+	public void setTextureMapMode(int mode, int proj) {
+		if (isLogDebugEnabled) {
+			log.debug(String.format("setTextureMapMode mode=%d, proj=%d", mode, proj));
+		}
+		super.setTextureMapMode(mode, proj);
+	}
+
+	@Override
+	public void setFrontFace(boolean cw) {
+		if (isLogDebugEnabled) {
+			log.debug(String.format("setFrontFace %s", cw ? "clockwise" : "counter-clockwise"));
+		}
+		super.setFrontFace(cw);
+	}
+
+	@Override
+	public void setColorPointer(int size, int type, int stride, int bufferSize, Buffer buffer) {
+		if (isLogDebugEnabled) {
+			log.debug(String.format("setColorPointer size=%d, type=%d, stride=%d, bufferSize=%d, buffer offset=%d", size, type, stride, bufferSize, buffer.position()));
+		}
+		super.setColorPointer(size, type, stride, bufferSize, buffer);
+	}
+
+	@Override
+	public void setColorPointer(int size, int type, int stride, long offset) {
+		if (isLogDebugEnabled) {
+			log.debug(String.format("setColorPointer size=%d, type=%d, stride=%d, offset=%d", size, type, stride, offset));
+		}
+		super.setColorPointer(size, type, stride, offset);
+	}
+
+	@Override
+	public void setNormalPointer(int type, int stride, int bufferSize, Buffer buffer) {
+		if (isLogDebugEnabled) {
+			log.debug(String.format("setNormalPointer type=%d, stride=%d, bufferSize=%d, buffer offset=%d", type, stride, bufferSize, buffer.position()));
+		}
+		super.setNormalPointer(type, stride, bufferSize, buffer);
+	}
+
+	@Override
+	public void setNormalPointer(int type, int stride, long offset) {
+		if (isLogDebugEnabled) {
+			log.debug(String.format("setNormalPointer type=%d, stride=%d, offset=%d", type, stride, offset));
+		}
+		super.setNormalPointer(type, stride, offset);
+	}
+
+	@Override
+	public void setTexCoordPointer(int size, int type, int stride, int bufferSize, Buffer buffer) {
+		if (isLogDebugEnabled) {
+			log.debug(String.format("setTexCoordPointer size=%d, type=%d, stride=%d, bufferSize=%d, buffer offset=%d", size, type, stride, bufferSize, buffer.position()));
+		}
+		super.setTexCoordPointer(size, type, stride, bufferSize, buffer);
+	}
+
+	@Override
+	public void setTexCoordPointer(int size, int type, int stride, long offset) {
+		if (isLogDebugEnabled) {
+			log.debug(String.format("setTexCoordPointer size=%d, type=%d, stride=%d, offset=%d", size, type, stride, offset));
+		}
+		super.setTexCoordPointer(size, type, stride, offset);
+	}
+
+	@Override
+	public void setVertexPointer(int size, int type, int stride, int bufferSize, Buffer buffer) {
+		if (isLogDebugEnabled) {
+			log.debug(String.format("setVertexPointer size=%d, type=%d, stride=%d, bufferSize=%d, buffer offset=%d", size, type, stride, bufferSize, buffer.position()));
+		}
+		super.setVertexPointer(size, type, stride, bufferSize, buffer);
+	}
+
+	@Override
+	public void setVertexPointer(int size, int type, int stride, long offset) {
+		if (isLogDebugEnabled) {
+			log.debug(String.format("setVertexPointer size=%d, type=%d, stride=%d, offset=%d", size, type, stride, offset));
+		}
+		super.setVertexPointer(size, type, stride, offset);
+	}
+
+	@Override
+	public void setWeightPointer(int size, int type, int stride, int bufferSize, Buffer buffer) {
+		if (isLogDebugEnabled) {
+			log.debug(String.format("setWeightPointer size=%d, type=%d, stride=%d, bufferSize=%d, buffer offset=%d", size, type, stride, bufferSize, buffer.position()));
+		}
+		super.setWeightPointer(size, type, stride, bufferSize, buffer);
+	}
+
+	@Override
+	public void setWeightPointer(int size, int type, int stride, long offset) {
+		if (isLogDebugEnabled) {
+			log.debug(String.format("setWeightPointer size=%d, type=%d, stride=%d, offset=%d", size, type, stride, offset));
+		}
+		super.setWeightPointer(size, type, stride, offset);
+	}
+
+	@Override
+	public void setBufferData(int target, int size, Buffer buffer, int usage) {
+		if (isLogDebugEnabled) {
+			log.debug(String.format("setBufferData target=%d, size=%d, buffer offset=%d, buffer size=%d, usage=%d", target, size, buffer == null ? 0 : buffer.position(), buffer == null ? 0 : buffer.capacity(), usage));
+		}
+		super.setBufferData(target, size, buffer, usage);
+	}
+
+	@Override
+	public void setBufferSubData(int target, int offset, int size, Buffer buffer) {
+		if (isLogDebugEnabled) {
+			log.debug(String.format("setBufferSubData target=%d, offset=%d, size=%d, buffer offset=%d, buffer size=%d, buffer type=%s, buffer direct=%b", target, offset, size, buffer == null ? 0 : buffer.position(), buffer == null ? 0 : buffer.capacity(), buffer.getClass().getName(), buffer.isDirect()));
+		}
+		super.setBufferSubData(target, offset, size, buffer);
+	}
+
+	@Override
+	public void bindBuffer(int target, int buffer) {
+		if (isLogDebugEnabled) {
+			log.debug(String.format("bindBuffer %d, %d", target, buffer));
+		}
+		super.bindBuffer(target, buffer);
+	}
+
+	@Override
+	public void useProgram(int program) {
+		useProgram = program;
+		if (isLogDebugEnabled) {
+			log.debug(String.format("useProgram %d", program));
+		}
+		super.useProgram(program);
+	}
+
+	@Override
+	public void setViewport(int x, int y, int width, int height) {
+		if (isLogDebugEnabled) {
+			log.debug(String.format("setViewport x=%d, y=%d, width=%d, height=%d", x, y, width, height));
+		}
+		super.setViewport(x, y, width, height);
+	}
+
+	@Override
+	public void setScissor(int x, int y, int width, int height) {
+		if (isLogDebugEnabled) {
+			log.debug(String.format("setScissor x=%d, y=%d, width=%d, height=%d", x, y, width, height));
+		}
+		super.setScissor(x, y, width, height);
+	}
+
+	@Override
+	public void setTexSubImage(int level, int xOffset, int yOffset, int width, int height, int format, int type, int textureSize, Buffer buffer) {
+		if (isLogDebugEnabled) {
+			log.debug(String.format("setTexSubImage level=%d, xOffset=%d, yOffset=%d, width=%d, height=%d, format=%d, type=%d, textureSize=%d", level, xOffset, yOffset, width, height, format, type, textureSize));
+		}
+		super.setTexSubImage(level, xOffset, yOffset, width, height, format, type, textureSize, buffer);
+	}
+
+	@Override
+	public void copyTexSubImage(int level, int xOffset, int yOffset, int x, int y, int width, int height) {
+		if (isLogDebugEnabled) {
+			log.debug(String.format("copyTexSubImage level=%d, xOffset=%d, yOffset=%d, x=%d, y=%d, width=%d, height=%d", level, xOffset, yOffset, x, y, width, height));
+		}
+		super.copyTexSubImage(level, xOffset, yOffset, x, y, width, height);
+	}
+
+	@Override
+	public void getTexImage(int level, int format, int type, Buffer buffer) {
+		if (isLogDebugEnabled) {
+			log.debug(String.format("getTexImage level=%d, format=%d, type=%d, buffer remaining=%d, buffer class=%s", level, format, type, buffer.remaining(), buffer.getClass().getName()));
+		}
+		super.getTexImage(level, format, type, buffer);
+	}
+
+	@Override
+	public void bindVertexArray(int id) {
+		if (isLogDebugEnabled) {
+			log.debug(String.format("bindVertexArray %d", id));
+		}
+		super.bindVertexArray(id);
+	}
+
+	@Override
+	public void multiDrawArrays(int primitive, IntBuffer first, IntBuffer count) {
+		if (isLogDebugEnabled) {
+			StringBuilder s = new StringBuilder();
+			int n = first.remaining();
+			int p = first.position();
+			for (int i = 0; i < n; i++) {
+				s.append(String.format(" (%d,%d)", first.get(p + i), count.get(p + i)));
+			}
+			log.debug(String.format("multiDrawArrays primitive=%d, count=%d,%s", primitive, n, s.toString()));
+		}
+		super.multiDrawArrays(primitive, first, count);
+	}
+
+	@Override
+	public void setActiveTexture(int index) {
+		if (isLogDebugEnabled) {
+			log.debug(String.format("setActiveTexture %d", index));
+		}
+		super.setActiveTexture(index);
+	}
+
+	@Override
+	public void setTextureFormat(int pixelFormat, boolean swizzle) {
+		if (isLogDebugEnabled) {
+			log.debug(String.format("setTextureFormat pixelFormat=%d(%s), swizzle=%b", pixelFormat, VideoEngine.getPsmName(pixelFormat), swizzle));
+		}
+		super.setTextureFormat(pixelFormat, swizzle);
+	}
+
+	@Override
+	public int createProgram() {
+		int program = super.createProgram();
+		if (isLogDebugEnabled) {
+			log.debug(String.format("createProgram %d", program));
+		}
+		return program;
+	}
+
+	@Override
+	public int createShader(int type) {
+		int shader = super.createShader(type);
+		if (isLogDebugEnabled) {
+			log.debug(String.format("createShader(%d) %d", type, shader));
+		}
+		return shader;
+	}
+
+	@Override
+	public void setVertexColor(float[] color) {
+		if (isLogDebugEnabled) {
+			log.debug(String.format("setVertexColor (r=%.3f, b=%.3f, g=%.3f, a=%.3f)", color[0], color[1], color[2], color[3]));
+		}
+		super.setVertexColor(color);
+	}
+
+	@Override
+	public void setUniform4(int id, float[] values) {
+		if (isLogDebugEnabled) {
+			log.debug(String.format("setUniform4 %s=%f, %f, %f, %f", getUniformName(id), values[0], values[1], values[2], values[3]));
+		}
+		super.setUniform4(id, values);
+	}
+
+	@Override
+	public void setColorMaterial(boolean ambient, boolean diffuse, boolean specular) {
+		if (isLogDebugEnabled) {
+			log.debug(String.format("setColorMaterial ambient=%b, diffuse=%b, specular=%b", ambient, diffuse, specular));
+		}
+		super.setColorMaterial(ambient, diffuse, specular);
+	}
+
+	@Override
+	public void bindFramebuffer(int target, int framebuffer) {
+		if (isLogDebugEnabled) {
+			log.debug(String.format("bindFramebuffer target=%d, framebuffer=%d", target, framebuffer));
+		}
+		super.bindFramebuffer(target, framebuffer);
+	}
+
+	@Override
+	public void bindActiveTexture(int index, int texture) {
+		if (isLogDebugEnabled) {
+			log.debug(String.format("bindActiveTexture index=%d, texture=%d", index, texture));
+		}
+		super.bindActiveTexture(index, texture);
+	}
+
+	@Override
+	public void blitFramebuffer(int srcX0, int srcY0, int srcX1, int srcY1, int dstX0, int dstY0, int dstX1, int dstY1, int mask, int filter) {
+		if (isLogDebugEnabled) {
+			log.debug(String.format("blitFramebuffer src=(%d,%d)-(%d,%d), dst=(%d,%d)-(%d,%d), mask=0x%X, filter=%d", srcX0, srcY0, srcX1, srcY1, dstX0, dstY0, dstX1, dstY1, mask, filter));
+		}
+		super.blitFramebuffer(srcX0, srcY0, srcX1, srcY1, dstX0, dstY0, dstX1, dstY1, mask, filter);
+	}
+
+	@Override
+	public boolean setCopyRedToAlpha(boolean copyRedToAlpha) {
+		if (isLogDebugEnabled) {
+			log.debug(String.format("setCopyRedToAlpha %b", copyRedToAlpha));
+		}
+		return super.setCopyRedToAlpha(copyRedToAlpha);
+	}
+
+	@Override
+	public void drawElements(int primitive, int count, int indexType, Buffer indices, int indicesOffset) {
+		if (isLogDebugEnabled) {
+			log.debug(String.format("drawElements primitive=%d(%s), count=%d, indexType=%d, indicesOffset=%d", primitive, primitiveTypeNames[primitive], count, indexType, indicesOffset));
+		}
+		super.drawElements(primitive, count, indexType, indices, indicesOffset);
+	}
+
+	@Override
+	public void drawElements(int primitive, int count, int indexType, long indicesOffset) {
+		if (isLogDebugEnabled) {
+			log.debug(String.format("drawElements primitive=%d(%s), count=%d, indexType=%d, indicesOffset=%d", primitive, primitiveTypeNames[primitive], count, indexType, indicesOffset));
+		}
+		super.drawElements(primitive, count, indexType, indicesOffset);
+	}
+
+	@Override
+	public void multiDrawElements(int primitive, IntBuffer first, IntBuffer count, int indexType, long indicesOffset) {
+		if (isLogDebugEnabled) {
+			StringBuilder s = new StringBuilder();
+			int n = first.remaining();
+			int p = first.position();
+			for (int i = 0; i < n; i++) {
+				s.append(String.format(" (%d,%d)", first.get(p + i), count.get(p + i)));
+			}
+			log.debug(String.format("multiDrawElements primitive=%d(%s), count=%d,%s, indexType=%d, indicesOffset=%d", primitive, primitiveTypeNames[primitive], n, s.toString(), indexType, indicesOffset));
+		}
+		super.multiDrawElements(primitive, first, count, indexType, indicesOffset);
+	}
+
+	@Override
+	public void drawElementsBurstMode(int primitive, int count, int indexType, long indicesOffset) {
+		if (isLogDebugEnabled) {
+			log.debug(String.format("drawElementsBurstMode primitive=%d(%s), count=%d, indexType=%d, indicesOffset=%d", primitive, primitiveTypeNames[primitive], count, indexType, indicesOffset));
+		}
+		super.drawElementsBurstMode(primitive, count, indexType, indicesOffset);
+	}
+
+	@Override
+	public int genFramebuffer() {
+		int value = super.genFramebuffer();
+		if (isLogDebugEnabled) {
+			log.debug(String.format("genFramebuffer %d", value));
+		}
+		return value;
+	}
+
+	@Override
+	public int genRenderbuffer() {
+		int value = super.genRenderbuffer();
+		if (isLogDebugEnabled) {
+			log.debug(String.format("genRenderbuffer %d", value));
+		}
+		return value;
+	}
+
+	@Override
+	public void bindRenderbuffer(int renderbuffer) {
+		if (isLogDebugEnabled) {
+			log.debug(String.format("bindRenderbuffer renderbuffer=%d", renderbuffer));
+		}
+		super.bindRenderbuffer(renderbuffer);
+	}
+
+	@Override
+	public void setRenderbufferStorage(int internalFormat, int width, int height) {
+		if (isLogDebugEnabled) {
+			log.debug(String.format("setRenderbufferStorage internalFormat=%d, width=%d, height=%d", internalFormat, width, height));
+		}
+		super.setRenderbufferStorage(internalFormat, width, height);
+	}
+
+	@Override
+	public void setFramebufferRenderbuffer(int target, int attachment, int renderbuffer) {
+		if (isLogDebugEnabled) {
+			log.debug(String.format("setFramebufferRenderbuffer target=%d, attachment=%d, renderbuffer=%d", target, attachment, renderbuffer));
+		}
+		super.setFramebufferRenderbuffer(target, attachment, renderbuffer);
+	}
+
+	@Override
+	public void setFramebufferTexture(int target, int attachment, int texture, int level) {
+		if (isLogDebugEnabled) {
+			log.debug(String.format("setFramebufferTexture target=%d, attachment=%d, texture=%d, level=%d", target, attachment, texture, level));
+		}
+		super.setFramebufferTexture(target, attachment, texture, level);
+	}
+
+	@Override
+	public void textureBarrier() {
+		if (isLogDebugEnabled) {
+			log.debug("textureBarrier");
+		}
+		super.textureBarrier();
+	}
+
+	@Override
+	public void setLogicOp(int logicOp) {
+		if (isLogDebugEnabled) {
+			log.debug(String.format("setLogicOp logicOp=%d", logicOp));
+		}
+		super.setLogicOp(logicOp);
+	}
+
+	@Override
+	public void setLightPosition(int light, float[] position) {
+		if (isLogDebugEnabled) {
+			log.debug(String.format("setLightPosition light=%d, (%f, %f, %f)", light, position[0], position[1], position[2]));
+		}
+		super.setLightPosition(light, position);
+	}
+
+	@Override
+	public void setLightMode(int mode) {
+		if (isLogDebugEnabled) {
+			log.debug(String.format("setLightMode mode=%d", mode));
+		}
+		super.setLightMode(mode);
+	}
+
+	@Override
+	public void setLightType(int light, int type, int kind) {
+		if (isLogDebugEnabled) {
+			log.debug(String.format("setLightType light=%d, type=%d, kind=%d", light, type, kind));
+		}
+		super.setLightType(light, type, kind);
+	}
+
+	@Override
+	public void setMaterialShininess(float shininess) {
+		if (isLogDebugEnabled) {
+			log.debug(String.format("setMaterialShininess %f", shininess));
+		}
+		super.setMaterialShininess(shininess);
+	}
+
+	@Override
+	public long fenceSync() {
+		long value = super.fenceSync();
+		if (isLogDebugEnabled) {
+			log.debug(String.format("fenceSync %d", value));
+		}
+		return value;
+	}
+
+	@Override
+	public void clientWaitSync(long sync, long timeout) {
+		if (isLogDebugEnabled) {
+			log.debug(String.format("clientWaitSync sync=%d, timeout=%d", sync, timeout));
+		}
+		super.clientWaitSync(sync, timeout);
+	}
+
+	@Override
+	public void deleteSync(long sync) {
+		if (isLogDebugEnabled) {
+			log.debug(String.format("deleteSync sync=%d", sync));
+		}
+		super.deleteSync(sync);
+	}
+
+	@Override
+	public int genBuffer() {
+		int value = super.genBuffer();
+		if (isLogDebugEnabled) {
+			log.debug(String.format("genBuffer %d", value));
+		}
+		return value;
+	}
+
+	@Override
+	public void setUniformBlockBinding(int program, int blockIndex, int bindingPoint) {
+		if (isLogDebugEnabled) {
+			log.debug(String.format("setUniformBlockBinding program=%d, blockIndex=%d, bindingPoint=%d", program, blockIndex, bindingPoint));
+		}
+		super.setUniformBlockBinding(program, blockIndex, bindingPoint);
+	}
+
+	@Override
+	public int getUniformBlockIndex(int program, String name) {
+		int value = super.getUniformBlockIndex(program, name);
+		if (isLogDebugEnabled) {
+			log.debug(String.format("getUniformBlockIndex program=%d, name='%s' returning %d", program, name, value));
+		}
+		return value;
+	}
+
+	@Override
+	public void bindBufferBase(int target, int bindingPoint, int buffer) {
+		if (isLogDebugEnabled) {
+			log.debug(String.format("bindBufferBase target=%d, bindingPoint=%d, binbufferdingPoint=%d", target, bindingPoint, buffer));
+		}
+		super.bindBufferBase(target, bindingPoint, buffer);
+	}
+
+	@Override
+	public void reset() {
+		if (isLogDebugEnabled) {
+			log.debug("reset");
+		}
+		super.reset();
+	}
+
+	@Override
+	public void deleteBuffer(int buffer) {
+		if (isLogDebugEnabled) {
+			log.debug(String.format("deleteBuffer %d", buffer));
+		}
+		super.deleteBuffer(buffer);
+	}
+
+	@Override
+	public void deleteFramebuffer(int framebuffer) {
+		if (isLogDebugEnabled) {
+			log.debug(String.format("deleteFramebuffer %d", framebuffer));
+		}
+		super.deleteFramebuffer(framebuffer);
+	}
+
+	@Override
+	public void deleteRenderbuffer(int renderbuffer) {
+		if (isLogDebugEnabled) {
+			log.debug(String.format("deleteRenderbuffer %d", renderbuffer));
+		}
+		super.deleteRenderbuffer(renderbuffer);
+	}
+
+	@Override
+	public void setVertexInfo(VertexInfo vinfo, boolean allNativeVertexInfo, boolean useVertexColor, boolean useTexture, boolean useNormal, int type) {
+		if (isLogDebugEnabled) {
+			log.debug(String.format("setVertexInfo vinfo=%s, allNativeVertexInfo=%b, useVertexColor=%b, useTexture=%b, useNormal=%b, type=%d(%s)", vinfo, allNativeVertexInfo, useVertexColor, useTexture, useNormal, type, primitiveTypeNames[type]));
+		}
+		super.setVertexInfo(vinfo, allNativeVertexInfo, useVertexColor, useTexture, useNormal, type);
+	}
+
+	@Override
+	public void setPatchParameter(int parameter, int value) {
+		if (isLogDebugEnabled) {
+			log.debug(String.format("setPatchParameter parameter=%d, value=%d", parameter, value));
+		}
+		super.setPatchParameter(parameter, value);
+	}
+
+	@Override
+	public int getAttribLocation(int program, String name) {
+		int value = super.getAttribLocation(program, name);
+		if (isLogDebugEnabled) {
+			log.debug(String.format("getAttribLocation program=%d, name='%s': %d", program, name, value));
+		}
+		return value;
+	}
+
+	@Override
+	public void bindAttribLocation(int program, int index, String name) {
+		if (isLogDebugEnabled) {
+			log.debug(String.format("bindAttribLocation program=%d, index=%d, name='%s'", program, index, name));
+		}
+		super.bindAttribLocation(program, index, name);
+	}
+
+	@Override
+	public void setPolygonMode(int mode) {
+		if (isLogDebugEnabled) {
+			log.debug(String.format("setPolygonMode mode=%d", mode));
+		}
+		super.setPolygonMode(mode);
+	}
+
+	@Override
+	public void setSplineInfo(int ucount, int vcount, int utype, int vtype) {
+		if (isLogDebugEnabled) {
+			log.debug(String.format("setSplineInfo ucount=%d, vcount=%d, utype=%d, vtype=%d", ucount, vcount, utype, vtype));
+		}
+		super.setSplineInfo(ucount, vcount, utype, vtype);
+	}
+}

@@ -1,0 +1,1076 @@
+/*
+This file is part of jpcsp.
+
+Jpcsp is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+Jpcsp is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
+ */
+package jpcsp.graphics.RE;
+
+import static jpcsp.graphics.VideoEngine.NUM_LIGHTS;
+
+import org.apache.log4j.Logger;
+
+import jpcsp.graphics.Uniforms;
+import jpcsp.graphics.VideoEngine;
+
+/**
+ * @author gid15
+ *
+ * The current values for the Shader uniform variables.
+ * The Shader uniform values have to be updated when switching the active
+ * shader program.
+ */
+public class ShaderContext {
+	protected static Logger log = VideoEngine.log;
+	private float zPos;
+	private float zScale;
+	private int[] matFlags = new int[3];
+	private int lightingEnable;
+	private int lightMode;
+	private int[] lightType = new int[NUM_LIGHTS];
+	private int[] lightKind = new int[NUM_LIGHTS];
+	private int[] lightEnabled = new int[NUM_LIGHTS];
+	private float[] lightPosition = new float[NUM_LIGHTS * 3];
+	private float[] lightDirection = new float[NUM_LIGHTS * 3];
+	private float[] lightAmbientColor = new float[NUM_LIGHTS * 3];
+	private float[] lightDiffuseColor = new float[NUM_LIGHTS * 3];
+	private float[] lightSpecularColor = new float[NUM_LIGHTS * 3];
+	private float[] lightSpotLightExponent = new float[NUM_LIGHTS];
+	private float[] lightSpotLightCutoff = new float[NUM_LIGHTS];
+	private float[] lightAttenuation = new float[NUM_LIGHTS * 3];
+	private float[] boneMatrix = new float[8 * 16];
+	private int numberBones;
+	private int texEnable;
+	private int texMapMode;
+	private int texMapProj;
+	private int[] texShade = new int[2];
+	private int ctestEnable;
+	private int ctestFunc;
+	private int[] ctestMsk = new int[3];
+	private int[] ctestRef = new int[3];
+	private int[] texEnvMode = new int[2];
+	private float[] texEnvColor = new float[3];
+	private float colorDoubling;
+	private int vinfoColor;
+	private int vinfoPosition;
+	private int vinfoTexture;
+	private int vinfoNormal;
+	private int vinfoTransform2D;
+	private float positionScale;
+	private float normalScale;
+	private float textureScale;
+	private float weightScale;
+	private int clutShift;
+	private int clutMask;
+	private int clutOffset;
+	private boolean mipmapShareClut;
+	private int clut = -1;
+	private int texPixelFormat;
+	private int tex = 0;
+	private int utex = -1;
+	private float[] vertexColor = new float[4];
+	private int clutIndexHint;
+	private int stencilTestEnable;
+	private int stencilFunc;
+	private int stencilRef;
+	private int stencilMask;
+	private int stencilOpFail;
+	private int stencilOpZFail;
+	private int stencilOpZPass;
+	private int depthTestEnable;
+	private int depthFunc;
+	private boolean depthWriteEnabled;
+	private int fbTex = -1;
+	private int udepthTex = -1;
+	private int colorMaskEnable;
+	private int[] colorMask = new int[4];
+	private int[] notColorMask = new int[4];
+	private int alphaTestEnable;
+	private int alphaTestFunc;
+	private int alphaTestRef;
+	private int alphaTestMask;
+	private int blendTestEnable;
+	private int blendEquation;
+	private int blendSrc;
+	private int blendDst;
+	private float[] blendSFix = new float[3];
+	private float[] blendDFix = new float[3];
+	private int copyRedToAlpha;
+	private int wrapModeS;
+	private int wrapModeT;
+	private int fogEnable;
+	private float[] fogColor = new float[3];
+	private float fogEnd;
+	private float fogScale;
+	private int clipPlaneEnable;
+	private float[] viewportPos = new float[3];
+	private float[] viewportScale = new float[3];
+	private int shadeModel;
+	private float[] ambientLightColor = new float[4];
+	private float materialShininess;
+	private float[] materialAmbientColor = new float[4];
+	private float[] materialDiffuseColor = new float[3];
+	private float[] materialSpecularColor = new float[3];
+	private float[] materialEmissionColor = new float[3];
+	private float[] textureMatrix = new float[16];
+	private float[] modelMatrix = new float[16];
+	private float[] modelViewMatrix = new float[16];
+	private float[] modelViewProjectionMatrix = new float[16];
+	private int curvedSurfaceType;
+	private int[] splineInfo = new int[4];
+	private int patchFace;
+
+	public void setUniforms(IRenderingEngine re, int shaderProgram) {
+		re.setUniform3(Uniforms.matFlags.getId(shaderProgram), matFlags);
+		re.setUniform4(Uniforms.lightEnabled.getId(shaderProgram), lightEnabled);
+		re.setUniform(Uniforms.lightMode.getId(shaderProgram), lightMode);
+		re.setUniform4(Uniforms.lightType.getId(shaderProgram), lightType);
+		re.setUniform4(Uniforms.lightKind.getId(shaderProgram), lightKind);
+		re.setUniform3v(Uniforms.lightPosition.getId(shaderProgram), lightPosition);
+		re.setUniform3v(Uniforms.lightDirection.getId(shaderProgram), lightDirection);
+		re.setUniform3v(Uniforms.lightAmbientColor.getId(shaderProgram), lightAmbientColor);
+		re.setUniform3v(Uniforms.lightDiffuseColor.getId(shaderProgram), lightDiffuseColor);
+		re.setUniform3v(Uniforms.lightSpecularColor.getId(shaderProgram), lightSpecularColor);
+		re.setUniform1v(Uniforms.lightSpotLightExponent.getId(shaderProgram), lightSpotLightExponent);
+		re.setUniform1v(Uniforms.lightSpotLightCutoff.getId(shaderProgram), lightSpotLightCutoff);
+		re.setUniform3v(Uniforms.lightAttenuation.getId(shaderProgram), lightAttenuation);
+		re.setUniform(Uniforms.lightingEnable.getId(shaderProgram), lightingEnable);
+		re.setUniformMatrix4(Uniforms.boneMatrix.getId(shaderProgram), numberBones, boneMatrix);
+		re.setUniform(Uniforms.numberBones.getId(shaderProgram), numberBones);
+		re.setUniform(Uniforms.texEnable.getId(shaderProgram), texEnable);
+		re.setUniform(Uniforms.texMapMode.getId(shaderProgram), texMapMode);
+		re.setUniform(Uniforms.texMapProj.getId(shaderProgram), texMapProj);
+		re.setUniform2(Uniforms.texShade.getId(shaderProgram), texShade);
+		re.setUniform(Uniforms.ctestEnable.getId(shaderProgram), ctestEnable);
+		re.setUniform(Uniforms.ctestFunc.getId(shaderProgram), ctestFunc);
+		re.setUniform3(Uniforms.ctestMsk.getId(shaderProgram), ctestMsk);
+		re.setUniform3(Uniforms.ctestRef.getId(shaderProgram), ctestRef);
+		re.setUniform2(Uniforms.texEnvMode.getId(shaderProgram), texEnvMode);
+		re.setUniform3(Uniforms.texEnvColor.getId(shaderProgram), texEnvColor);
+		re.setUniform(Uniforms.colorDoubling.getId(shaderProgram), colorDoubling);
+		re.setUniform(Uniforms.vinfoColor.getId(shaderProgram), vinfoColor);
+		re.setUniform(Uniforms.vinfoPosition.getId(shaderProgram), vinfoPosition);
+		re.setUniform(Uniforms.vinfoTransform2D.getId(shaderProgram), vinfoTransform2D);
+		re.setUniform(Uniforms.positionScale.getId(shaderProgram), positionScale);
+		re.setUniform(Uniforms.normalScale.getId(shaderProgram), normalScale);
+		re.setUniform(Uniforms.textureScale.getId(shaderProgram), textureScale);
+		re.setUniform(Uniforms.weightScale.getId(shaderProgram), weightScale);
+		re.setUniform(Uniforms.clutShift.getId(shaderProgram), clutShift);
+		re.setUniform(Uniforms.clutMask.getId(shaderProgram), clutMask);
+		re.setUniform(Uniforms.clutOffset.getId(shaderProgram), clutOffset);
+		re.setUniform(Uniforms.mipmapShareClut.getId(shaderProgram), mipmapShareClut ? 1 : 0);
+		re.setUniform(Uniforms.texPixelFormat.getId(shaderProgram), texPixelFormat);
+		re.setUniform4(Uniforms.vertexColor.getId(shaderProgram), vertexColor);
+		re.setUniform(Uniforms.vinfoTexture.getId(shaderProgram), vinfoTexture);
+		re.setUniform(Uniforms.vinfoNormal.getId(shaderProgram), vinfoNormal);
+		re.setUniform(Uniforms.stencilTestEnable.getId(shaderProgram), stencilTestEnable);
+		re.setUniform(Uniforms.stencilFunc.getId(shaderProgram), stencilFunc);
+		re.setUniform(Uniforms.stencilRef.getId(shaderProgram), stencilRef);
+		re.setUniform(Uniforms.stencilMask.getId(shaderProgram), stencilMask);
+		re.setUniform(Uniforms.stencilOpFail.getId(shaderProgram), stencilOpFail);
+		re.setUniform(Uniforms.stencilOpZFail.getId(shaderProgram), stencilOpZFail);
+		re.setUniform(Uniforms.stencilOpZPass.getId(shaderProgram), stencilOpZPass);
+		re.setUniform(Uniforms.depthTestEnable.getId(shaderProgram), depthTestEnable);
+		re.setUniform(Uniforms.depthFunc.getId(shaderProgram), depthFunc);
+		re.setUniform(Uniforms.depthWriteEnabled.getId(shaderProgram), depthWriteEnabled ? 1 : 0);
+		re.setUniform(Uniforms.colorMaskEnable.getId(shaderProgram), colorMaskEnable);
+		re.setUniform4(Uniforms.colorMask.getId(shaderProgram), colorMask);
+		re.setUniform4(Uniforms.notColorMask.getId(shaderProgram), notColorMask);
+		re.setUniform(Uniforms.alphaTestEnable.getId(shaderProgram), alphaTestEnable);
+		re.setUniform(Uniforms.alphaTestFunc.getId(shaderProgram), alphaTestFunc);
+		re.setUniform(Uniforms.alphaTestRef.getId(shaderProgram), alphaTestRef);
+		re.setUniform(Uniforms.alphaTestMask.getId(shaderProgram), alphaTestMask);
+		re.setUniform(Uniforms.blendTestEnable.getId(shaderProgram), blendTestEnable);
+		re.setUniform(Uniforms.blendEquation.getId(shaderProgram), blendEquation);
+		re.setUniform(Uniforms.blendSrc.getId(shaderProgram), blendSrc);
+		re.setUniform(Uniforms.blendDst.getId(shaderProgram), blendDst);
+		re.setUniform3(Uniforms.blendSFix.getId(shaderProgram), blendSFix);
+		re.setUniform3(Uniforms.blendDFix.getId(shaderProgram), blendDFix);
+		re.setUniform(Uniforms.copyRedToAlpha.getId(shaderProgram), copyRedToAlpha);
+		re.setUniform(Uniforms.wrapModeS.getId(shaderProgram), wrapModeS);
+		re.setUniform(Uniforms.wrapModeT.getId(shaderProgram), wrapModeT);
+		re.setUniform(Uniforms.fogEnable.getId(shaderProgram), fogEnable);
+		re.setUniform3(Uniforms.fogColor.getId(shaderProgram), fogColor);
+		re.setUniform(Uniforms.fogEnd.getId(shaderProgram), fogEnd);
+		re.setUniform(Uniforms.fogScale.getId(shaderProgram), fogScale);
+		re.setUniform(Uniforms.clipPlaneEnable.getId(shaderProgram), clipPlaneEnable);
+		re.setUniform3(Uniforms.viewportPos.getId(shaderProgram), viewportPos);
+		re.setUniform3(Uniforms.viewportScale.getId(shaderProgram), viewportScale);
+		re.setUniform(Uniforms.shadeModel.getId(shaderProgram), shadeModel);
+		re.setUniform4(Uniforms.ambientLightColor.getId(shaderProgram), ambientLightColor);
+		re.setUniform(Uniforms.materialShininess.getId(shaderProgram), materialShininess);
+		re.setUniform4(Uniforms.materialAmbientColor.getId(shaderProgram), materialAmbientColor);
+		re.setUniform3(Uniforms.materialDiffuseColor.getId(shaderProgram), materialDiffuseColor);
+		re.setUniform3(Uniforms.materialSpecularColor.getId(shaderProgram), materialSpecularColor);
+		re.setUniform3(Uniforms.materialEmissionColor.getId(shaderProgram), materialEmissionColor);
+		re.setUniformMatrix4(Uniforms.pspTextureMatrix.getId(shaderProgram), 1, textureMatrix);
+		re.setUniformMatrix4(Uniforms.modelMatrix.getId(shaderProgram), 1, modelMatrix);
+		re.setUniformMatrix4(Uniforms.modelViewMatrix.getId(shaderProgram), 1, modelViewMatrix);
+		re.setUniformMatrix4(Uniforms.modelViewProjectionMatrix.getId(shaderProgram), 1, modelViewProjectionMatrix);
+		re.setUniform(Uniforms.curvedSurfaceType.getId(shaderProgram), curvedSurfaceType);
+		re.setUniform4(Uniforms.splineInfo.getId(shaderProgram), splineInfo);
+		re.setUniform(Uniforms.patchFace.getId(shaderProgram), patchFace);
+
+		setUniformsSamplers(re, shaderProgram);
+	}
+
+	protected void setUniformsSamplers(IRenderingEngine re, int shaderProgram) {
+		re.setUniform(Uniforms.clut.getId(shaderProgram), clut);
+		re.setUniform(Uniforms.tex.getId(shaderProgram), tex);
+		re.setUniform(Uniforms.utex.getId(shaderProgram), utex);
+		re.setUniform(Uniforms.fbTex.getId(shaderProgram), fbTex);
+		re.setUniform(Uniforms.depthTex.getId(shaderProgram), udepthTex);
+	}
+
+	public void initShaderProgram(IRenderingEngine re, int shaderProgram) {
+		// Nothing to do here
+	}
+
+	public void startDisplay(IRenderingEngine re) {
+		// Nothing to do here
+	}
+
+	public float getZPos() {
+		return zPos;
+	}
+
+	public void setZPos(float pos) {
+		zPos = pos;
+	}
+
+	public float getZScale() {
+		return zScale;
+	}
+
+	public void setZScale(float scale) {
+		zScale = scale;
+	}
+
+	public int getMatFlags(int index) {
+		return matFlags[index];
+	}
+
+	public void setMatFlags(int index, int matFlags) {
+		this.matFlags[index] = matFlags;
+	}
+
+	public int getLightingEnable() {
+		return lightingEnable;
+	}
+
+	public void setLightingEnable(int lightingEnable) {
+		this.lightingEnable = lightingEnable;
+	}
+
+	public int getLightMode() {
+		return lightMode;
+	}
+
+	public void setLightMode(int lightMode) {
+		this.lightMode = lightMode;
+	}
+
+	public int getLightType(int light) {
+		return lightType[light];
+	}
+
+	public void setLightType(int light, int lightType) {
+		this.lightType[light] = lightType;
+	}
+
+	public int getLightKind(int light) {
+		return lightKind[light];
+	}
+
+	public void setLightKind(int light, int lightKind) {
+		this.lightKind[light] = lightKind;
+	}
+
+	public int getLightEnabled(int light) {
+		return lightEnabled[light];
+	}
+
+	public void setLightEnabled(int light, int lightEnabled) {
+		this.lightEnabled[light] = lightEnabled;
+	}
+
+	public float getLightPosition(int light, int n) {
+		return lightPosition[light * 3 + n];
+	}
+
+	public void setLightPosition(int light, float[] lightPosition) {
+		System.arraycopy(lightPosition, 0, this.lightPosition, light * 3, 3);
+	}
+
+	public float getLightDirection(int light, int n) {
+		return lightDirection[light * 3 + n];
+	}
+
+	public void setLightDirection(int light, float[] lightDirection) {
+		System.arraycopy(lightDirection, 0, this.lightDirection, light * 3, 3);
+	}
+
+	public float getLightAmbientColor(int light, int n) {
+		return lightAmbientColor[light * 3 + n];
+	}
+
+	public void setLightAmbientColor(int light, float[] lightAmbientColor) {
+		System.arraycopy(lightAmbientColor, 0, this.lightAmbientColor, light * 3, 3);
+	}
+
+	public float getLightDiffuseColor(int light, int n) {
+		return lightDiffuseColor[light * 3 + n];
+	}
+
+	public void setLightDiffuseColor(int light, float[] lightDiffuseColor) {
+		System.arraycopy(lightDiffuseColor, 0, this.lightDiffuseColor, light * 3, 3);
+	}
+
+	public float getLightSpecularColor(int light, int n) {
+		return lightSpecularColor[light * 3 + n];
+	}
+
+	public void setLightSpecularColor(int light, float[] lightSpecularColor) {
+		System.arraycopy(lightSpecularColor, 0, this.lightSpecularColor, light * 3, 3);
+	}
+
+	public float getLightSpotLightExponent(int light) {
+		return lightSpotLightExponent[light];
+	}
+
+	public void setLightSpotLightExponent(int light, float lightSpotLightExponent) {
+		this.lightSpotLightExponent[light] = lightSpotLightExponent;
+	}
+
+	public float getLightSpotLightCutoff(int light) {
+		return lightSpotLightCutoff[light];
+	}
+
+	public void setLightSpotLightCutoff(int light, float lightSpotLightCutoff) {
+		this.lightSpotLightCutoff[light] = lightSpotLightCutoff;
+	}
+
+	public float getLightConstantAttenuation(int light) {
+		return lightAttenuation[light * 3 + 0];
+	}
+
+	public void setLightConstantAttenuation(int light, float lightAttenuation) {
+		this.lightAttenuation[light * 3 + 0] = lightAttenuation;
+	}
+
+	public float getLightLinearAttenuation(int light) {
+		return lightAttenuation[light * 3 + 1];
+	}
+
+	public void setLightLinearAttenuation(int light, float lightAttenuation) {
+		this.lightAttenuation[light * 3 + 1] = lightAttenuation;
+	}
+
+	public float getLightQuadraticAttenuation(int light) {
+		return lightAttenuation[light * 3 + 2];
+	}
+
+	public void setLightQuadraticAttenuation(int light, float lightAttenuation) {
+		this.lightAttenuation[light * 3 + 2] = lightAttenuation;
+	}
+
+	public int getBoneMatrixLength() {
+		return boneMatrix.length;
+	}
+
+	public float[] getBoneMatrix() {
+		return boneMatrix;
+	}
+
+	public void setBoneMatrix(int count, float[] boneMatrix) {
+		if (count > 0) {
+			System.arraycopy(boneMatrix, 0, this.boneMatrix, 0, 16 * count);
+		}
+	}
+
+	public int getNumberBones() {
+		return numberBones;
+	}
+
+	public void setNumberBones(int numberBones) {
+		this.numberBones = numberBones;
+	}
+
+	public int getTexEnable() {
+		return texEnable;
+	}
+
+	public void setTexEnable(int texEnable) {
+		this.texEnable = texEnable;
+	}
+
+	public int getTexMapMode() {
+		return texMapMode;
+	}
+
+	public void setTexMapMode(int texMapMode) {
+		this.texMapMode = texMapMode;
+	}
+
+	public int getTexMapProj() {
+		return texMapProj;
+	}
+
+	public void setTexMapProj(int texMapProj) {
+		this.texMapProj = texMapProj;
+	}
+
+	public int getTexShade(int index) {
+		return texShade[index];
+	}
+
+	public void setTexShade(int index, int texShade) {
+		this.texShade[index] = texShade;
+	}
+
+	public int getCtestEnable() {
+		return ctestEnable;
+	}
+
+	public void setCtestEnable(int ctestEnable) {
+		this.ctestEnable = ctestEnable;
+	}
+
+	public int getCtestFunc() {
+		return ctestFunc;
+	}
+
+	public void setCtestFunc(int ctestFunc) {
+		this.ctestFunc = ctestFunc;
+	}
+
+	public int getCtestMsk(int index) {
+		return ctestMsk[index];
+	}
+
+	public void setCtestMsk(int index, int ctestMsk) {
+		this.ctestMsk[index] = ctestMsk;
+	}
+
+	public int getCtestRef(int index) {
+		return ctestRef[index];
+	}
+
+	public void setCtestRef(int index, int ctestRef) {
+		this.ctestRef[index] = ctestRef;
+	}
+
+	public int getTexEnvMode(int index) {
+		return texEnvMode[index];
+	}
+
+	public void setTexEnvMode(int index, int texEnvMode) {
+		this.texEnvMode[index] = texEnvMode;
+	}
+
+	public float[] getTexEnvColor() {
+		return texEnvColor;
+	}
+
+	public void setTexEnvColor(float[] texEnvColor) {
+		this.texEnvColor[0] = texEnvColor[0];
+		this.texEnvColor[1] = texEnvColor[1];
+		this.texEnvColor[2] = texEnvColor[2];
+	}
+
+	public float getColorDoubling() {
+		return colorDoubling;
+	}
+
+	public void setColorDoubling(float colorDoubling) {
+		this.colorDoubling = colorDoubling;
+	}
+
+	public int getVinfoColor() {
+		return vinfoColor;
+	}
+
+	public void setVinfoColor(int vinfoColor) {
+		this.vinfoColor = vinfoColor;
+	}
+
+	public int getVinfoPosition() {
+		return vinfoPosition;
+	}
+
+	public void setVinfoPosition(int vinfoPosition) {
+		this.vinfoPosition = vinfoPosition;
+	}
+
+	public int getVinfoTransform2D() {
+		return vinfoTransform2D;
+	}
+
+	public void setVinfoTransform2D(int vinfoTransform2D) {
+		this.vinfoTransform2D = vinfoTransform2D;
+	}
+
+	public float getPositionScale() {
+		return positionScale;
+	}
+
+	public void setPositionScale(float positionScale) {
+		this.positionScale = positionScale;
+	}
+
+	public float getNormalScale() {
+		return normalScale;
+	}
+
+	public void setNormalScale(float normalScale) {
+		this.normalScale = normalScale;
+	}
+
+	public float getTextureScale() {
+		return textureScale;
+	}
+
+	public void setTextureScale(float textureScale) {
+		this.textureScale = textureScale;
+	}
+
+	public float getWeightScale() {
+		return weightScale;
+	}
+
+	public void setWeightScale(float weightScale) {
+		this.weightScale = weightScale;
+	}
+
+	public int getClutShift() {
+		return clutShift;
+	}
+
+	public void setClutShift(int clutShift) {
+		this.clutShift = clutShift;
+	}
+
+	public int getClutMask() {
+		return clutMask;
+	}
+
+	public void setClutMask(int clutMask) {
+		this.clutMask = clutMask;
+	}
+
+	public int getClutOffset() {
+		return clutOffset;
+	}
+
+	public void setClutOffset(int clutOffset) {
+		this.clutOffset = clutOffset;
+	}
+
+	public boolean isMipmapShareClut() {
+		return mipmapShareClut;
+	}
+
+	public void setMipmapShareClut(boolean mipmapShareClut) {
+		this.mipmapShareClut = mipmapShareClut;
+	}
+
+	public int getClut() {
+		return clut;
+	}
+
+	public void setClut(int clut) {
+		this.clut = clut;
+	}
+
+	public int getTexPixelFormat() {
+		return texPixelFormat;
+	}
+
+	public void setTexPixelFormat(int texPixelFormat) {
+		this.texPixelFormat = texPixelFormat;
+	}
+
+	public int getTex() {
+		return tex;
+	}
+
+	public void setTex(int tex) {
+		this.tex = tex;
+	}
+
+	public int getUtex() {
+		return utex;
+	}
+
+	public void setUtex(int utex) {
+		this.utex = utex;
+	}
+
+	public float[] getVertexColor() {
+		return vertexColor;
+	}
+
+	public void setVertexColor(float[] vertexColor) {
+		this.vertexColor[0] = vertexColor[0];
+		this.vertexColor[1] = vertexColor[1];
+		this.vertexColor[2] = vertexColor[2];
+		this.vertexColor[3] = vertexColor[3];
+	}
+
+	public int getClutIndexHint() {
+		return clutIndexHint;
+	}
+
+	public void setClutIndexHint(int clutIndexHint) {
+		this.clutIndexHint = clutIndexHint;
+	}
+
+	public int getVinfoTexture() {
+		return vinfoTexture;
+	}
+
+	public void setVinfoTexture(int vinfoTexture) {
+		this.vinfoTexture = vinfoTexture;
+	}
+
+	public int getVinfoNormal() {
+		return vinfoNormal;
+	}
+
+	public void setVinfoNormal(int vinfoNormal) {
+		this.vinfoNormal = vinfoNormal;
+	}
+
+	public int getStencilTestEnable() {
+		return stencilTestEnable;
+	}
+
+	public void setStencilTestEnable(int stencilTestEnable) {
+		this.stencilTestEnable = stencilTestEnable;
+	}
+
+	public int getStencilFunc() {
+		return stencilFunc;
+	}
+
+	public void setStencilFunc(int stencilFunc) {
+		this.stencilFunc = stencilFunc;
+	}
+
+	public int getStencilRef() {
+		return stencilRef;
+	}
+
+	public void setStencilRef(int stencilRef) {
+		this.stencilRef = stencilRef;
+	}
+
+	public int getStencilMask() {
+		return stencilMask;
+	}
+
+	public void setStencilMask(int stencilMask) {
+		this.stencilMask = stencilMask;
+	}
+
+	public int getStencilOpFail() {
+		return stencilOpFail;
+	}
+
+	public void setStencilOpFail(int stencilOpFail) {
+		this.stencilOpFail = stencilOpFail;
+	}
+
+	public int getStencilOpZFail() {
+		return stencilOpZFail;
+	}
+
+	public void setStencilOpZFail(int stencilOpZFail) {
+		this.stencilOpZFail = stencilOpZFail;
+	}
+
+	public int getStencilOpZPass() {
+		return stencilOpZPass;
+	}
+
+	public void setStencilOpZPass(int stencilOpZPass) {
+		this.stencilOpZPass = stencilOpZPass;
+	}
+        
+	public int getDepthTestEnable() {
+		return depthTestEnable;
+	}
+
+	public void setDepthTestEnable(int depthTestEnable) {
+		this.depthTestEnable = depthTestEnable;
+	}
+
+	public int getDepthFunc() {
+		return depthFunc;
+	}
+
+	public void setDepthFunc(int depthFunc) {
+		this.depthFunc = depthFunc;
+	}
+
+	public boolean isDepthWriteEnabled() {
+		return depthWriteEnabled;
+	}
+
+	public void setDepthWriteEnabled(boolean depthWriteEnabled) {
+		this.depthWriteEnabled = depthWriteEnabled;
+	}
+
+	public int getFbTex() {
+		return fbTex;
+	}
+
+	public void setFbTex(int fbTex) {
+		this.fbTex = fbTex;
+	}
+
+	public int getDepthTex() {
+		return udepthTex;
+	}
+
+	public void setDepthTex(int depthTex) {
+		this.udepthTex = depthTex;
+	}
+
+	public int getColorMaskEnable() {
+		return colorMaskEnable;
+	}
+
+	public void setColorMaskEnable(int colorMaskEnable) {
+		this.colorMaskEnable = colorMaskEnable;
+	}
+
+	public int[] getColorMask() {
+		return colorMask;
+	}
+
+	public void setColorMask(int redMask, int greenMask, int blueMask, int alphaMask) {
+		this.colorMask[0] = redMask;
+		this.colorMask[1] = greenMask;
+		this.colorMask[2] = blueMask;
+		this.colorMask[3] = alphaMask;
+	}
+
+	public int[] getNotColorMask() {
+		return notColorMask;
+	}
+
+	public void setNotColorMask(int notRedMask, int notGreenMask, int notBlueMask, int notAlphaMask) {
+		this.notColorMask[0] = notRedMask;
+		this.notColorMask[1] = notGreenMask;
+		this.notColorMask[2] = notBlueMask;
+		this.notColorMask[3] = notAlphaMask;
+	}
+
+	public int getAlphaTestEnable() {
+		return alphaTestEnable;
+	}
+
+	public void setAlphaTestEnable(int alphaTestEnable) {
+		this.alphaTestEnable = alphaTestEnable;
+	}
+
+	public int getAlphaTestFunc() {
+		return alphaTestFunc;
+	}
+
+	public void setAlphaTestFunc(int alphaTestFunc) {
+		this.alphaTestFunc = alphaTestFunc;
+	}
+
+	public int getAlphaTestRef() {
+		return alphaTestRef;
+	}
+
+	public void setAlphaTestRef(int alphaTestRef) {
+		this.alphaTestRef = alphaTestRef;
+	}
+
+	public int getAlphaTestMask() {
+		return alphaTestMask;
+	}
+
+	public void setAlphaTestMask(int alphaTestMask) {
+		this.alphaTestMask = alphaTestMask;
+	}
+
+	public int getBlendTestEnable() {
+		return blendTestEnable;
+	}
+
+	public void setBlendTestEnable(int blendTestEnable) {
+		this.blendTestEnable = blendTestEnable;
+	}
+
+	public int getBlendEquation() {
+		return blendEquation;
+	}
+
+	public void setBlendEquation(int blendEquation) {
+		this.blendEquation = blendEquation;
+	}
+
+	public int getBlendSrc() {
+		return blendSrc;
+	}
+
+	public void setBlendSrc(int blendSrc) {
+		this.blendSrc = blendSrc;
+	}
+
+	public int getBlendDst() {
+		return blendDst;
+	}
+
+	public void setBlendDst(int blendDst) {
+		this.blendDst = blendDst;
+	}
+
+	public float[] getBlendSFix() {
+		return blendSFix;
+	}
+
+	public void setBlendSFix(float[] blendSFix) {
+		this.blendSFix[0] = blendSFix[0];
+		this.blendSFix[1] = blendSFix[1];
+		this.blendSFix[2] = blendSFix[2];
+	}
+
+	public float[] getBlendDFix() {
+		return blendDFix;
+	}
+
+	public void setBlendDFix(float[] blendDFix) {
+		this.blendDFix[0] = blendDFix[0];
+		this.blendDFix[1] = blendDFix[1];
+		this.blendDFix[2] = blendDFix[2];
+	}
+
+	public int getCopyRedToAlpha() {
+		return copyRedToAlpha;
+	}
+
+	public void setCopyRedToAlpha(int copyRedToAlpha) {
+		this.copyRedToAlpha = copyRedToAlpha;
+	}
+
+	public int getWrapModeS() {
+		return wrapModeS;
+	}
+
+	public void setWrapModeS(int wrapModeS) {
+		this.wrapModeS = wrapModeS;
+	}
+
+	public int getWrapModeT() {
+		return wrapModeT;
+	}
+
+	public void setWrapModeT(int wrapModeT) {
+		this.wrapModeT = wrapModeT;
+	}
+
+	public int getFogEnable() {
+		return fogEnable;
+	}
+
+	public void setFogEnable(int fogEnable) {
+		this.fogEnable = fogEnable;
+	}
+
+	public float[] getFogColor() {
+		return fogColor;
+	}
+
+	public void setFogColor(float[] fogColor) {
+		this.fogColor[0] = fogColor[0];
+		this.fogColor[1] = fogColor[1];
+		this.fogColor[2] = fogColor[2];
+	}
+
+	public float getFogEnd() {
+		return fogEnd;
+	}
+
+	public void setFogEnd(float fogEnd) {
+		this.fogEnd = fogEnd;
+	}
+
+	public float getFogScale() {
+		return fogScale;
+	}
+
+	public void setFogScale(float fogScale) {
+		this.fogScale = fogScale;
+	}
+
+	public int getClipPlaneEnable() {
+		return clipPlaneEnable;
+	}
+
+	public void setClipPlaneEnable(int clipPlaneEnable) {
+		this.clipPlaneEnable = clipPlaneEnable;
+	}
+
+	public float[] getViewportPos() {
+		return viewportPos;
+	}
+
+	public void setViewportPos(float x, float y, float z) {
+		this.viewportPos[0] = x;
+		this.viewportPos[1] = y;
+		this.viewportPos[2] = z;
+	}
+
+	public float[] getViewportScale() {
+		return viewportScale;
+	}
+
+	public void setViewportScale(float sx, float sy, float sz) {
+		this.viewportScale[0] = sx;
+		this.viewportScale[1] = sy;
+		this.viewportScale[2] = sz;
+	}
+
+	public int getShadeModel() {
+		return shadeModel;
+	}
+
+	public void setShadeModel(int shadeModel) {
+		this.shadeModel = shadeModel;
+	}
+
+	public float[] getAmbientLightColor() {
+		return ambientLightColor;
+	}
+
+	public void setAmbientLightColor(float[] ambientLightColor) {
+		this.ambientLightColor[0] = ambientLightColor[0];
+		this.ambientLightColor[1] = ambientLightColor[1];
+		this.ambientLightColor[2] = ambientLightColor[2];
+		this.ambientLightColor[3] = ambientLightColor[3];
+	}
+
+	public float getMaterialShininess() {
+		return materialShininess;
+	}
+
+	public void setMaterialShininess(float materialShininess) {
+		this.materialShininess = materialShininess;
+	}
+
+	public float[] getMaterialAmbientColor() {
+		return materialAmbientColor;
+	}
+
+	public void setMaterialAmbientColor(float[] materialAmbientColor) {
+		this.materialAmbientColor[0] = materialAmbientColor[0];
+		this.materialAmbientColor[1] = materialAmbientColor[1];
+		this.materialAmbientColor[2] = materialAmbientColor[2];
+		this.materialAmbientColor[3] = materialAmbientColor[3];
+	}
+
+	public float[] getMaterialDiffuseColor() {
+		return materialDiffuseColor;
+	}
+
+	public void setMaterialDiffuseColor(float[] materialDiffuseColor) {
+		this.materialDiffuseColor[0] = materialDiffuseColor[0];
+		this.materialDiffuseColor[1] = materialDiffuseColor[1];
+		this.materialDiffuseColor[2] = materialDiffuseColor[2];
+	}
+
+	public float[] getMaterialSpecularColor() {
+		return materialSpecularColor;
+	}
+
+	public void setMaterialSpecularColor(float[] materialSpecularColor) {
+		this.materialSpecularColor[0] = materialSpecularColor[0];
+		this.materialSpecularColor[1] = materialSpecularColor[1];
+		this.materialSpecularColor[2] = materialSpecularColor[2];
+	}
+
+	public float[] getMaterialEmissionColor() {
+		return materialEmissionColor;
+	}
+
+	public void setMaterialEmissionColor(float[] materialEmissionColor) {
+		this.materialEmissionColor[0] = materialEmissionColor[0];
+		this.materialEmissionColor[1] = materialEmissionColor[1];
+		this.materialEmissionColor[2] = materialEmissionColor[2];
+	}
+
+	public float[] getTextureMatrix() {
+		return textureMatrix;
+	}
+
+	public void setTextureMatrix(float[] textureMatrix) {
+		System.arraycopy(textureMatrix, 0, this.textureMatrix, 0, this.textureMatrix.length);
+	}
+
+	public float[] getModelMatrix() {
+		return modelMatrix;
+	}
+
+	public void setModelMatrix(float[] modelMatrix) {
+		System.arraycopy(modelMatrix, 0, this.modelMatrix, 0, this.modelMatrix.length);
+	}
+
+	public float[] getModelViewMatrix() {
+		return modelViewMatrix;
+	}
+
+	public void setModelViewMatrix(float[] modelViewMatrix) {
+		System.arraycopy(modelViewMatrix, 0, this.modelViewMatrix, 0, this.modelViewMatrix.length);
+	}
+
+	public float[] getModelViewProjectionMatrix() {
+		return modelViewProjectionMatrix;
+	}
+
+	public void setModelViewProjectionMatrix(float[] modelViewProjectionMatrix) {
+		System.arraycopy(modelViewProjectionMatrix, 0, this.modelViewProjectionMatrix, 0, this.modelViewProjectionMatrix.length);
+	}
+
+	public int getCurvedSurfaceType() {
+		return curvedSurfaceType;
+	}
+
+	public void setCurvedSurfaceType(int curvedSurfaceType) {
+		this.curvedSurfaceType = curvedSurfaceType;
+	}
+
+	public int[] getSplineInfo() {
+		return splineInfo;
+	}
+
+	public void setSplineInfo(int ucount, int vcount, int utype, int vtype) {
+		splineInfo[0] = ucount;
+		splineInfo[1] = vcount;
+		splineInfo[2] = utype;
+		splineInfo[3] = vtype;
+	}
+
+	public int getPatchFace() {
+		return patchFace;
+	}
+
+	public void setPatchFace(int patchFace) {
+		this.patchFace = patchFace;
+	}
+}
