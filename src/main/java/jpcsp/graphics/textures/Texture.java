@@ -1,0 +1,283 @@
+/*
+This file is part of jpcsp.
+
+Jpcsp is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+Jpcsp is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
+ */
+package jpcsp.graphics.textures;
+
+import jpcsp.graphics.GeCommands;
+import jpcsp.graphics.VideoEngine;
+import jpcsp.graphics.RE.IRenderingEngine;
+import jpcsp.util.Hash;
+
+public class Texture {
+	private int addr;
+	private int lineWidth;
+	private int width;
+	private int height;
+	private int pixelStorage;
+	private int clutAddr;
+	private int clutMode;
+	private int clutStart;
+	private int clutShift;
+	private int clutMask;
+	private int clutNumBlocks;
+	private int hashCode;
+	private int mipmapLevels;
+	private boolean mipmapShareClut;
+	private int textureId = -1;	// id created by genTexture
+	private boolean loaded = false;	// is the texture already loaded?
+	private TextureCache textureCache;
+	private final static int defaultHashStride = 64 + 8;
+	private final static int smallHashStride = 12;
+	private short[] cachedValues16;
+	private int[] cachedValues32;
+	private int bufferLengthInBytes;
+	private int lineWidthInBytes;
+	private int hashStrideInBytes;
+
+	public Texture(TextureCache textureCache, int addr, int lineWidth, int width, int height, int pixelStorage, int clutAddr, int clutMode, int clutStart, int clutShift, int clutMask, int clutNumBlocks, int mipmapLevels, boolean mipmapShareClut, short[] values16, int[] values32) {
+		this.textureCache = textureCache;
+		this.addr = addr;
+		this.lineWidth = lineWidth;
+		this.width = width;
+		this.height = height;
+		this.pixelStorage = pixelStorage;
+		this.clutAddr = clutAddr;
+		this.clutMode = clutMode;
+		this.clutStart = clutStart;
+		this.clutShift = clutShift;
+		this.clutMask = clutMask;
+		this.clutNumBlocks = clutNumBlocks;
+		this.mipmapLevels = mipmapLevels;
+		this.mipmapShareClut = mipmapShareClut;
+
+		bufferLengthInBytes = lineWidth * height;
+		lineWidthInBytes = lineWidth;
+		hashStrideInBytes = defaultHashStride;
+		int bytesPerPixel = IRenderingEngine.sizeOfTextureType[pixelStorage];
+		if (bytesPerPixel <= 0) {
+			// Special texture types
+			switch (pixelStorage) {
+				case GeCommands.TPSM_PIXEL_STORAGE_MODE_DXT1:
+					bufferLengthInBytes = VideoEngine.getCompressedTextureSize(lineWidth, height, 8);
+					break;
+				case GeCommands.TPSM_PIXEL_STORAGE_MODE_DXT3:
+				case GeCommands.TPSM_PIXEL_STORAGE_MODE_DXT5:
+					bufferLengthInBytes = VideoEngine.getCompressedTextureSize(lineWidth, height, 4);
+					break;
+				case GeCommands.TPSM_PIXEL_STORAGE_MODE_4BIT_INDEXED:
+					bufferLengthInBytes >>= 1;
+					lineWidthInBytes >>= 1;
+					// Take a smaller hash stride for 4-bit indexed textures to better detect small texture changes
+					// (e.g. for textures representing text)
+					hashStrideInBytes = smallHashStride;
+					break;
+			}
+		} else {
+			bufferLengthInBytes *= bytesPerPixel;
+			lineWidthInBytes *= bytesPerPixel;
+		}
+
+		if (values16 != null) {
+			cachedValues16 = new short[lineWidth];
+			System.arraycopy(values16, 0, cachedValues16, 0, lineWidth);
+		} else if (values32 != null) {
+			cachedValues32 = new int[lineWidth];
+			System.arraycopy(values32, 0, cachedValues32, 0, lineWidth);
+		} else {
+			if (lineWidthInBytes < hashStrideInBytes) {
+				if (lineWidthInBytes <= 32) {
+					// No stride at all for narrow textures
+					hashStrideInBytes = 0;
+				} else {
+					hashStrideInBytes = lineWidthInBytes - 4;
+				}
+			}
+			hashCode = hashCode(addr, bufferLengthInBytes, lineWidthInBytes, hashStrideInBytes, clutAddr, clutNumBlocks, mipmapLevels);
+		}
+	}
+
+	/**
+	 * Compute the Texture hashCode value,
+	 * based on the pixel buffer and the clut table.
+	 *
+	 * @param addr                pixel buffer
+	 * @param bufferLengthInBytes texture buffer length in bytes
+	 * @param lineWidthInBytes    texture buffer line width in bytes
+	 * @param clutAddr            clut table address
+	 * @param clutNumBlocks       clut number of blocks
+	 * @param mipmapLevels        number of mipmaps
+	 * @return                    hashcode value
+	 */
+	private static int hashCode(int addr, int bufferLengthInBytes, int lineWidthInBytes, int strideInBytes, int clutAddr, int clutNumBlocks, int mipmapLevels) {
+		int hashCode = mipmapLevels;
+
+		if (addr != 0) {
+			if (VideoEngine.log.isDebugEnabled()) {
+				VideoEngine.log.debug("Texture.hashCode: " + bufferLengthInBytes + " bytes");
+			}
+
+			hashCode = Hash.getHashCode(hashCode, addr, bufferLengthInBytes, strideInBytes);
+		}
+
+		if (clutAddr != 0) {
+			hashCode = Hash.getHashCode(hashCode, clutAddr, clutNumBlocks * 32);
+		}
+
+		return hashCode;
+	}
+
+	@Override
+	public int hashCode() {
+		return hashCode;
+	}
+
+	public boolean equals(int addr, int lineWidth, int width, int height, int pixelStorage, int clutAddr, int clutMode, int clutStart, int clutShift, int clutMask, int clutNumBlocks, int mipmapLevels, boolean mipmapShareClut, short[] values16, int[] values32) {
+		if (this.addr != addr ||
+			this.lineWidth != lineWidth ||
+			this.width != width ||
+			this.height != height ||
+			this.pixelStorage != pixelStorage ||
+			this.clutAddr != clutAddr ||
+			this.clutMode != clutMode ||
+			this.clutStart != clutStart ||
+			this.clutShift != clutShift ||
+			this.clutMask != clutMask ||
+			this.clutNumBlocks != clutNumBlocks ||
+			this.mipmapLevels != mipmapLevels ||
+			this.mipmapShareClut != mipmapShareClut)
+		{
+			return false;
+		}
+
+		// Do not compute the hashCode of the new texture if it has already
+		// been checked during this display cycle
+		if (!textureCache.textureAlreadyHashed(addr, clutAddr, clutStart, clutMode)) {
+			if (values16 != null) {
+				return equals(values16);
+			}
+			if (values32 != null) {
+				return equals(values32);
+			}
+			int hashCode = hashCode(addr, bufferLengthInBytes, lineWidthInBytes, hashStrideInBytes, clutAddr, clutNumBlocks, mipmapLevels);
+			if (hashCode != hashCode()) {
+				return false;
+			}
+			textureCache.setTextureAlreadyHashed(addr, clutAddr, clutStart, clutMode);
+		}
+
+		return true;
+	}
+
+	private boolean equals(short[] values16) {
+		if (cachedValues16 == null) {
+			return false;
+		}
+
+		for (int i = 0; i < lineWidth; i++) {
+			if (values16[i] != cachedValues16[i]) {
+				return false;
+			}
+		}
+
+		return true;
+	}
+
+	private boolean equals(int[] values32) {
+		if (cachedValues32 == null) {
+			return false;
+		}
+
+		for (int i = 0; i < lineWidth; i++) {
+			if (values32[i] != cachedValues32[i]) {
+				return false;
+			}
+		}
+
+		return true;
+	}
+
+	public void bindTexture(IRenderingEngine re) {
+		re.bindTexture(getTextureId(re));
+	}
+
+	public int getTextureId(IRenderingEngine re) {
+		if (textureId == -1) {
+			textureId = re.genTexture();
+		}
+		return textureId;
+	}
+
+	public void deleteTexture(IRenderingEngine re) {
+		if (textureId != -1) {
+			re.deleteTexture(textureId);
+            textureId = -1;
+		}
+
+		setLoaded(false);
+	}
+
+	public boolean isLoaded() {
+		return loaded;
+	}
+
+	public void setIsLoaded() {
+		setLoaded(true);
+	}
+
+	public void setLoaded(boolean loaded) {
+		this.loaded = loaded;
+	}
+
+	public int getAddr() {
+		return addr;
+	}
+
+	public int getClutAddr() {
+		return clutAddr;
+	}
+
+	public int getClutMode() {
+		return clutMode;
+	}
+
+	public int getClutStart() {
+		return clutStart;
+	}
+
+	public int getGlId() {
+		return textureId;
+	}
+	
+	public int getMipmapLevels() {
+		return mipmapLevels;
+	}
+
+	public boolean isInsideMemory(int fromAddr, int toAddr) {
+		if (addr >= fromAddr && addr < toAddr) {
+			return true;
+		}
+		if (addr + bufferLengthInBytes >= fromAddr && addr + bufferLengthInBytes < toAddr) {
+			return true;
+		}
+
+		return false;
+	}
+
+	@Override
+	public String toString() {
+		return String.format("Texture[0x%08X, %dx%d, bufferWidth=%d, %s]", addr, width, height, lineWidth, VideoEngine.getPsmName(pixelStorage));
+	}
+}
