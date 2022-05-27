@@ -173,7 +173,7 @@ public class PreDecrypt {
 		documentBuilderFactory.setCoalescing(true);
 		try {
 			DocumentBuilder documentBuilder = documentBuilderFactory.newDocumentBuilder();
-			Document document = documentBuilder.parse(PreDecrypt.class.getResourceAsStream("PreDecrypt.xml"));
+			Document document = documentBuilder.parse(PreDecrypt.class.getResourceAsStream("/PreDecrypt.xml"));
 			Element configuration = document.getDocumentElement();
 			load(configuration);
 		} catch (ParserConfigurationException e) {
