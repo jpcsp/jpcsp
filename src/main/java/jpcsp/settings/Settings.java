@@ -51,7 +51,7 @@ import jpcsp.util.Utilities;
  */
 public class Settings {
     public static String SETTINGS_FILE_NAME = "Settings.properties";
-    private final static String DEFAULT_SETTINGS_FILE_NAME = "/DefaultSettings.properties";
+    private final static String DEFAULT_SETTINGS_FILE_NAME = "/jpcsp/DefaultSettings.properties";
     private static Settings instance = null;
     private Properties defaultSettings;
     private SortedProperties loadedSettings;
