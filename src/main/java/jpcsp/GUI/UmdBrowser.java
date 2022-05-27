@@ -402,7 +402,7 @@ public class UmdBrowser extends javax.swing.JDialog {
     	// Do not access this class using reflection as this is producing a warning on JDK 9 or later.
         try {
         	// getClass().getClassLoader().loadClass("sun.awt.image.PNGImageDecoder").getMethod("	", boolean.class).invoke(null, false);
-        	sun.awt.image.PNGImageDecoder.setCheckCRC(false);
+//can't compile        	sun.awt.image.PNGImageDecoder.setCheckCRC(false);
         } catch (Throwable e) {
         	log.warn(e);
         }
