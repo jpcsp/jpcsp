@@ -116,7 +116,7 @@ public class MemoryViewer extends javax.swing.JFrame {
     }
 
     public void RefreshMemory() {
-        int addr = startaddress;
+        int addr = Emulator.getProcessor().cpu.pc;
         taMemoryView.setText("");
 
         visiblelines = taMemoryView.getHeight() / taMemoryView.getFontMetrics(taMemoryView.getFont()).getHeight();
