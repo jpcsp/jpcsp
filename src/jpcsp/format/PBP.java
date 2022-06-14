@@ -31,19 +31,19 @@ import static jpcsp.util.Utilities.read32;
 import static jpcsp.util.Utilities.readUWord;
 
 public class PBP {
+
     public static final int PBP_MAGIC = 0x50425000;
     private static final String PBP_UNPACK_PATH_PREFIX = "unpacked-pbp/";
 
     static private final String[] FILE_NAMES = new String[]{
-            "param.sfo",
-            "icon0.png",
-            "icon1.pmf",
-            "pic0.png",
-            "pic1.png",
-            "snd0.at3",
-            "psp.data",
-            "psar.data",
-    };
+        "param.sfo",
+        "icon0.png",
+        "icon1.pmf",
+        "pic0.png",
+        "pic1.png",
+        "snd0.at3",
+        "psp.data",
+        "psar.data",};
 
     static private final int TOTAL_FILES = 8;
 
@@ -60,7 +60,6 @@ public class PBP {
     static public final int PBP_PSP_DATA_OFFSET = 8 + PSP_DATA * 4;
     static public final int PBP_PSAR_DATA_OFFSET = 8 + PSAR_DATA * 4;
 
-    private String info;
     private int size_pbp;
 
     private int p_magic;
@@ -85,14 +84,6 @@ public class PBP {
         return psf;
     }
 
-    public void setInfo(String msg) {
-        info = msg;
-    }
-
-    public String getInfo() {
-        return info;
-    }
-
     public PBP(ByteBuffer f) throws IOException {
         size_pbp = f.limit();
         if (size_pbp == 0) {
@@ -102,9 +93,8 @@ public class PBP {
         if (isValid()) {
             p_version = readUWord(f);
 
-            p_offsets = new int[] {readUWord(f),readUWord(f),readUWord(f),readUWord(f),readUWord(f),readUWord(f),readUWord(f),readUWord(f),size_pbp};
+            p_offsets = new int[]{readUWord(f), readUWord(f), readUWord(f), readUWord(f), readUWord(f), readUWord(f), readUWord(f), readUWord(f), size_pbp};
 
-            info = toString();
         }
     }
 
@@ -125,16 +115,16 @@ public class PBP {
     public String toString() {
         StringBuilder str = new StringBuilder();
         str.append("-----PBP HEADER---------" + "\n");
-        str.append("p_magic " + "\t\t" + formatString("long", Long.toHexString(p_magic & 0xFFFFFFFFL).toUpperCase()) + "\n");
-        str.append("p_version " + "\t\t" + formatString("long", Long.toHexString(p_version & 0xFFFFFFFFL).toUpperCase()) + "\n");
-        str.append("p_offset_param_sfo " + "\t" + formatString("long", Long.toHexString(getOffsetParam() & 0xFFFFFFFFL).toUpperCase()) + "\n");
-        str.append("p_offset_icon0_png " + "\t" + formatString("long", Long.toHexString(getOffsetIcon0() & 0xFFFFFFFFL).toUpperCase()) + "\n");
-        str.append("p_offset_icon1_pmf " + "\t" + formatString("long", Long.toHexString(getOffsetIcon1() & 0xFFFFFFFFL).toUpperCase()) + "\n");
-        str.append("p_offset_pic0_png " + "\t" + formatString("long", Long.toHexString(getOffsetPic0() & 0xFFFFFFFFL).toUpperCase()) + "\n");
-        str.append("p_offset_pic1_png " + "\t" + formatString("long", Long.toHexString(getOffsetPic1() & 0xFFFFFFFFL).toUpperCase()) + "\n");
-        str.append("p_offset_snd0_at3 " + "\t" + formatString("long", Long.toHexString(getOffsetSnd0() & 0xFFFFFFFFL).toUpperCase()) + "\n");
-        str.append("p_offset_psp_data " + "\t" + formatString("long", Long.toHexString(getOffsetPspData() & 0xFFFFFFFFL).toUpperCase()) + "\n");
-        str.append("p_offset_psar_data " + "\t" + formatString("long", Long.toHexString(getOffsetPsarData() & 0xFFFFFFFFL).toUpperCase()) + "\n");
+        str.append("p_magic \t\t").append(formatString("long", Long.toHexString(p_magic & 0xFFFFFFFFL).toUpperCase())).append("\n");
+        str.append("p_version \t\t").append(formatString("long", Long.toHexString(p_version & 0xFFFFFFFFL).toUpperCase())).append("\n");
+        str.append("p_offset_param_sfo \t").append(formatString("long", Long.toHexString(getOffsetParam() & 0xFFFFFFFFL).toUpperCase())).append("\n");
+        str.append("p_offset_icon0_png \t").append(formatString("long", Long.toHexString(getOffsetIcon0() & 0xFFFFFFFFL).toUpperCase())).append("\n");
+        str.append("p_offset_icon1_pmf \t").append(formatString("long", Long.toHexString(getOffsetIcon1() & 0xFFFFFFFFL).toUpperCase())).append("\n");
+        str.append("p_offset_pic0_png \t").append(formatString("long", Long.toHexString(getOffsetPic0() & 0xFFFFFFFFL).toUpperCase())).append("\n");
+        str.append("p_offset_pic1_png \t").append(formatString("long", Long.toHexString(getOffsetPic1() & 0xFFFFFFFFL).toUpperCase())).append("\n");
+        str.append("p_offset_snd0_at3 \t").append(formatString("long", Long.toHexString(getOffsetSnd0() & 0xFFFFFFFFL).toUpperCase())).append("\n");
+        str.append("p_offset_psp_data \t").append(formatString("long", Long.toHexString(getOffsetPspData() & 0xFFFFFFFFL).toUpperCase())).append("\n");
+        str.append("p_offset_psar_data \t").append(formatString("long", Long.toHexString(getOffsetPsarData() & 0xFFFFFFFFL).toUpperCase())).append("\n");
         return str.toString();
     }
 
@@ -199,14 +189,14 @@ public class PBP {
     }
 
     public int getSizePsarData() {
-    	return getSize(PSAR_DATA);
+        return getSize(PSAR_DATA);
     }
 
     public static boolean deleteDir(File dir) {
         if (dir.isDirectory()) {
             String[] children = dir.list();
-            for (int i = 0; i < children.length; i++) {
-                boolean success = deleteDir(new File(dir, children[i]));
+            for (String children1 : children) {
+                boolean success = deleteDir(new File(dir, children1));
                 if (!success) {
                     return false;
                 }
@@ -227,30 +217,30 @@ public class PBP {
         dir.mkdir();
 
         for (int index = 0; index < TOTAL_FILES; index++) {
-        	byte[] bytes = pbp.getBytes(f, index);
-        	if (bytes != null && bytes.length > 0) {
-        		FileUtil.writeBytes(new File(PBP_UNPACK_PATH_PREFIX + pbp.getName(index)), bytes);
-        	}
+            byte[] bytes = pbp.getBytes(f, index);
+            if (bytes != null && bytes.length > 0) {
+                FileUtil.writeBytes(new File(PBP_UNPACK_PATH_PREFIX + pbp.getName(index)), bytes);
+            }
         }
     }
 
     /**
-     * Unpack a PBP file, avoiding to consume too much memory
-     * (i.e. not reading each section completely in memory).
-     * 
-     * @param vFile        the PBP file
+     * Unpack a PBP file, avoiding to consume too much memory (i.e. not reading
+     * each section completely in memory).
+     *
+     * @param vFile the PBP file
      * @throws IOException
      */
     public static void unpackPBP(IVirtualFile vFile) throws IOException {
-    	vFile.ioLseek(0L);
-    	PBP pbp = new PBP();
-    	pbp.size_pbp = (int) vFile.length();
-    	pbp.p_magic = read32(vFile);
-    	if (!pbp.isValid()) {
-    		return;
-    	}
-    	pbp.p_version = read32(vFile);
-        pbp.p_offsets = new int[] { read32(vFile), read32(vFile), read32(vFile), read32(vFile), read32(vFile), read32(vFile), read32(vFile), read32(vFile), pbp.size_pbp };
+        vFile.ioLseek(0L);
+        PBP pbp = new PBP();
+        pbp.size_pbp = (int) vFile.length();
+        pbp.p_magic = read32(vFile);
+        if (!pbp.isValid()) {
+            return;
+        }
+        pbp.p_version = read32(vFile);
+        pbp.p_offsets = new int[]{read32(vFile), read32(vFile), read32(vFile), read32(vFile), read32(vFile), read32(vFile), read32(vFile), read32(vFile), pbp.size_pbp};
 
         File dir = new File(PBP_UNPACK_PATH_PREFIX);
         deleteDir(dir); //delete all files and directory
@@ -258,25 +248,25 @@ public class PBP {
 
         final byte[] buffer = new byte[10 * 1024];
         for (int index = 0; index < TOTAL_FILES; index++) {
-        	int size = pbp.getSize(index);
-        	if (size > 0) {
-        		long offset = pbp.getOffset(index) & 0xFFFFFFFFL;
-        		if (vFile.ioLseek(offset) == offset) {
-            		OutputStream os = new FileOutputStream(new File(PBP_UNPACK_PATH_PREFIX + pbp.getName(index)));
-	        		while (size > 0) {
-	        			int length = Math.min(size, buffer.length);
-	        			int readLength = vFile.ioRead(buffer, 0, length);
-	        			if (readLength > 0) {
-	        				os.write(buffer, 0, readLength);
-	        				size -= readLength;
-	        			}
-	        			if (readLength != length) {
-	        				break;
-	        			}
-	        		}
-	        		os.close();
-        		}
-        	}
+            int size = pbp.getSize(index);
+            if (size > 0) {
+                long offset = pbp.getOffset(index) & 0xFFFFFFFFL;
+                if (vFile.ioLseek(offset) == offset) {
+                    try ( OutputStream os = new FileOutputStream(new File(PBP_UNPACK_PATH_PREFIX + pbp.getName(index)))) {
+                        while (size > 0) {
+                            int length = Math.min(size, buffer.length);
+                            int readLength = vFile.ioRead(buffer, 0, length);
+                            if (readLength > 0) {
+                                os.write(buffer, 0, readLength);
+                                size -= readLength;
+                            }
+                            if (readLength != length) {
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 }
