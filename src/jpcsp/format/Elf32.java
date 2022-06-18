@@ -26,6 +26,7 @@ import jpcsp.Emulator;
 import jpcsp.util.Utilities;
 
 public class Elf32 {
+
     // File offset
     private int elfOffset;
     private boolean kernelMode;
@@ -57,7 +58,7 @@ public class Elf32 {
     }
 
     private void loadProgramHeaders(ByteBuffer f) throws IOException {
-        programHeaderList = new LinkedList<Elf32ProgramHeader>();
+        programHeaderList = new LinkedList<>();
         StringBuilder sb = new StringBuilder();
 
         for (int i = 0; i < header.getE_phnum(); i++) {
@@ -68,13 +69,13 @@ public class Elf32 {
             programHeaderList.add(phdr);
 
             // Construct ELF program header info for debugger
-            sb.append("-----PROGRAM HEADER #" + i + "-----" + "\n");
+            sb.append("-----PROGRAM HEADER #").append(i).append("-----\n");
             sb.append(phdr.toString());
 
             // yapspd: if the PRX file is a kernel module then the most significant
             // bit must be set in the phsyical address of the first program header.
             if (i == 0 && (phdr.getP_paddr() & 0x80000000) != 0) {
-            	kernelMode = true;
+                kernelMode = true;
                 Emulator.log.debug("Kernel mode PRX detected");
             }
         }
@@ -83,8 +84,8 @@ public class Elf32 {
     }
 
     private void loadSectionHeaders(ByteBuffer f) throws IOException {
-        sectionHeaderList = new LinkedList<Elf32SectionHeader>();
-        sectionHeaderMap = new HashMap<String, Elf32SectionHeader>();
+        sectionHeaderList = new LinkedList<>();
+        sectionHeaderMap = new HashMap<>();
 
         // 1st pass
         // - save headers
@@ -97,11 +98,12 @@ public class Elf32 {
             sectionHeaderList.add(shdr);
 
             // Find the .shstrtab section
-            if (shdr.getSh_type() == Elf32SectionHeader.SHT_STRTAB && // 0x00000003
-                shstrtab == null &&
-                // Some programs have 2 STRTAB headers,
-                // the header with size 1 has to be ignored.
-                shdr.getSh_size() > 1) {
+            if (shdr.getSh_type() == Elf32SectionHeader.SHT_STRTAB
+                    && // 0x00000003
+                    shstrtab == null
+                    && // Some programs have 2 STRTAB headers,
+                    // the header with size 1 has to be ignored.
+                    shdr.getSh_size() > 1) {
                 shstrtab = shdr;
             }
         }
@@ -120,12 +122,12 @@ public class Elf32 {
             f.position(position); // removed past end of file check (fiveofhearts 18/10/08)
 
             // Number the section
-            sb.append("-----SECTION HEADER #" + SectionCounter + "-----" + "\n");
+            sb.append("-----SECTION HEADER #").append(SectionCounter).append("-----\n");
 
             String SectionName = Utilities.readStringZ(f); // removed readStringZ exception check (fiveofhearts 18/10/08)
             if (SectionName.length() > 0) {
                 shdr.setSh_namez(SectionName);
-                sb.append(SectionName + "\n");
+                sb.append(SectionName).append("\n");
                 sectionHeaderMap.put(SectionName, shdr);
             } else {
                 //Emulator.log.debug("Section header #" + SectionCounter + " has no name");
@@ -139,10 +141,12 @@ public class Elf32 {
         SectInfo = sb.toString();
     }
 
-    /** @return The elf was loaded from some kind of file or buffer. The elf
+    /**
+     * @return The elf was loaded from some kind of file or buffer. The elf
      * offset is an offset into this buffer where the elf actually starts. If
      * the returned offset is non-zero this is typically due to the elf being
-     * embedded inside a pbp. */
+     * embedded inside a pbp.
+     */
     public int getElfOffset() {
         return elfOffset;
     }
@@ -156,9 +160,9 @@ public class Elf32 {
     }
 
     public Elf32ProgramHeader getProgramHeader(int index) {
-    	if (index < 0 || index >= programHeaderList.size()) {
-    		return null;
-    	}
+        if (index < 0 || index >= programHeaderList.size()) {
+            return null;
+        }
         return programHeaderList.get(index);
     }
 
@@ -167,9 +171,9 @@ public class Elf32 {
     }
 
     public Elf32SectionHeader getSectionHeader(int index) {
-    	if (index < 0 || index >= sectionHeaderList.size()) {
-    		return null;
-    	}
+        if (index < 0 || index >= sectionHeaderList.size()) {
+            return null;
+        }
         return sectionHeaderList.get(index);
     }
 
@@ -189,7 +193,7 @@ public class Elf32 {
         return SectInfo;
     }
 
-	public boolean isKernelMode() {
-		return kernelMode;
-	}
+    public boolean isKernelMode() {
+        return kernelMode;
+    }
 }

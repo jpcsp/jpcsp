@@ -15,6 +15,7 @@ You should have received a copy of the GNU General Public License
 along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.format;
+
 import static jpcsp.util.Utilities.readUWord;
 
 import java.io.IOException;
@@ -23,9 +24,10 @@ import java.nio.ByteBuffer;
 import jpcsp.util.Utilities;
 
 public class Elf32ProgramHeader {
-	public static final int PF_X = (1 << 0); /* Segment is executable */
-	public static final int PF_W = (1 << 1); /* Segment is writable */
-	public static final int PF_R = (1 << 2); /* Segment is readable */
+
+    public static final int PF_X = (1 << 0);/* Segment is executable */
+    public static final int PF_W = (1 << 1);/* Segment is writable */
+    public static final int PF_R = (1 << 2);/* Segment is readable */
     private int p_type;
     private int p_offset;
     private int p_vaddr;
@@ -55,16 +57,16 @@ public class Elf32ProgramHeader {
     }
 
     @Override
-	public String toString() {
+    public String toString() {
         StringBuilder str = new StringBuilder();
-        str.append("p_type " + "\t\t " + Utilities.formatString("long", Long.toHexString(getP_type() & 0xFFFFFFFFL).toUpperCase()) + "\n");
-        str.append("p_offset " + "\t " + Utilities.formatString("long", Long.toHexString(getP_offset() & 0xFFFFFFFFL).toUpperCase()) + "\n");
-        str.append("p_vaddr " + "\t " + Utilities.formatString("long", Long.toHexString(getP_vaddr() & 0xFFFFFFFFL).toUpperCase()) + "\n");
-        str.append("p_paddr " + "\t " + Utilities.formatString("long", Long.toHexString(getP_paddr() & 0xFFFFFFFFL).toUpperCase()) + "\n");
-        str.append("p_filesz " + "\t " + Utilities.formatString("long", Long.toHexString(getP_filesz() & 0xFFFFFFFFL).toUpperCase()) + "\n");
-        str.append("p_memsz " + "\t " + Utilities.formatString("long", Long.toHexString(getP_memsz() & 0xFFFFFFFFL).toUpperCase()) + "\n");
-        str.append("p_flags " + "\t " + Utilities.formatString("long", Long.toHexString(getP_flags() & 0xFFFFFFFFL).toUpperCase()) + "\n");
-        str.append("p_align " + "\t " + Utilities.formatString("long", Long.toHexString(getP_align() & 0xFFFFFFFFL).toUpperCase()) + "\n");
+        str.append("p_type \t\t ").append(Utilities.formatString("long", Long.toHexString(getP_type() & 0xFFFFFFFFL).toUpperCase())).append("\n");
+        str.append("p_offset \t ").append(Utilities.formatString("long", Long.toHexString(getP_offset() & 0xFFFFFFFFL).toUpperCase())).append("\n");
+        str.append("p_vaddr \t ").append(Utilities.formatString("long", Long.toHexString(getP_vaddr() & 0xFFFFFFFFL).toUpperCase())).append("\n");
+        str.append("p_paddr \t ").append(Utilities.formatString("long", Long.toHexString(getP_paddr() & 0xFFFFFFFFL).toUpperCase())).append("\n");
+        str.append("p_filesz \t ").append(Utilities.formatString("long", Long.toHexString(getP_filesz() & 0xFFFFFFFFL).toUpperCase())).append("\n");
+        str.append("p_memsz \t ").append(Utilities.formatString("long", Long.toHexString(getP_memsz() & 0xFFFFFFFFL).toUpperCase())).append("\n");
+        str.append("p_flags \t ").append(Utilities.formatString("long", Long.toHexString(getP_flags() & 0xFFFFFFFFL).toUpperCase())).append("\n");
+        str.append("p_align \t ").append(Utilities.formatString("long", Long.toHexString(getP_align() & 0xFFFFFFFFL).toUpperCase())).append("\n");
         return str.toString();
     }
 
