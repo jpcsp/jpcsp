@@ -3062,6 +3062,8 @@ private void threeTimesResizeActionPerformed(java.awt.event.ActionEvent evt) {//
                 }
             } else if (args[i].equals("--bufferumd")) {
             	doUmdBuffering = true;
+            	// Delete any previously existing umdbuffer files as they might belong to another ISO
+            	UmdIsoReader.deleteUmdbufferFiles();
             } else if (args[i].equals("--loadbufferedumd")) {
             	doUmdBuffering = true;
             	Modules.sceDisplayModule.setCalledFromCommandLine();

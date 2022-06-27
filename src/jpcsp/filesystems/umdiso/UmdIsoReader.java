@@ -18,6 +18,7 @@ package jpcsp.filesystems.umdiso;
 
 import static jpcsp.filesystems.umdiso.UmdIsoFile.sectorLength;
 
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -82,8 +83,7 @@ public class UmdIsoReader implements IBrowser {
     	}
 
     	if (doIsoBuffering) {
-    		String tmp = Settings.getInstance().getTmpDirectory();
-        	sectorDevice = new BufferedFileSectorDevice(new RandomAccessFile(tmp + "umdbuffer.toc", "rw"), new RandomAccessFile(tmp + "umdbuffer.iso", "rw"), sectorDevice);
+        	sectorDevice = new BufferedFileSectorDevice(new RandomAccessFile(getUmdbufferTocFile(), "rw"), new RandomAccessFile(getUmdbufferIsoFile(), "rw"), sectorDevice);
         }
 
         numSectors = sectorDevice.getNumSectors();
@@ -506,6 +506,27 @@ public class UmdIsoReader implements IBrowser {
 
 	public static void setDoIsoBuffering(boolean doIsoBuffering) {
 		UmdIsoReader.doIsoBuffering = doIsoBuffering;
+	}
+
+	private static File getUmdbufferIsoFile() {
+		String tmp = Settings.getInstance().getTmpDirectory();
+		return new File(tmp + "umdbuffer.iso");
+	}
+
+	private static File getUmdbufferTocFile() {
+		String tmp = Settings.getInstance().getTmpDirectory();
+		return new File(tmp + "umdbuffer.toc");
+	}
+
+	public static void deleteUmdbufferFiles() {
+    	File umdBufferToc = UmdIsoReader.getUmdbufferTocFile();
+		if (umdBufferToc != null && umdBufferToc.exists()) {
+			umdBufferToc.delete();
+		}
+    	File umdBufferIso = UmdIsoReader.getUmdbufferIsoFile();
+		if (umdBufferIso != null && umdBufferIso.exists()) {
+			umdBufferIso.delete();
+		}
 	}
 
 	private byte[] readFile(String fileName) throws IOException {
