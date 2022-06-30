@@ -1126,4 +1126,9 @@ public class BaseRenderingEngineProxy implements IRenderingEngine {
 	public void setSplineInfo(int ucount, int vcount, int utype, int vtype) {
 		proxy.setSplineInfo(ucount, vcount, utype, vtype);
 	}
+
+	@Override
+	public int getFramebufferBinding(int target) {
+		return proxy.getFramebufferBinding(target);
+	}
 }

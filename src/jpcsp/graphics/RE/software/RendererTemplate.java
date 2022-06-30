@@ -904,7 +904,7 @@ public class RendererTemplate {
 		            		//
 	            			if (!transform2D) {
 	            				switch (texMapMode) {
-	            					case GeCommands.TMAP_TEXTURE_MAP_MODE_TEXTURE_COORDIATES_UV:
+	            					case GeCommands.TMAP_TEXTURE_MAP_MODE_TEXTURE_COORDINATES_UV:
 	            						if (texScaleX != 1f) {
 	            							pixelU *= renderer.texScaleX;
 	            						}

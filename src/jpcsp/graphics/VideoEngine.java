@@ -2571,7 +2571,7 @@ public class VideoEngine {
                 }
             } else {
                 switch (context.tex_map_mode) {
-                    case TMAP_TEXTURE_MAP_MODE_TEXTURE_COORDIATES_UV:
+                    case TMAP_TEXTURE_MAP_MODE_TEXTURE_COORDINATES_UV:
                         if (context.vinfo.texture != 0) {
                             useTexture = true;
                         }
@@ -3293,7 +3293,7 @@ public class VideoEngine {
             transformedV.t[0] = v.t[0];
             transformedV.t[1] = v.t[1];
             switch (context.tex_map_mode) {
-                case GeCommands.TMAP_TEXTURE_MAP_MODE_TEXTURE_COORDIATES_UV:
+                case GeCommands.TMAP_TEXTURE_MAP_MODE_TEXTURE_COORDINATES_UV:
                     transformedV.t[0] = v.t[0] * context.tex_scale_x + context.tex_translate_x;
                     transformedV.t[1] = v.t[1] * context.tex_scale_y + context.tex_translate_y;
                     break;
@@ -5008,7 +5008,7 @@ public class VideoEngine {
 
         if (context.tex_map_mode == TMAP_TEXTURE_MAP_MODE_UNKNOW) {
             // Confirmed by testing with 3DStudio: map mode 3 is equivalent to map mode 0
-            context.tex_map_mode = TMAP_TEXTURE_MAP_MODE_TEXTURE_COORDIATES_UV;
+            context.tex_map_mode = TMAP_TEXTURE_MAP_MODE_TEXTURE_COORDINATES_UV;
         }
 
         if (isLogDebugEnabled) {
@@ -7105,7 +7105,7 @@ public class VideoEngine {
          */
         if (textureMatrixUpload.isChanged()) {
             if (context.transform_mode != VTYPE_TRANSFORM_PIPELINE_TRANS_COORD) {
-                re.setTextureMapMode(TMAP_TEXTURE_MAP_MODE_TEXTURE_COORDIATES_UV, TMAP_TEXTURE_PROJECTION_MODE_TEXTURE_COORDINATES);
+                re.setTextureMapMode(TMAP_TEXTURE_MAP_MODE_TEXTURE_COORDINATES_UV, TMAP_TEXTURE_PROJECTION_MODE_TEXTURE_COORDINATES);
                 context.reTextureGenS.setEnabled(re, false);
                 context.reTextureGenT.setEnabled(re, false);
 
@@ -7126,7 +7126,7 @@ public class VideoEngine {
             } else {
                 re.setTextureMapMode(context.tex_map_mode, context.tex_proj_map_mode);
                 switch (context.tex_map_mode) {
-                    case TMAP_TEXTURE_MAP_MODE_TEXTURE_COORDIATES_UV: {
+                    case TMAP_TEXTURE_MAP_MODE_TEXTURE_COORDINATES_UV: {
                         context.reTextureGenS.setEnabled(re, false);
                         context.reTextureGenT.setEnabled(re, false);
 
@@ -7143,7 +7143,7 @@ public class VideoEngine {
                         	}
                             textureMatrix[5] = -textureMatrix[5];
                             if (isLogDebugEnabled) {
-                                log.debug("Flipped TMAP_TEXTURE_MAP_MODE_TEXTURE_COORDIATES_UV");
+                                log.debug("Flipped TMAP_TEXTURE_MAP_MODE_TEXTURE_COORDINATES_UV");
                             }
                         }
                         re.setTextureMatrix(textureMatrix);

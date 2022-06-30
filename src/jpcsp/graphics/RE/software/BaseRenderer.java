@@ -220,7 +220,7 @@ public abstract class BaseRenderer implements IRenderer {
 			screenOffsetY = context.offset_y;
 			zscale = context.zscale;
 			zpos = context.zpos;
-			if (context.tex_map_mode == GeCommands.TMAP_TEXTURE_MAP_MODE_TEXTURE_COORDIATES_UV) {
+			if (context.tex_map_mode == GeCommands.TMAP_TEXTURE_MAP_MODE_TEXTURE_COORDINATES_UV) {
 				texTranslateX = context.tex_translate_x;
 				texTranslateY = context.tex_translate_y;
 				texScaleX = context.tex_scale_x;

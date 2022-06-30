@@ -19,7 +19,7 @@ package jpcsp.graphics;
 import static jpcsp.MemoryMap.START_VRAM;
 import static jpcsp.graphics.GeCommands.TBIAS_MODE_AUTO;
 import static jpcsp.graphics.GeCommands.TFLT_NEAREST;
-import static jpcsp.graphics.GeCommands.TMAP_TEXTURE_MAP_MODE_TEXTURE_COORDIATES_UV;
+import static jpcsp.graphics.GeCommands.TMAP_TEXTURE_MAP_MODE_TEXTURE_COORDINATES_UV;
 import static jpcsp.graphics.GeCommands.TMAP_TEXTURE_PROJECTION_MODE_POSITION;
 import static jpcsp.graphics.GeCommands.TWRAP_WRAP_MODE_REPEAT;
 import static jpcsp.graphics.VideoEngine.NUM_LIGHTS;
@@ -152,7 +152,7 @@ public class GeContext extends pspAbstractMemoryMappedStructure {
     public int blend_dst;
     public int blendEquation;
     public int[] dither_matrix = new int[16];
-    public int tex_map_mode = TMAP_TEXTURE_MAP_MODE_TEXTURE_COORDIATES_UV;
+    public int tex_map_mode = TMAP_TEXTURE_MAP_MODE_TEXTURE_COORDINATES_UV;
     public int tex_proj_map_mode = TMAP_TEXTURE_PROJECTION_MODE_POSITION;
     public int colorTestFunc;
     public int[] colorTestRef = { 0, 0, 0 };

@@ -16,6 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.graphics.textures;
 
+import jpcsp.graphics.VideoEngine;
 import jpcsp.graphics.RE.IRenderingEngine;
 import jpcsp.util.Utilities;
 
@@ -37,6 +38,7 @@ public abstract class GEProxyTexture extends GETexture {
 		super.bind(re, forDrawing);
 
 		if (isUpdateRequired(re)) {
+			int previousFbo = re.getFramebufferBinding(IRenderingEngine.RE_FRAMEBUFFER);
 			// Update the texture each time the GETexture has changed
 			if (fboId == -1) {
 				fboId = re.genFramebuffer();
@@ -48,7 +50,7 @@ public abstract class GEProxyTexture extends GETexture {
 
 			updateTexture(re);
 
-			re.bindFramebuffer(IRenderingEngine.RE_FRAMEBUFFER, 0);
+			re.bindFramebuffer(IRenderingEngine.RE_FRAMEBUFFER, previousFbo);
 			re.bindTexture(textureId);
 			if (forDrawing) {
 				re.setTextureFormat(pixelFormat, false);
@@ -68,4 +70,9 @@ public abstract class GEProxyTexture extends GETexture {
 	}
 
 	abstract protected void updateTexture(IRenderingEngine re);
+
+	@Override
+	public String toString() {
+		return String.format("GEProxyTexture[0x%08X-0x%08X, %dx%d (texture %dx%d), bufferWidth=%d, pixelFormat=%d(%s), textureId=%d, fboId=%d]", address, address + length, width, height, getTexImageWidth(), getTexImageHeight(), bufferWidth, pixelFormat, VideoEngine.getPsmName(pixelFormat), textureId, fboId);
+	}
 }

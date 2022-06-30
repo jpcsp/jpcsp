@@ -287,7 +287,7 @@ public class GeCommands {
         public final static int TMAP_TEXTURE_PROJECTION_MODE_NORMALIZED_NORMAL = 0X02;
         public final static int TMAP_TEXTURE_PROJECTION_MODE_NORMAL = 0X03;
 
-        public final static int TMAP_TEXTURE_MAP_MODE_TEXTURE_COORDIATES_UV = 0X00;
+        public final static int TMAP_TEXTURE_MAP_MODE_TEXTURE_COORDINATES_UV = 0X00;
         public final static int TMAP_TEXTURE_MAP_MODE_TEXTURE_MATRIX = 0X01;
         public final static int TMAP_TEXTURE_MAP_MODE_ENVIRONMENT_MAP = 0X02;
         public final static int TMAP_TEXTURE_MAP_MODE_UNKNOW = 0X03;

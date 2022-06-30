@@ -592,4 +592,5 @@ public interface IRenderingEngine {
 	public void setPatchParameter(int parameter, float[] values);
 	public void setPolygonMode(int mode);
 	public void setSplineInfo(int ucount, int vcount, int utype, int vtype);
+	public int getFramebufferBinding(int target);
 }

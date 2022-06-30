@@ -467,6 +467,11 @@ public class RenderingEngineLwjgl extends NullRenderingEngine {
 		GL20.GL_LINE, // RE_POLYGON_MODE_LINE
     	GL20.GL_POINT // RE_POLYGON_MODE_POINT
     };
+    protected static final int[] framebufferBindingTargetToGL = {
+        ARBFramebufferObject.GL_FRAMEBUFFER_BINDING, // RE_FRAMEBUFFER
+        ARBFramebufferObject.GL_READ_FRAMEBUFFER_BINDING, // RE_READ_FRAMEBUFFER
+        ARBFramebufferObject.GL_DRAW_FRAMEBUFFER_BINDING // RE_DRAW_FRAMEBUFFER
+    };
     protected boolean vendorIntel;
     protected boolean hasOpenGL30;
 
@@ -1754,5 +1759,10 @@ public class RenderingEngineLwjgl extends NullRenderingEngine {
 	@Override
 	public void setPolygonMode(int mode) {
 		GL20.glPolygonMode(GL20.GL_FRONT_AND_BACK, polygonModeToGL[mode]);
+	}
+
+	@Override
+	public int getFramebufferBinding(int target) {
+		return GL11.glGetInteger(framebufferBindingTargetToGL[target]);
 	}
 }

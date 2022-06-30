@@ -368,6 +368,8 @@ public class GETexture {
 	protected boolean copyStencilToTextureAlpha(IRenderingEngine re, int texWidth, int texHeight) {
 		re.checkAndLogErrors(null);
 
+		int previousFbo = re.getFramebufferBinding(IRenderingEngine.RE_DRAW_FRAMEBUFFER);
+
 		if (stencilFboId == -1) {
 			// Create a FBO
 			stencilFboId = re.genFramebuffer();
@@ -418,8 +420,8 @@ public class GETexture {
 		drawTexture(re, 0, 0, true, false, false, false, true);
 		re.checkAndLogErrors("drawTexture");
 
-		// Reset the framebuffer to the default one
-		re.bindFramebuffer(IRenderingEngine.RE_DRAW_FRAMEBUFFER, 0);
+		// Reset the framebuffer to the previous one
+		re.bindFramebuffer(IRenderingEngine.RE_DRAW_FRAMEBUFFER, previousFbo);
 
 		re.setCopyRedToAlpha(false);
 
@@ -448,6 +450,6 @@ public class GETexture {
 
 	@Override
 	public String toString() {
-		return String.format("GETexture[0x%08X-0x%08X, %dx%d (texture %dx%d), bufferWidth=%d, pixelFormat=%d(%s)]", address, address + length, width, height, getTexImageWidth(), getTexImageHeight(), bufferWidth, pixelFormat, VideoEngine.getPsmName(pixelFormat));
+		return String.format("GETexture[0x%08X-0x%08X, %dx%d (texture %dx%d), bufferWidth=%d, pixelFormat=%d(%s), textureId=%d]", address, address + length, width, height, getTexImageWidth(), getTexImageHeight(), bufferWidth, pixelFormat, VideoEngine.getPsmName(pixelFormat), textureId);
 	}
 }

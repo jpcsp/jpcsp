@@ -294,7 +294,7 @@ public class DebugProxy extends BaseRenderingEngineProxy {
 	@Override
 	public void setDepthMask(boolean depthWriteEnabled) {
 		if (isLogDebugEnabled) {
-			log.debug(String.format("setDepthMask %s", getEnabledDisabled(depthWriteEnabled)));
+			log.debug(String.format("setDepthMask depthWrite %s", getEnabledDisabled(depthWriteEnabled)));
 		}
 		super.setDepthMask(depthWriteEnabled);
 	}
@@ -689,6 +689,22 @@ public class DebugProxy extends BaseRenderingEngineProxy {
 			log.debug(String.format("setViewport x=%d, y=%d, width=%d, height=%d", x, y, width, height));
 		}
 		super.setViewport(x, y, width, height);
+	}
+
+	@Override
+	public void setViewportPos(float x, float y, float z) {
+		if (isLogDebugEnabled) {
+			log.debug(String.format("setViewportPos x=%f, y=%f, z=%f", x, y, z));
+		}
+		super.setViewportPos(x, y, z);
+	}
+
+	@Override
+	public void setViewportScale(float sx, float sy, float sz) {
+		if (isLogDebugEnabled) {
+			log.debug(String.format("setViewportScale sx=%f, sy=%f, sz=%f", sx, sy, sz));
+		}
+		super.setViewportScale(sx, sy, sz);
 	}
 
 	@Override
@@ -1109,5 +1125,22 @@ public class DebugProxy extends BaseRenderingEngineProxy {
 			log.debug(String.format("setSplineInfo ucount=%d, vcount=%d, utype=%d, vtype=%d", ucount, vcount, utype, vtype));
 		}
 		super.setSplineInfo(ucount, vcount, utype, vtype);
+	}
+
+	@Override
+	public void readDepth(int x, int y, int width, int height, int bufferSize, Buffer buffer) {
+		if (isLogDebugEnabled) {
+			log.debug(String.format("readDepth x=%d, y=%d, width=%d, height=%d, bufferSize=%d", x, y, width, height, bufferSize));
+		}
+		super.readDepth(x, y, width, height, bufferSize, buffer);
+	}
+
+	@Override
+	public int getFramebufferBinding(int target) {
+		int value = super.getFramebufferBinding(target);
+		if (isLogDebugEnabled) {
+			log.debug(String.format("getFramebufferBinding target=%d: %d", target, value));
+		}
+		return value;
 	}
 }

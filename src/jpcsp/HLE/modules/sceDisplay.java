@@ -24,13 +24,12 @@ import static jpcsp.MemoryMap.START_VRAM;
 import static jpcsp.graphics.GeCommands.TFLT_NEAREST;
 import static jpcsp.graphics.GeCommands.TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888;
 import static jpcsp.graphics.GeCommands.TWRAP_WRAP_MODE_CLAMP;
-import static jpcsp.graphics.RE.IRenderingEngine.RE_DEPTH_COMPONENT;
-import static jpcsp.graphics.RE.IRenderingEngine.sizeOfTextureType;
 import static jpcsp.graphics.VideoEngine.maxDrawingBufferWidth;
 import static jpcsp.graphics.VideoEngine.maxDrawingHeight;
 import static jpcsp.graphics.VideoEngine.maxDrawingWidth;
 import static jpcsp.graphics.VideoEngineUtilities.drawFrameBuffer;
 import static jpcsp.graphics.VideoEngineUtilities.drawFrameBufferFromMemory;
+import static jpcsp.graphics.VideoEngineUtilities.dumpDepthBufferImage;
 import static jpcsp.graphics.VideoEngineUtilities.getPixelFormatBytes;
 import static jpcsp.graphics.VideoEngineUtilities.getResizedHeight;
 import static jpcsp.graphics.VideoEngineUtilities.getResizedHeightPow2;
@@ -90,7 +89,6 @@ import jpcsp.HLE.kernel.types.ThreadWaitInfo;
 import jpcsp.graphics.DisplayScreen;
 import jpcsp.graphics.FrameBufferSettings;
 import jpcsp.graphics.GeCommands;
-import jpcsp.graphics.GeContext;
 import jpcsp.graphics.TextureSettings;
 import jpcsp.graphics.VertexCache;
 import jpcsp.graphics.VideoEngine;
@@ -1390,28 +1388,8 @@ public class sceDisplay extends HLEModule {
         re.deleteTexture(texGe);
 
         if (dumpDepthBuffer) {
-        	dumpDepthBufferImage();
+        	dumpDepthBufferImage(re);
         }
-    }
-
-    private void dumpDepthBufferImage() {
-    	GeContext context = VideoEngine.getInstance().getContext();
-    	int zbp = context.zbp;
-    	int zbw = context.zbw;
-    	int height = ge.getHeight();
-    	int pixelFormat = RE_DEPTH_COMPONENT;
-        int depthBufferSize = zbw * height * sizeOfTextureType[pixelFormat];
-
-        Buffer buffer;
-        if (isUsingSoftwareRenderer()) {
-    		buffer = Memory.getInstance().getBuffer(zbp, depthBufferSize);
-    	} else {
-    		buffer = tempByteBuffer.clear();
-    		re.readDepth(0, 0, zbw, height, depthBufferSize, buffer);
-    		buffer.rewind();
-    	}
-
-        CaptureManager.dumpImage(zbp, 0, buffer, zbw, height, zbw, pixelFormat, false, 0, true, false);
     }
 
     private void convertABGRtoARGB(int[] abgr, int imageSize, boolean needAlpha) {

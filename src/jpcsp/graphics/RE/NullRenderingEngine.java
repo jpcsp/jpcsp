@@ -930,4 +930,9 @@ public class NullRenderingEngine implements IRenderingEngine {
 	@Override
 	public void setSplineInfo(int ucount, int vcount, int utype, int vtype) {
 	}
+
+	@Override
+	public int getFramebufferBinding(int target) {
+		return 0;
+	}
 }

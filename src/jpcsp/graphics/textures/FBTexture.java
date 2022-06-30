@@ -129,6 +129,6 @@ public class FBTexture extends GETexture {
 
 	@Override
 	public String toString() {
-		return String.format("FBTexture[0x%08X-0x%08X, %dx%d, bufferWidth=%d, pixelFormat=%d(%s)]", address, address + length, width, height, bufferWidth, pixelFormat, VideoEngine.getPsmName(pixelFormat));
+		return String.format("FBTexture[0x%08X-0x%08X, %dx%d, bufferWidth=%d, pixelFormat=%d(%s), textureId=%d, depthTextureId=%d, fboId=%d]", address, address + length, width, height, bufferWidth, pixelFormat, VideoEngine.getPsmName(pixelFormat), textureId, depthTextureId, fboId);
 	}
 }

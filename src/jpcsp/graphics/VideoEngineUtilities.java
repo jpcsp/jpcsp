@@ -17,8 +17,11 @@
 package jpcsp.graphics;
 
 import static jpcsp.HLE.Modules.sceDisplayModule;
+import static jpcsp.graphics.GeCommands.TFLT_NEAREST;
 import static jpcsp.graphics.GeCommands.TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888;
 import static jpcsp.graphics.GeCommands.TWRAP_WRAP_MODE_CLAMP;
+import static jpcsp.graphics.RE.IRenderingEngine.RE_DEPTH_COMPONENT;
+import static jpcsp.graphics.RE.IRenderingEngine.sizeOfTextureType;
 import static jpcsp.graphics.VideoEngine.SIZEOF_FLOAT;
 import static jpcsp.util.Utilities.makePow2;
 
@@ -37,8 +40,10 @@ import org.lwjgl.system.linux.XVisualInfo;
 import org.lwjgl.system.windows.User32;
 
 import jpcsp.Emulator;
+import jpcsp.Memory;
 import jpcsp.graphics.RE.IRenderingEngine;
 import jpcsp.graphics.RE.buffer.IREBufferManager;
+import jpcsp.graphics.capture.CaptureManager;
 import jpcsp.graphics.textures.GETexture;
 import jpcsp.graphics.textures.GETextureManager;
 import jpcsp.memory.IMemoryReaderWriter;
@@ -726,5 +731,31 @@ public class VideoEngineUtilities {
 		// Always use a 32-bit texture to store the GE.
 		// 16-bit textures are causing color artifacts.
     	return GeCommands.TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888;
+    }
+
+    public static void dumpDepthBufferImage(IRenderingEngine re) {
+    	GeContext context = VideoEngine.getInstance().getContext();
+    	int zbp = context.zbp;
+    	int zbw = context.zbw;
+    	int height = sceDisplayModule.getHeightGe();
+    	int pixelFormat = RE_DEPTH_COMPONENT;
+        int depthBufferSize = zbw * height * sizeOfTextureType[pixelFormat];
+
+        Buffer buffer;
+        if (sceDisplayModule.isUsingSoftwareRenderer()) {
+    		buffer = Memory.getInstance().getBuffer(zbp, depthBufferSize);
+    	} else {
+    		buffer = sceDisplayModule.getTempByteBuffer().clear();
+            re.setTextureMipmapMinFilter(TFLT_NEAREST);
+            re.setTextureMipmapMagFilter(TFLT_NEAREST);
+            re.setTextureMipmapMinLevel(0);
+            re.setTextureMipmapMaxLevel(0);
+            re.setTextureWrapMode(TWRAP_WRAP_MODE_CLAMP, TWRAP_WRAP_MODE_CLAMP);
+    		re.setPixelStore(zbw, getPixelFormatBytes(pixelFormat));
+    		re.readDepth(0, 0, zbw, height, depthBufferSize, buffer);
+    		buffer.rewind();
+    	}
+
+        CaptureManager.dumpImage(zbp, 0, buffer, zbw, height, zbw, pixelFormat, false, 0, true, false);
     }
 }

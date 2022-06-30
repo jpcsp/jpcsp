@@ -392,7 +392,7 @@ public abstract class BasePrimitiveRenderer extends BaseRenderer {
 			needTextureWrapU = prim.tuMin < 0 || prim.tuMax >= context.texture_width[mipmapLevel];
 			needTextureWrapV = prim.tvMin < 0 || prim.tvMax >= context.texture_height[mipmapLevel];
 		} else {
-			if (context.tex_map_mode != GeCommands.TMAP_TEXTURE_MAP_MODE_TEXTURE_COORDIATES_UV) {
+			if (context.tex_map_mode != GeCommands.TMAP_TEXTURE_MAP_MODE_TEXTURE_COORDINATES_UV) {
 				needTextureWrapU = true;
 				needTextureWrapV = true;
 			} else if (isTriangle && (prim.p1w <= 0f || prim.p2w <= 0f || prim.p3w <= 0f)) {
