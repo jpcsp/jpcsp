@@ -80,7 +80,7 @@ public class GeContext extends pspAbstractMemoryMappedStructure {
     public boolean textureAlphaUsed;
     public boolean frontFaceCw;
     public int depthFunc;
-    public float[] morph_weight = new float[8];
+    public final float[] morph_weight = new float[8];
     public float[] tex_envmap_matrix = new float[4 * 4];
     public float[][] light_pos = new float[NUM_LIGHTS][4];
     public float[][] light_dir = new float[NUM_LIGHTS][4];

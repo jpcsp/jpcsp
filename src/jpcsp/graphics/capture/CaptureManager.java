@@ -52,7 +52,9 @@ import java.util.Map;
 import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.HLE.kernel.types.PspGeList;
+import jpcsp.graphics.GeContext;
 import jpcsp.graphics.VideoEngine;
+import jpcsp.graphics.RE.IRenderingEngine;
 import jpcsp.memory.IMemoryReader;
 import jpcsp.memory.MemoryReader;
 
@@ -70,6 +72,7 @@ public class CaptureManager {
     public static final int PACKET_TYPE_RAM = 2;
     public static final int PACKET_TYPE_FRAME_BUFFER_DETAILS = 3;
     public static final int PACKET_TYPE_GE_DETAILS = 4;
+    public static final int PACKET_TYPE_GE_CONTEXT = 5;
     public static boolean captureInProgress;
     protected static int version;
     private static DataOutputStream out;
@@ -78,6 +81,7 @@ public class CaptureManager {
     private static boolean listExecuted;
     private static CaptureFrameBufDetails replayFrameBufDetails;
     private static CaptureGEDetails replayGEDetails;
+    private static CaptureGeContext replayGeContext;
     private static HashSet<Integer> capturedImages;
     private static Map<Integer, Integer> capturedAddresses;
 
@@ -109,6 +113,10 @@ public class CaptureManager {
                 replayFrameBufDetails = CaptureFrameBufDetails.read(in);
                 break;
 
+            case PACKET_TYPE_GE_CONTEXT:
+            	replayGeContext = CaptureGeContext.read(in);
+            	break;
+
             default:
                 throw new IOException(String.format("Unknown packet type 0x%08X", packetType));
         }
@@ -131,32 +139,6 @@ public class CaptureManager {
         }
 
         return true;
-    }
-
-    public static synchronized void startCaptureReplay(Memory mem, String filename) {
-        if (captureInProgress) {
-            log.error("Ignoring startCaptureReplay, capture is in progress");
-            return;
-        }
-
-        log.info(String.format("Starting replay '%s'", filename));
-
-        try {
-            DataInputStream in = new DataInputStream(new BufferedInputStream(new FileInputStream(filename), BUFFER_SIZE));
-
-            if (!processReplayHeader(mem, in)) {
-            	in.close();
-            	return;
-            }
-
-            while (!processReplayPacket(mem, in)) {
-            	// Loop until end of capture file
-            }
-
-            in.close();
-        } catch(IOException e) {
-            log.error("Failed to start replay", e);
-        }
     }
 
     public static synchronized boolean startRecordReplay(Memory mem, String filename) {
@@ -208,6 +190,16 @@ public class CaptureManager {
         return continueReplay;
     }
 
+    public static synchronized void startListReplay(IRenderingEngine re, GeContext context) {
+    	if (replayGeContext != null) {
+    		if (log.isDebugEnabled()) {
+    			log.debug(String.format("startListReplay %s", replayGeContext));
+    		}
+    		replayGeContext.commit(re, context);
+    		replayGeContext = null;
+    	}
+    }
+
     public static synchronized void endListReplay() {
     	if (replayGEDetails != null) {
     		replayGEDetails.commit();
@@ -222,6 +214,16 @@ public class CaptureManager {
 
         log.debug("Replay List completed");
         Emulator.PauseEmu();
+    }
+
+    private static void startGeContextCapture(GeContext context) {
+    	try {
+        	CaptureGeContext captureGeContext = new CaptureGeContext(context);
+			captureGeContext.write(out);
+		} catch (IOException e) {
+            log.error("Failed to capture GE Context", e);
+            Emulator.PauseEmu();
+		}
     }
 
     public static synchronized void startCapture(Memory mem, String filename, PspGeList list) {
@@ -241,6 +243,8 @@ public class CaptureManager {
             out.writeInt(CURRENT_VERSION);
 
             captureInProgress = true;
+
+            startGeContextCapture(VideoEngine.getInstance().getContext());
 
             startListCapture(mem, list);
         } catch(IOException e) {

@@ -804,6 +804,10 @@ public class VideoEngine {
         	}
         }
 
+        if (State.replayGeFrames) {
+            CaptureManager.startListReplay(re, context);
+        }
+
         // Draw only as many lists as currently available in the drawListQueue.
         // Some game add automatically a new list to the queue when the current
         // list is finishing.
