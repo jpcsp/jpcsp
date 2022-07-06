@@ -196,10 +196,10 @@ public class VertexInfo {
     }
 
     public void setMorphWeights(float[] mw) {
-        morph_weight = mw;
-
         if (morphingVertexCount == 1) {
             morph_weight[0] = 1.f;
+        } else {
+        	System.arraycopy(mw, 0, morph_weight, 0, morphingVertexCount);
         }
     }
 
