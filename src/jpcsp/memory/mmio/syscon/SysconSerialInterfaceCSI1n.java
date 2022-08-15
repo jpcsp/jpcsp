@@ -16,9 +16,8 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.memory.mmio.syscon;
 
-import static jpcsp.util.Utilities.hasBit;
-
 import java.io.IOException;
+import java.util.Arrays;
 
 import org.apache.log4j.Logger;
 
@@ -41,8 +40,10 @@ public class SysconSerialInterfaceCSI1n implements IState {
 	private int clockSelection;
 	private int transmitBuffer;
 	private int ioShift;
-	private int index;
-	private int[] buffer;
+	private int receiveIndex;
+	private final int[] receiveBuffer = new int[MMIOHandlerSyscon.MAX_DATA_LENGTH];
+	private int sendIndex;
+	private final int[] sendBuffer = new int[MMIOHandlerSyscon.MAX_DATA_LENGTH];
 
 	public SysconSerialInterfaceCSI1n(MMIOHandlerSysconFirmwareSfr sfr, String name, int interruptFlag) {
 		this.sfr = sfr;
@@ -57,8 +58,10 @@ public class SysconSerialInterfaceCSI1n implements IState {
 		clockSelection = stream.readInt();
 		transmitBuffer = stream.readInt();
 		ioShift = stream.readInt();
-		index = stream.readInt();
-		buffer = stream.readIntsWithLength();
+		receiveIndex = stream.readInt();
+		stream.readInts(receiveBuffer);
+		sendIndex = stream.readInt();
+		stream.readInts(sendBuffer);
 	}
 
 	@Override
@@ -68,8 +71,10 @@ public class SysconSerialInterfaceCSI1n implements IState {
 		stream.writeInt(clockSelection);
 		stream.writeInt(transmitBuffer);
 		stream.writeInt(ioShift);
-		stream.writeInt(index);
-		stream.writeIntsWithLength(buffer);
+		stream.writeInt(receiveIndex);
+		stream.writeInts(receiveBuffer);
+		stream.writeInt(sendIndex);
+		stream.writeInts(sendBuffer);
 	}
 
 	public void reset() {
@@ -77,7 +82,10 @@ public class SysconSerialInterfaceCSI1n implements IState {
 		clockSelection = 0x00;
 		transmitBuffer = 0x00;
 		ioShift = 0x00;
-		index = 0;
+		receiveIndex = 0;
+		Arrays.fill(receiveBuffer, 0);
+		sendIndex = 0;
+		Arrays.fill(sendBuffer, 0);
 	}
 
 
@@ -86,13 +94,6 @@ public class SysconSerialInterfaceCSI1n implements IState {
 	}
 
 	public void setOperationMode(int value) {
-		if (hasBit(value, 7)) {
-			log.error(String.format("%s setOperationMode unimplemented operation in 3-wire serial I/O mode 0x%02X", name, value));
-		}
-		if (hasBit(value, 6)) {
-			log.error(String.format("%s setOperationMode unimplemented transmit/receive mode 0x%02X", name, value));
-		}
-
 		operationMode = value;
 	}
 
@@ -105,6 +106,9 @@ public class SysconSerialInterfaceCSI1n implements IState {
 	}
 
 	public void setTransmitBuffer(int value) {
+		if (sendIndex < sendBuffer.length) {
+			sendBuffer[sendIndex++] = value;
+		}
 		transmitBuffer = value;
 
 		sfr.setInterruptRequest(interruptFlag);
@@ -119,11 +123,13 @@ public class SysconSerialInterfaceCSI1n implements IState {
 	}
 
 	public int getIOShift() {
-		if (index < buffer.length) {
-			ioShift = buffer[index++];
+		if (receiveIndex < receiveBuffer.length) {
+			ioShift = receiveBuffer[receiveIndex++];
 		} else {
 			ioShift = 0x00;
 		}
+
+		sfr.setInterruptRequest(interruptFlag);
 
 		if (log.isDebugEnabled()) {
 			log.debug(String.format("%s getIOShift 0x%02X", name, ioShift));
@@ -132,8 +138,18 @@ public class SysconSerialInterfaceCSI1n implements IState {
 		return ioShift;
 	}
 
-	public void setBuffer(int[] buffer) {
-		index = 0;
-		this.buffer = buffer;
+	public void setReceiveBuffer(int[] data) {
+		receiveIndex = 0;
+		if (data != null) {
+			System.arraycopy(data, 0, receiveBuffer, 0, Math.min(data.length, receiveBuffer.length));
+		}
+	}
+
+	public int getSendBuffer(int[] data) {
+		int length = sendIndex;
+		sendIndex = 0;
+		System.arraycopy(sendBuffer, 0, data, 0, Math.min(length, data.length));
+
+		return length;
 	}
 }

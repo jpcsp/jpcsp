@@ -133,6 +133,10 @@ public class SysconTimerEventCounter16 extends AbstractSysconTimerEventCounter {
 		}
 	}
 
+	public int getTimerModeControl() {
+		return timerModeControl;
+	}
+
 	private void updateCompare() {
 		if (hasBit(compareControl, 0)) {
 			// Acting as a capture register

@@ -33,8 +33,11 @@ import org.apache.log4j.xml.DOMConfigurator;
 import jpcsp.Emulator;
 import jpcsp.Allegrex.compiler.RuntimeContext;
 import jpcsp.autotests.AutoTestsRunner;
+import jpcsp.hardware.Battery;
 import jpcsp.hardware.Model;
 import jpcsp.hardware.Wlan;
+import jpcsp.memory.mmio.syscon.MMIOHandlerSysconFirmwareSfr;
+import jpcsp.memory.mmio.syscon.SysconEmulator;
 import jpcsp.nec78k0.Nec78k0Interpreter;
 import jpcsp.nec78k0.Nec78k0Memory;
 import jpcsp.nec78k0.Nec78k0Processor;
@@ -53,6 +56,7 @@ public class Syscon78k0Test {
         log = Nec78k0Processor.log;
 		RuntimeContext.setLog4jMDC();
 		Wlan.initialize();
+		Battery.initialize();
         new Emulator(new AutoTestsRunner.DummyGUI());
         Emulator.getClock().resume();
 		RuntimeContext.debugCodeBlockCalls = true;
@@ -62,15 +66,11 @@ public class Syscon78k0Test {
 	}
 
 	public void testFirmware() {
-		int model = Model.MODEL_PSP_SLIM; // syscon_02g.bin
-//		model = Model.MODEL_PSP_FAT;      // syscon_01g.bin
-//		model = Model.MODEL_PSP_BRITE;    // syscon_03g.bin
-//		model = Model.MODEL_PSP_BRITE2;   // syscon_04g.bin
-//		model = Model.MODEL_PSP_BRITE4;   // syscon_09g.bin
-//		model = Model.MODEL_PSP_STREET;   // syscon_11g.bin
+		int model = Model.MODEL_PSP_SLIM;
+		model = Model.MODEL_PSP_FAT;
 
 		Model.setModel(model);
-		String fileName = String.format("syscon_%02dg.bin", Model.getGeneration());
+		String fileName = SysconEmulator.getFirmwareFileName();
 		log.debug(String.format("Reading %s", fileName));
 		File inputFile = new File(fileName);
 		byte[] buffer = new byte[(int) inputFile.length()];
@@ -93,14 +93,16 @@ public class Syscon78k0Test {
 			mem.write32(baseAddress + i, readUnaligned32(buffer, i));
 		}
 
-		if (true) {
-			for (int i = 0; i < 0x40; i += 2) {
-				int addr = mem.internalRead16(i);
-				if (addr != 0 && addr != 0xFFFF) {
-					log.info(String.format("Disassembling Vector Table entry 0x%02X(%s): 0x%04X", i, getInterruptName(i), addr));
-					processor.disassemble(addr);
-				}
+		for (int i = 0; i < 0x40; i += 2) {
+			int addr = mem.internalRead16(i);
+			if (addr != 0 && addr != 0xFFFF) {
+				log.info(String.format("Disassembling Vector Table entry 0x%02X(%s): 0x%04X", i, getInterruptName(i), addr));
+				processor.disassemble(addr);
 			}
+		}
+
+		if (model == Model.MODEL_PSP_SLIM) {
+			// The below offsets are taken from the syscon firmware on the TA-085 motherboard
 			for (int i = 0x88; i < 0xAE; i += 2) {
 				int addr = mem.internalRead16(i);
 				if (addr != 0 && addr != 0xFFFF) {
@@ -123,7 +125,50 @@ public class Syscon78k0Test {
 				}
 			}
 			processor.disassemble(0x8100);
+			for (int i = 2; i <= 13; i++) {
+				int addr = mem.internalRead16(0x4DA8 + (i - 2) * 2);
+				log.info(String.format("Disassembling switch table from 0x4DA6: case 0x%02X at 0x%04X", i, addr));
+				processor.disassemble(addr);
+			}
+			for (int i = 1; i <= 20; i++) {
+				int addr = mem.internalRead16(0x3264 + (i - 1) * 2);
+				log.info(String.format("Disassembling switch table from 0x3262: case 0x%02X at 0x%04X", i, addr));
+				processor.disassemble(addr);
+			}
+		} else if (model == Model.MODEL_PSP_FAT) {
+			// The below offsets are taken from the syscon firmware on the TA-086 motherboard
+			for (int i = 0x88; i < 0xAE; i += 2) {
+				int addr = mem.internalRead16(i);
+				if (addr != 0 && addr != 0xFFFF) {
+					log.info(String.format("Disassembling sysconCmdGetOps table 0x%02X(%s): 0x%04X", i, getSysconCmdName((i - 0x88) / 2), addr));
+					processor.disassemble(addr);
+				}
+			}
+			for (int i = 0xAC; i < 0xDA; i += 2) {
+				int addr = mem.internalRead16(i);
+				if (addr != 0 && addr != 0xFFFF) {
+					log.info(String.format("Disassembling mainOperations table 0x%02X(%s): 0x%04X", i, getSysconCmdName((i - 0xAE) / 2 + 0x20), addr));
+					processor.disassemble(addr);
+				}
+			}
+			for (int i = 0xDA; i < 0x108; i += 2) {
+				int addr = mem.internalRead16(i);
+				if (addr != 0 && addr != 0xFFFF) {
+					log.info(String.format("Disassembling peripheralOperations table 0x%02X(%s): 0x%04X", i, getSysconCmdName((i - 0xDC) / 2 + 0x40), addr));
+					processor.disassemble(addr);
+				}
+			}
+			processor.disassemble(0x8100);
+			for (int i = 1; i <= 12; i++) {
+				int addr = mem.internalRead16(0x25C2 + (i - 1) * 2);
+				log.info(String.format("Disassembling switch table from 0x25C0: case 0x%02X at 0x%04X", i, addr));
+				processor.disassemble(addr);
+			}
 		}
+
+		SysconEmulator.disable();
+		MMIOHandlerSysconFirmwareSfr.dummyTesting = true;
+		Nec78k0Processor.disassembleFunctions = true;
 
 		processor.reset();
 
@@ -132,10 +177,6 @@ public class Syscon78k0Test {
 		long minimumDuration = 3000L; // Run for at least 3 seconds
 		long start = now();
 		while ((now() - start) < minimumDuration) {
-			// TODO This is triggering the start of the serial communication where the firmware is receiving requests from the PSP.
-			// Not yet found how to properly come to that state.
-			processor.mem.write8(0xFE34, (byte) 0x01);
-
 			interpreter.run();
 		}
 	}

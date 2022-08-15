@@ -121,6 +121,7 @@ public class MMIOHandlerSyscon extends MMIOHandlerBase {
 	private int error;
 	private static final int NUMBER_INTERNAL_REGISTERS = 8;
 	private final byte[][] internalRegisters = new byte[8][8];
+	private SysconEmulator fw;
 
 	private static class ResetAction implements IAction {
 		@Override
@@ -144,6 +145,11 @@ public class MMIOHandlerSyscon extends MMIOHandlerBase {
 
 	private MMIOHandlerSyscon(int baseAddress) {
 		super(baseAddress);
+
+		if (SysconEmulator.isEnabled()) {
+			fw = new SysconEmulator();
+			fw.boot();
+		}
 	}
 
 	@Override
@@ -176,11 +182,12 @@ public class MMIOHandlerSyscon extends MMIOHandlerBase {
 		error = 0;
 	}
 
-	private void clearData() {
+	public void clearData() {
 		Arrays.fill(data, 0);
+		endDataIndex = false;
 	}
 
-	private void setDataValue(int offset, int value) {
+	public void setDataValue(int offset, int value) {
 		data[offset] = value & 0xFF;
 	}
 
@@ -275,313 +282,317 @@ public class MMIOHandlerSyscon extends MMIOHandlerBase {
 	private void startSysconCmd() {
 		int cmd = data[PSP_SYSCON_TX_CMD];
 		if (log.isDebugEnabled()) {
-			log.debug(String.format("startSysconCmd cmd=0x%02X(%s), %s", cmd, getSysconCmdName(cmd), this));
+			log.debug(String.format("startSysconCmd cmd=0x%02X(%s), %s", cmd, getSysconCmdName(cmd), toString(data[PSP_SYSCON_TX_LEN] + 1)));
 		}
 
-		// The default response
-		int[] responseData = new int[] { 0x82 };
+		if (fw != null) {
+			fw.startSysconCmd(data);
+		} else {
+			// The default response
+			int[] responseData = new int[] { 0x82 };
 
-		MMIOHandlerGpio.getInstance().clearPort(GPIO_PORT_SYSCON_END_CMD);
+			MMIOHandlerGpio.getInstance().clearPort(GPIO_PORT_SYSCON_END_CMD);
 
-		int unknown;
-		int address;
-		boolean power;
-		int parameterId;
-		switch (cmd) {
-			case PSP_SYSCON_CMD_NOP:
-				// Doing nothing
-				break;
-			case PSP_SYSCON_CMD_CTRL_LEPTON_POWER:
-				UMDDrive.setUmdPower(data[PSP_SYSCON_TX_DATA] != 0);
-				break;
-			case PSP_SYSCON_CMD_RESET_DEVICE:
-				int device = data[PSP_SYSCON_TX_DATA] & 0x3F;
-				boolean resetMode1 = (data[PSP_SYSCON_TX_DATA] & sceSyscon.PSP_SYSCON_DEVICE_RESET_MODE_1) != 0;
-				boolean resetMode2 = (data[PSP_SYSCON_TX_DATA] & sceSyscon.PSP_SYSCON_DEVICE_RESET_MODE_2) != 0;
-				switch (device) {
-					case PSP_SYSCON_DEVICE_UMD:
-						if (log.isDebugEnabled()) {
-							log.debug(String.format("PSP_SYSCON_CMD_RESET_DEVICE device=0x%X(UMD Drive), reset=%b", device, resetMode1));
-						}
-						break;
-					case PSP_SYSCON_DEVICE_WLAN:
-						if (log.isDebugEnabled()) {
-							log.debug(String.format("PSP_SYSCON_CMD_RESET_DEVICE device=0x%X(WLAN), reset=%b", device, resetMode1));
-						}
+			int unknown;
+			int address;
+			boolean power;
+			int parameterId;
+			switch (cmd) {
+				case PSP_SYSCON_CMD_NOP:
+					// Doing nothing
+					break;
+				case PSP_SYSCON_CMD_CTRL_LEPTON_POWER:
+					UMDDrive.setUmdPower(data[PSP_SYSCON_TX_DATA] != 0);
+					break;
+				case PSP_SYSCON_CMD_RESET_DEVICE:
+					int device = data[PSP_SYSCON_TX_DATA] & 0x3F;
+					boolean resetMode1 = (data[PSP_SYSCON_TX_DATA] & sceSyscon.PSP_SYSCON_DEVICE_RESET_MODE_1) != 0;
+					boolean resetMode2 = (data[PSP_SYSCON_TX_DATA] & sceSyscon.PSP_SYSCON_DEVICE_RESET_MODE_2) != 0;
+					switch (device) {
+						case PSP_SYSCON_DEVICE_UMD:
+							if (log.isDebugEnabled()) {
+								log.debug(String.format("PSP_SYSCON_CMD_RESET_DEVICE device=0x%X(UMD Drive), reset=%b", device, resetMode1));
+							}
+							break;
+						case PSP_SYSCON_DEVICE_WLAN:
+							if (log.isDebugEnabled()) {
+								log.debug(String.format("PSP_SYSCON_CMD_RESET_DEVICE device=0x%X(WLAN), reset=%b", device, resetMode1));
+							}
 
-						if (resetMode1) {
-							MMIOHandlerWlan.getInstance().reset();
-						}
-						break;
-					case PSP_SYSCON_DEVICE_PSP:
-						if (log.isDebugEnabled()) {
-							log.debug(String.format("PSP_SYSCON_CMD_RESET_DEVICE device=0x%X(PSP), resetMode1=%b, resetMode2=%b", device, resetMode1, resetMode2));
-						}
+							if (resetMode1) {
+								MMIOHandlerWlan.getInstance().reset();
+							}
+							break;
+						case PSP_SYSCON_DEVICE_PSP:
+							if (log.isDebugEnabled()) {
+								log.debug(String.format("PSP_SYSCON_CMD_RESET_DEVICE device=0x%X(PSP), resetMode1=%b, resetMode2=%b", device, resetMode1, resetMode2));
+							}
 
-						Emulator.getScheduler().addAction(new ResetAction());
-						break;
-					default:
-						log.error(String.format("PSP_SYSCON_CMD_RESET_DEVICE unimplemented device=0x%X, reset=%b", device, resetMode1));
-						break;
-				}
-				break;
-			case PSP_SYSCON_CMD_GET_DIGITAL_KEY:
-				State.controller.hleControllerPoll();
-				responseData = addButtonsResponseData(responseData, false);
-				break;
-			case PSP_SYSCON_CMD_GET_ANALOG:
-				State.controller.hleControllerPoll();
-				responseData = addAnalogResponseData(responseData);
-				break;
-			case PSP_SYSCON_CMD_GET_TACHYON_TEMP:
-				responseData = addResponseData32(responseData, Modules.sceSysconModule.getTachyonTemp());
-				break;
-			case PSP_SYSCON_CMD_GET_DIGITAL_KEY_ANALOG:
-				State.controller.hleControllerPoll();
-				responseData = addButtonsResponseData(responseData, false);
-				responseData = addAnalogResponseData(responseData);
-				break;
-			case PSP_SYSCON_CMD_GET_KERNEL_DIGITAL_KEY:
-				State.controller.hleControllerPoll();
-				responseData = addButtonsResponseData(responseData, true);
-				break;
-			case PSP_SYSCON_CMD_GET_KERNEL_DIGITAL_KEY_ANALOG:
-				State.controller.hleControllerPoll();
-				responseData = addButtonsResponseData(responseData, true);
-				responseData = addAnalogResponseData(responseData);
-				break;
-			case PSP_SYSCON_CMD_CTRL_ANALOG_XY_POLLING:
-				Modules.sceCtrlModule.setSamplingMode(data[PSP_SYSCON_TX_DATA]);
-				break;
-			case PSP_SYSCON_CMD_CTRL_LED:
-				int flag = data[PSP_SYSCON_TX_DATA];
-				boolean setOn;
-				int led;
-				if (Model.getModel() == Model.MODEL_PSP_GO) {
-					setOn = (flag & 0x01) != 0;
-					led = flag & 0xF0;
-				} else {
-					setOn = (flag & 0x10) != 0;
-					led = flag & 0xE0;
-				}
+							Emulator.getScheduler().addAction(new ResetAction());
+							break;
+						default:
+							log.error(String.format("PSP_SYSCON_CMD_RESET_DEVICE unimplemented device=0x%X, reset=%b", device, resetMode1));
+							break;
+					}
+					break;
+				case PSP_SYSCON_CMD_GET_DIGITAL_KEY:
+					State.controller.hleControllerPoll();
+					responseData = addButtonsResponseData(responseData, false);
+					break;
+				case PSP_SYSCON_CMD_GET_ANALOG:
+					State.controller.hleControllerPoll();
+					responseData = addAnalogResponseData(responseData);
+					break;
+				case PSP_SYSCON_CMD_GET_TACHYON_TEMP:
+					responseData = addResponseData32(responseData, Modules.sceSysconModule.getTachyonTemp());
+					break;
+				case PSP_SYSCON_CMD_GET_DIGITAL_KEY_ANALOG:
+					State.controller.hleControllerPoll();
+					responseData = addButtonsResponseData(responseData, false);
+					responseData = addAnalogResponseData(responseData);
+					break;
+				case PSP_SYSCON_CMD_GET_KERNEL_DIGITAL_KEY:
+					State.controller.hleControllerPoll();
+					responseData = addButtonsResponseData(responseData, true);
+					break;
+				case PSP_SYSCON_CMD_GET_KERNEL_DIGITAL_KEY_ANALOG:
+					State.controller.hleControllerPoll();
+					responseData = addButtonsResponseData(responseData, true);
+					responseData = addAnalogResponseData(responseData);
+					break;
+				case PSP_SYSCON_CMD_CTRL_ANALOG_XY_POLLING:
+					Modules.sceCtrlModule.setSamplingMode(data[PSP_SYSCON_TX_DATA]);
+					break;
+				case PSP_SYSCON_CMD_CTRL_LED:
+					int flag = data[PSP_SYSCON_TX_DATA];
+					boolean setOn;
+					int led;
+					if (Model.getModel() == Model.MODEL_PSP_GO) {
+						setOn = (flag & 0x01) != 0;
+						led = flag & 0xF0;
+					} else {
+						setOn = (flag & 0x10) != 0;
+						led = flag & 0xE0;
+					}
 
-				switch (led) {
-					case 0x40: LED.setLedMemoryStickOn(setOn); break;
-					case 0x80: LED.setLedWlanOn(setOn); break;
-					case 0x20: LED.setLedPowerOn(setOn); break;
-					case 0x10: LED.setLedBluetoothOn(setOn); break;
-					default:
-						log.warn(String.format("startSysconCmd PSP_SYSCON_CMD_CTRL_LED unknown flag value 0x%02X", flag));
-						break;
-				}
-				break;
-			case PSP_SYSCON_CMD_RECEIVE_SETPARAM:
-				parameterId = 0;
-				// Depending on the Baryon version, there is a parameter or not
-				if (data[PSP_SYSCON_TX_LEN] >= 3) {
-					parameterId = data[PSP_SYSCON_TX_DATA];
-				}
+					switch (led) {
+						case 0x40: LED.setLedMemoryStickOn(setOn); break;
+						case 0x80: LED.setLedWlanOn(setOn); break;
+						case 0x20: LED.setLedPowerOn(setOn); break;
+						case 0x10: LED.setLedBluetoothOn(setOn); break;
+						default:
+							log.warn(String.format("startSysconCmd PSP_SYSCON_CMD_CTRL_LED unknown flag value 0x%02X", flag));
+							break;
+					}
+					break;
+				case PSP_SYSCON_CMD_RECEIVE_SETPARAM:
+					parameterId = 0;
+					// Depending on the Baryon version, there is a parameter or not
+					if (data[PSP_SYSCON_TX_LEN] >= 3) {
+						parameterId = data[PSP_SYSCON_TX_DATA];
+					}
 
-				if (log.isDebugEnabled()) {
-					log.debug(String.format("startSysconCmd PSP_SYSCON_CMD_RECEIVE_SETPARAM parameterId=0x%X", parameterId));
-				}
+					if (log.isDebugEnabled()) {
+						log.debug(String.format("startSysconCmd PSP_SYSCON_CMD_RECEIVE_SETPARAM parameterId=0x%X", parameterId));
+					}
 
-				// 8 bytes response data:
-				// - 2 bytes scePowerGetForceSuspendCapacity() (usually 72)
-				// - 6 bytes unknown
-				responseData = addResponseData16(responseData, scePowerModule.scePowerGetForceSuspendCapacity());
-				for (int i = 2; i < 8; i++) {
-					responseData = Utilities.add(responseData, 0);
-				}
-				break;
-			case PSP_SYSCON_CMD_SEND_SETPARAM:
-				parameterId = 0;
-				if (data[PSP_SYSCON_TX_LEN] >= 11) {
-					parameterId = data[PSP_SYSCON_TX_DATA + 10];
-				}
+					// 8 bytes response data:
+					// - 2 bytes scePowerGetForceSuspendCapacity() (usually 72)
+					// - 6 bytes unknown
+					responseData = addResponseData16(responseData, scePowerModule.scePowerGetForceSuspendCapacity());
+					for (int i = 2; i < 8; i++) {
+						responseData = Utilities.add(responseData, 0);
+					}
+					break;
+				case PSP_SYSCON_CMD_SEND_SETPARAM:
+					parameterId = 0;
+					if (data[PSP_SYSCON_TX_LEN] >= 11) {
+						parameterId = data[PSP_SYSCON_TX_DATA + 10];
+					}
 
-				int forceSuspendCapacity = data[PSP_SYSCON_TX_DATA + 0];
-				forceSuspendCapacity |= data[PSP_SYSCON_TX_DATA + 1] << 8;
+					int forceSuspendCapacity = data[PSP_SYSCON_TX_DATA + 0];
+					forceSuspendCapacity |= data[PSP_SYSCON_TX_DATA + 1] << 8;
 
-				if (log.isDebugEnabled()) {
-					log.debug(String.format("startSysconCmd PSP_SYSCON_CMD_SEND_SETPARAM parameterId=0x%X, forceSuspendCapacity=0x%X", parameterId, forceSuspendCapacity));
+					if (log.isDebugEnabled()) {
+						log.debug(String.format("startSysconCmd PSP_SYSCON_CMD_SEND_SETPARAM parameterId=0x%X, forceSuspendCapacity=0x%X", parameterId, forceSuspendCapacity));
+					}
+					break;
+				case PSP_SYSCON_CMD_CTRL_HR_POWER:
+					power = data[PSP_SYSCON_TX_DATA] != 0;
+					Modules.sceSysconModule.sceSysconCtrlHRPower(power);
+					break;
+				case PSP_SYSCON_CMD_CTRL_WLAN_POWER:
+					power = data[PSP_SYSCON_TX_DATA] != 0;
+					Modules.sceSysconModule.sceSysconCtrlWlanPower(power);
+					break;
+				case PSP_SYSCON_CMD_GET_POWER_SUPPLY_STATUS:
+					responseData = addResponseData32(responseData, sceSysconModule.getPowerSupplyStatus());
+					break;
+				case PSP_SYSCON_CMD_BATTERY_GET_STATUS_CAP:
+					responseData = addResponseData16(responseData, sceSysconModule.getBatteryStatusCap1());
+					responseData = addResponseData16(responseData, sceSysconModule.getBatteryStatusCap2());
+					break;
+				case PSP_SYSCON_CMD_BATTERY_GET_FULL_CAP:
+					responseData = addResponseData32(responseData, Battery.getFullCapacity());
+					break;
+				case PSP_SYSCON_CMD_BATTERY_GET_CYCLE:
+					responseData = addResponseData32(responseData, sceSysconModule.getBatteryCycle());
+					break;
+				case PSP_SYSCON_CMD_BATTERY_GET_LIMIT_TIME:
+					responseData = addResponseData32(responseData, sceSysconModule.getBatteryLimitTime());
+					break;
+				case PSP_SYSCON_CMD_BATTERY_GET_TEMP:
+					responseData = addResponseData32(responseData, Battery.getTemperature());
+					break;
+				case PSP_SYSCON_CMD_BATTERY_GET_ELEC:
+					responseData = addResponseData32(responseData, sceSysconModule.getBatteryElec());
+					break;
+				case PSP_SYSCON_CMD_BATTERY_GET_VOLT:
+					responseData = addResponseData32(responseData, Battery.getVoltage());
+					break;
+				case PSP_SYSCON_CMD_GET_BARYON:
+					responseData = addResponseData32(responseData, Model.getBaryonVersion());
+					break;
+				case PSP_SYSCON_CMD_GET_POMMEL_VERSION:
+					responseData = addResponseData32(responseData, Model.getPommelVersion());
+					break;
+				case PSP_SYSCON_CMD_GET_POWER_STATUS:
+					responseData = addResponseData32(responseData, sceSysconModule.getPowerStatus());
+					break;
+				case PSP_SYSCON_CMD_GET_TIMESTAMP:
+					int[] timeStamp = sceSysconModule.getTimeStamp();
+					for (int i = 0; i < timeStamp.length; i++) {
+						responseData = Utilities.add(responseData, timeStamp[i] & 0xFF);
+					}
+					break;
+				case PSP_SYSCON_CMD_READ_SCRATCHPAD: {
+					int src = (data[PSP_SYSCON_TX_DATA] & 0xFC) >> 2;
+					int size = 1 << (data[PSP_SYSCON_TX_DATA] & 0x03);
+					int values[] = new int[size];
+					sceSysconModule.readScratchpad(src, values, size);
+					for (int i = 0; i < size; i++) {
+						responseData = Utilities.add(responseData, values[i] & 0xFF);
+					}
+					break;
 				}
-				break;
-			case PSP_SYSCON_CMD_CTRL_HR_POWER:
-				power = data[PSP_SYSCON_TX_DATA] != 0;
-				Modules.sceSysconModule.sceSysconCtrlHRPower(power);
-				break;
-			case PSP_SYSCON_CMD_CTRL_WLAN_POWER:
-				power = data[PSP_SYSCON_TX_DATA] != 0;
-				Modules.sceSysconModule.sceSysconCtrlWlanPower(power);
-				break;
-			case PSP_SYSCON_CMD_GET_POWER_SUPPLY_STATUS:
-				responseData = addResponseData32(responseData, sceSysconModule.getPowerSupplyStatus());
-				break;
-			case PSP_SYSCON_CMD_BATTERY_GET_STATUS_CAP:
-				responseData = addResponseData16(responseData, sceSysconModule.getBatteryStatusCap1());
-				responseData = addResponseData16(responseData, sceSysconModule.getBatteryStatusCap2());
-				break;
-			case PSP_SYSCON_CMD_BATTERY_GET_FULL_CAP:
-				responseData = addResponseData32(responseData, Battery.getFullCapacity());
-				break;
-			case PSP_SYSCON_CMD_BATTERY_GET_CYCLE:
-				responseData = addResponseData32(responseData, sceSysconModule.getBatteryCycle());
-				break;
-			case PSP_SYSCON_CMD_BATTERY_GET_LIMIT_TIME:
-				responseData = addResponseData32(responseData, sceSysconModule.getBatteryLimitTime());
-				break;
-			case PSP_SYSCON_CMD_BATTERY_GET_TEMP:
-				responseData = addResponseData32(responseData, Battery.getTemperature());
-				break;
-			case PSP_SYSCON_CMD_BATTERY_GET_ELEC:
-				responseData = addResponseData32(responseData, sceSysconModule.getBatteryElec());
-				break;
-			case PSP_SYSCON_CMD_BATTERY_GET_VOLT:
-				responseData = addResponseData32(responseData, Battery.getVoltage());
-				break;
-			case PSP_SYSCON_CMD_GET_BARYON:
-				responseData = addResponseData32(responseData, Model.getBaryonVersion());
-				break;
-			case PSP_SYSCON_CMD_GET_POMMEL_VERSION:
-				responseData = addResponseData32(responseData, Model.getPommelVersion());
-				break;
-			case PSP_SYSCON_CMD_GET_POWER_STATUS:
-				responseData = addResponseData32(responseData, sceSysconModule.getPowerStatus());
-				break;
-			case PSP_SYSCON_CMD_GET_TIMESTAMP:
-				int[] timeStamp = sceSysconModule.getTimeStamp();
-				for (int i = 0; i < timeStamp.length; i++) {
-					responseData = Utilities.add(responseData, timeStamp[i] & 0xFF);
+				case PSP_SYSCON_CMD_WRITE_SCRATCHPAD: {
+					int dst = (data[PSP_SYSCON_TX_DATA] & 0xFC) >> 2;
+					int size = 1 << (data[PSP_SYSCON_TX_DATA] & 0x03);
+					int values[] = new int[size];
+					for (int i = 0; i < size; i++) {
+						values[i] = data[PSP_SYSCON_TX_DATA + 1 + i];
+					}
+					sceSysconModule.writeScratchpad(dst, values, size);
+					break;
 				}
-				break;
-			case PSP_SYSCON_CMD_READ_SCRATCHPAD: {
-				int src = (data[PSP_SYSCON_TX_DATA] & 0xFC) >> 2;
-				int size = 1 << (data[PSP_SYSCON_TX_DATA] & 0x03);
-				int values[] = new int[size];
-				sceSysconModule.readScratchpad(src, values, size);
-				for (int i = 0; i < size; i++) {
-					responseData = Utilities.add(responseData, values[i] & 0xFF);
-				}
-				break;
-			}
-			case PSP_SYSCON_CMD_WRITE_SCRATCHPAD: {
-				int dst = (data[PSP_SYSCON_TX_DATA] & 0xFC) >> 2;
-				int size = 1 << (data[PSP_SYSCON_TX_DATA] & 0x03);
-				int values[] = new int[size];
-				for (int i = 0; i < size; i++) {
-					values[i] = data[PSP_SYSCON_TX_DATA + 1 + i];
-				}
-				sceSysconModule.writeScratchpad(dst, values, size);
-				break;
-			}
-			case PSP_SYSCON_CMD_READ_CLOCK:
-				responseData = addResponseData32(responseData, sceSysconModule.readClock());
-				break;
-			case PSP_SYSCON_CMD_WRITE_CLOCK:
-				int clock = getData32(data, PSP_SYSCON_TX_DATA);
-				sceSysconModule.writeClock(clock);
-				break;
-			case PSP_SYSCON_CMD_READ_ALARM:
-				responseData = addResponseData32(responseData, sceSysconModule.readAlarm());
-				break;
-			case PSP_SYSCON_CMD_WRITE_ALARM:
-				int alarm = getData32(data, PSP_SYSCON_TX_DATA);
-				sceSysconModule.writeAlarm(alarm);
-				break;
-			case PSP_SYSCON_CMD_CTRL_MS_POWER:
-				power = getData32(data, PSP_SYSCON_TX_DATA) != 0;
-				MemoryStick.setMsPower(power);
-				break;
-			case PSP_SYSCON_CMD_CTRL_POWER:
-				unknown = getData24(data, PSP_SYSCON_TX_DATA);
-				sceSysconModule.sceSysconCtrlPower(unknown & 0x3FFFFF, (unknown >> 23) & 0x1);
-				break;
-			case PSP_SYSCON_CMD_CTRL_VOLTAGE:
-				unknown = getData24(data, PSP_SYSCON_TX_DATA);
-				sceSysconModule.sceSysconCtrlVoltage(unknown & 0xFF, (unknown >> 8) & 0xFFFF);
-				break;
-			case PSP_SYSCON_CMD_GET_STATUS2:
-				break;
-			case PSP_SYSCON_CMD_SHUTDOWN_PSP:
-				log.info("Shutdown PSP");
-				Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_SHUTDOWN);
-				break;
-			case PSP_SYSCON_CMD_SUSPEND_PSP:
-				unknown = data[PSP_SYSCON_TX_DATA];
-				log.info("Suspend PSP");
-				Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_SUSPEND);
-				break;
-			case PSP_SYSCON_CMD_UNKNOWN_30:
-				// The UNKNOWN_30 command is not supported on PSP Fat
-				if (Model.getGeneration() < 2) {
-					responseData = new int[] { 0x84 };
-				} else {
-					int length = data[PSP_SYSCON_TX_LEN] - 3;
-					int registerAndFlag = data[PSP_SYSCON_TX_DATA];
-					int register = registerAndFlag & 0x7F;
-					if (register > NUMBER_INTERNAL_REGISTERS) {
-						log.error(String.format("startSysconCmd: unknown cmd=0x%02X(%s), %s", cmd, getSysconCmdName(cmd), this));
-					} else if (hasFlag(registerAndFlag, 0x80)) {
-						// Writing to internal registers
-						if (length <= internalRegisters[register].length) {
-							for (int i = 0; i < length; i++) {
-								internalRegisters[register][i] = (byte) data[PSP_SYSCON_TX_DATA + 1 + i];
+				case PSP_SYSCON_CMD_READ_CLOCK:
+					responseData = addResponseData32(responseData, sceSysconModule.readClock());
+					break;
+				case PSP_SYSCON_CMD_WRITE_CLOCK:
+					int clock = getData32(data, PSP_SYSCON_TX_DATA);
+					sceSysconModule.writeClock(clock);
+					break;
+				case PSP_SYSCON_CMD_READ_ALARM:
+					responseData = addResponseData32(responseData, sceSysconModule.readAlarm());
+					break;
+				case PSP_SYSCON_CMD_WRITE_ALARM:
+					int alarm = getData32(data, PSP_SYSCON_TX_DATA);
+					sceSysconModule.writeAlarm(alarm);
+					break;
+				case PSP_SYSCON_CMD_CTRL_MS_POWER:
+					power = getData32(data, PSP_SYSCON_TX_DATA) != 0;
+					MemoryStick.setMsPower(power);
+					break;
+				case PSP_SYSCON_CMD_CTRL_POWER:
+					unknown = getData24(data, PSP_SYSCON_TX_DATA);
+					sceSysconModule.sceSysconCtrlPower(unknown & 0x3FFFFF, (unknown >> 23) & 0x1);
+					break;
+				case PSP_SYSCON_CMD_CTRL_VOLTAGE:
+					unknown = getData24(data, PSP_SYSCON_TX_DATA);
+					sceSysconModule.sceSysconCtrlVoltage(unknown & 0xFF, (unknown >> 8) & 0xFFFF);
+					break;
+				case PSP_SYSCON_CMD_GET_STATUS2:
+					break;
+				case PSP_SYSCON_CMD_SHUTDOWN_PSP:
+					log.info("Shutdown PSP");
+					Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_SHUTDOWN);
+					break;
+				case PSP_SYSCON_CMD_SUSPEND_PSP:
+					unknown = data[PSP_SYSCON_TX_DATA];
+					log.info("Suspend PSP");
+					Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_SUSPEND);
+					break;
+				case PSP_SYSCON_CMD_UNKNOWN_30:
+					// The UNKNOWN_30 command is not supported on PSP Fat
+					if (Model.getGeneration() < 2) {
+						responseData = new int[] { 0x84 };
+					} else {
+						int length = data[PSP_SYSCON_TX_LEN] - 3;
+						int registerAndFlag = data[PSP_SYSCON_TX_DATA];
+						int register = registerAndFlag & 0x7F;
+						if (register > NUMBER_INTERNAL_REGISTERS) {
+							log.error(String.format("startSysconCmd: unknown cmd=0x%02X(%s), %s", cmd, getSysconCmdName(cmd), this));
+						} else if (hasFlag(registerAndFlag, 0x80)) {
+							// Writing to internal registers
+							if (length <= internalRegisters[register].length) {
+								for (int i = 0; i < length; i++) {
+									internalRegisters[register][i] = (byte) data[PSP_SYSCON_TX_DATA + 1 + i];
+								}
+							} else {
+								log.error(String.format("startSysconCmd: unknown cmd=0x%02X(%s), %s", cmd, getSysconCmdName(cmd), this));
 							}
 						} else {
-							log.error(String.format("startSysconCmd: unknown cmd=0x%02X(%s), %s", cmd, getSysconCmdName(cmd), this));
-						}
-					} else {
-						// Reading from internal registers
-						responseData = Utilities.add(responseData, 0); // Response code
-						for (int i = 0; i < internalRegisters[register].length; i++) {
-							responseData = Utilities.add(responseData, internalRegisters[register][i] & 0xFF);
+							// Reading from internal registers
+							responseData = Utilities.add(responseData, 0); // Response code
+							for (int i = 0; i < internalRegisters[register].length; i++) {
+								responseData = Utilities.add(responseData, internalRegisters[register][i] & 0xFF);
+							}
 						}
 					}
-				}
-				break;
-			case PSP_SYSCON_CMD_BATTERY_WRITE_EEPROM:
-				// The BATTERY_WRITE_EEPROM command is no longer supported on motherboard TA-085v2 (Baryon 0x00234000) and later models
-				if (Model.getBaryonVersion() >= 0x00230000) {
-					responseData = new int[] { 0x84 };
-				} else {
+					break;
+				case PSP_SYSCON_CMD_BATTERY_WRITE_EEPROM:
+					// The BATTERY_WRITE_EEPROM command is no longer supported on motherboard TA-085v2 (Baryon 0x00234000) and later models
+					if (Model.getBaryonVersion() >= 0x00230000) {
+						responseData = new int[] { 0x84 };
+					} else {
+						address = data[PSP_SYSCON_TX_DATA] << 1;
+						Battery.writeEeprom(address + 0, data[PSP_SYSCON_TX_DATA + 1]);
+						Battery.writeEeprom(address + 1, data[PSP_SYSCON_TX_DATA + 2]);
+					}
+					break;
+				case PSP_SYSCON_CMD_BATTERY_READ_EEPROM:
 					address = data[PSP_SYSCON_TX_DATA] << 1;
-					Battery.writeEeprom(address + 0, data[PSP_SYSCON_TX_DATA + 1]);
-					Battery.writeEeprom(address + 1, data[PSP_SYSCON_TX_DATA + 2]);
-				}
-				break;
-			case PSP_SYSCON_CMD_BATTERY_READ_EEPROM:
-				address = data[PSP_SYSCON_TX_DATA] << 1;
-				responseData = Utilities.add(responseData, 0); // Response code
-				responseData = Utilities.add(responseData, Battery.readEeprom(address + 0));
-				responseData = Utilities.add(responseData, Battery.readEeprom(address + 1));
-				break;
-			case PSP_SYSCON_CMD_CTRL_TACHYON_WDT:
-				int tachyonWatchdogTimer = data[PSP_SYSCON_TX_DATA];
-				sceSysconModule.sceSysconCtrlTachyonWDT(tachyonWatchdogTimer);
-				break;
-			case PSP_SYSCON_CMD_GET_WAKE_UP_FACTOR:
-				// Return unknown value, taken from a real PSP
-				unknown = 0x04C0;
-				// The flag 0x80 need to be disabled during the IPL boot
-				unknown &= ~0x0080;
-				responseData = addResponseData16(responseData, unknown);
-				break;
-			case PSP_SYSCON_CMD_GET_WAKE_UP_REQ:
-				// Return unknown value, taken from a real PSP
-				responseData = Utilities.add(responseData, 0xFF);
-				break;
-			case PSP_SYSCON_CMD_GET_BATT_VOLT:
-				responseData = Utilities.add(responseData, 0x00);
-				break;
-			default:
-				log.error(String.format("startSysconCmd: unknown cmd=0x%02X(%s), %s", cmd, getSysconCmdName(cmd), this));
-				break;
+					responseData = Utilities.add(responseData, 0); // Response code
+					responseData = Utilities.add(responseData, Battery.readEeprom(address + 0));
+					responseData = Utilities.add(responseData, Battery.readEeprom(address + 1));
+					break;
+				case PSP_SYSCON_CMD_CTRL_TACHYON_WDT:
+					int tachyonWatchdogTimer = data[PSP_SYSCON_TX_DATA];
+					sceSysconModule.sceSysconCtrlTachyonWDT(tachyonWatchdogTimer);
+					break;
+				case PSP_SYSCON_CMD_GET_WAKE_UP_FACTOR:
+					// Return unknown value, taken from a real PSP
+					unknown = 0x04C0;
+					// The flag 0x80 need to be disabled during the IPL boot
+					unknown &= ~0x0080;
+					responseData = addResponseData16(responseData, unknown);
+					break;
+				case PSP_SYSCON_CMD_GET_WAKE_UP_REQ:
+					// Return unknown value, taken from a real PSP
+					responseData = Utilities.add(responseData, 0xFF);
+					break;
+				case PSP_SYSCON_CMD_GET_BATT_VOLT:
+					responseData = Utilities.add(responseData, 0x00);
+					break;
+				default:
+					log.error(String.format("startSysconCmd: unknown cmd=0x%02X(%s), %s", cmd, getSysconCmdName(cmd), this));
+					break;
+			}
+
+			setResponseData(getBaryonStatus(), responseData, 0, responseData.length);
+
+			endSysconCmd();
 		}
-
-		setResponseData(getBaryonStatus(), responseData, 0, responseData.length);
-
-		endSysconCmd();
 	}
 
 	private void endSysconCmd() {
@@ -589,6 +600,10 @@ public class MMIOHandlerSyscon extends MMIOHandlerBase {
 			log.debug(String.format("endSysconCmd %s", this));
 		}
 		MMIOHandlerGpio.getInstance().setPort(GPIO_PORT_SYSCON_END_CMD);
+	}
+
+	public void setEndOfData() {
+		endDataIndex = false;
 	}
 
 	public void setResponseData(int status, int[] responseData, int offset, int length) {
@@ -600,8 +615,6 @@ public class MMIOHandlerSyscon extends MMIOHandlerBase {
 				setDataValue(PSP_SYSCON_RX_RESPONSE + i, responseData[offset + i]);
 			}
 			addHashValue();
-
-			endDataIndex = false;
 		}
 	}
 
@@ -650,6 +663,11 @@ public class MMIOHandlerSyscon extends MMIOHandlerBase {
 		}
 	}
 
+	private int getFlags04() {
+		// Flag 0x08 means in progress?
+		return 0;
+	}
+
 	private void setFlags20(int flags) {
 		// TODO Unknown flags: clear error status?
 		if ((flags & 3) != 0) {
@@ -661,6 +679,7 @@ public class MMIOHandlerSyscon extends MMIOHandlerBase {
 	public int read32(int address) {
 		int value;
 		switch (address - baseAddress) {
+			case 0x04: value = getFlags04(); break;
 			case 0x08: value = readData16(); break;
 			case 0x0C: value = getFlags0C(); break;
 			case 0x18: value = 0; break;
@@ -701,6 +720,20 @@ public class MMIOHandlerSyscon extends MMIOHandlerBase {
 		if (log.isTraceEnabled()) {
 			log.trace(String.format("0x%08X - write32(0x%08X, 0x%08X) on %s", getPc(), address, value, this));
 		}
+	}
+
+	public String toString(int length) {
+		StringBuilder sb = new StringBuilder();
+		sb.append(String.format("MMIOHandlerSyscon dataIndex=0x%X, data: [", dataIndex));
+		for (int i = 0; i < length; i++) {
+			if (i > 0) {
+				sb.append(", ");
+			}
+			sb.append(String.format("0x%02X", data[i]));
+		}
+		sb.append("]");
+
+		return sb.toString();
 	}
 
 	@Override

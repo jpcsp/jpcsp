@@ -34,6 +34,7 @@ import static jpcsp.HLE.modules.sceCtrl.PSP_CTRL_TRIANGLE;
 import static jpcsp.HLE.modules.sceCtrl.PSP_CTRL_UP;
 import static jpcsp.HLE.modules.sceCtrl.PSP_CTRL_VOLDOWN;
 import static jpcsp.HLE.modules.sceCtrl.PSP_CTRL_VOLUP;
+import static jpcsp.memory.mmio.MMIOHandlerGpio.GPIO_PORT_SYSCON_END_CMD;
 import static jpcsp.memory.mmio.syscon.SysconSfrNames.getSfr16Name;
 import static jpcsp.memory.mmio.syscon.SysconSfrNames.getSfr1Name;
 import static jpcsp.memory.mmio.syscon.SysconSfrNames.getSfr1Names;
@@ -50,7 +51,7 @@ import static jpcsp.util.Utilities.getByte1;
 import static jpcsp.util.Utilities.hasBit;
 import static jpcsp.util.Utilities.hasFlag;
 import static jpcsp.util.Utilities.isFallingBit;
-import static jpcsp.util.Utilities.notHasBit;
+import static jpcsp.util.Utilities.isRaisingBit;
 import static jpcsp.util.Utilities.setBit;
 import static jpcsp.util.Utilities.setByte0;
 import static jpcsp.util.Utilities.setByte1;
@@ -63,6 +64,8 @@ import org.apache.log4j.Logger;
 import jpcsp.Emulator;
 import jpcsp.State;
 import jpcsp.HLE.modules.sceSyscon;
+import jpcsp.hardware.Model;
+import jpcsp.memory.mmio.MMIOHandlerGpio;
 import jpcsp.nec78k0.Nec78k0MMIOHandlerBase;
 import jpcsp.state.StateInputStream;
 import jpcsp.state.StateOutputStream;
@@ -74,7 +77,6 @@ import jpcsp.util.Utilities;
  */
 public class MMIOHandlerSysconFirmwareSfr extends Nec78k0MMIOHandlerBase {
 	private static final int STATE_VERSION = 0;
-	public static boolean dummyTesting = true;
 	public static final int NUMBER_SPECIAL_FUNCTION_REGISTERS = 256;
 	// Interrupt Vector Table addresses
 	public static final int INTLVI   = 0x04;
@@ -120,6 +122,8 @@ public class MMIOHandlerSysconFirmwareSfr extends Nec78k0MMIOHandlerBase {
 	public static final int PIF5    = INTtoIF(INTP5);
 	public static final int PIF6    = INTtoIF(INTP6);
 	public static final int PIF7    = INTtoIF(INTP7);
+	public static final int SRIF6   = INTtoIF(INTSR6);
+	public static final int STIF6   = INTtoIF(INTST6);
 	public static final int TMIF50  = INTtoIF(INTTM50);
 	public static final int TMIF000 = INTtoIF(INTTM000);
 	public static final int TMIF010 = INTtoIF(INTTM010);
@@ -131,6 +135,8 @@ public class MMIOHandlerSysconFirmwareSfr extends Nec78k0MMIOHandlerBase {
 	public static final int TMIF011 = INTtoIF(INTTM011);
 	public static final int NUMBER_INTERRUPT_FLAGS = 28;
 	//
+	public static boolean dummyTesting = false;
+	//
 	private final SysconScheduler scheduler;
 	private final SysconWatchTimer watchTimer;
 	private static final int NUMBER_PORTS = 15;
@@ -138,7 +144,9 @@ public class MMIOHandlerSysconFirmwareSfr extends Nec78k0MMIOHandlerBase {
 	private final int[] portInputs = new int[NUMBER_PORTS];
 	private final int[] portModes = new int[NUMBER_PORTS];
 	private final int[] pullUpResistorOptions = new int[NUMBER_PORTS];
-	// Ports:
+	//
+	// Ports for TA-085 (78K0/KF2, PSP Slim and later):
+	//
 	// P0.0      LCD32_ON (Output)
 	// P0.1      HP_DETECT (Input)
 	// P0.2      CPU_SPI1SI (Output)
@@ -210,6 +218,104 @@ public class MMIOHandlerSysconFirmwareSfr extends Nec78k0MMIOHandlerBase {
 	// P14.3     Unused
 	// P14.4     Unused
 	// P14.5     Unused
+
+	//
+	// Ports for TA-086 (78K0/KE2, PSP Fat):
+	//
+	// P0.0      TTP1 (Output)
+	// P0.1      Unused
+	// P0.2      HPPWR_ON (Output)
+	// P0.3      UMD_DETECT (Input)
+	// P0.4      TACHYON_CS (Output)
+	// P0.5      STANDBY_HOLD (Output)
+	// P0.6      POMMEL_CS (Output)
+	// P1.0      CPU_SPI1SCK (Output)
+	// P1.1      CPU_SPI1SO (Input)
+	// P1.2      CPU_SPI1SI (Output)
+	// P1.3      Transmit to Battery
+	// P1.4      Receive from Battery
+	// P1.5      HP_DETECT (Input)
+	// P1.6      INTP5, POMMEL_ALERT (Input)
+	// P1.7      WL_POR (Output)
+	// P2.0/ANI0 KEY_HOME (Input)
+	// P2.1/ANI1 KEY_HOLD (Input)
+	// P2.2/ANI2 Unused
+	// P2.3/ANI3 STANDBY_SIGNAL (Output)
+	// P2.4/ANI4 BUFFER_EN (Output)
+	// P2.5/ANI5 Unused
+	// P2.6/ANI6 ANALOG_XPORT (Input)
+	// P2.7/ANI7 ANALOG_YPORT (Input)
+	// P3.0      INTP1, KEY_POWER (Input)
+	// P3.1      INTP2, SYSCON_REQ (Input)
+	// P3.2      INTP3, WLAN_WAKEUP (Input)
+	// P3.3      INTP4, HPRMC_WAKEUP (Input)
+	// P4.0      KEY_SELECT (Input)
+	// P4.1      KEY_L1 (Input)
+	// P4.2      KEY_R1 (Input)
+	// P4.3      KEY_START (Input)
+	// P4.4      Missing
+	// P4.5      Missing
+	// P4.6      Missing
+	// P4.7      Missing
+	// P5.0      KEY_VOLUP (Input)
+	// P5.1      KEY_VOLDOWN (Input)
+	// P5.2      KEY_DISPLAY (Input)
+	// P5.3      KEY_SOUND (Input)
+	// P5.4      Missing
+	// P5.5      Missing
+	// P5.6      Missing
+	// P5.7      Missing
+	// P6.0      I2C_SCL (Output)
+	// P6.1      I2C_SDA (Output)
+	// P6.2      CPU_RESET (Output)
+	// P6.3      LEPTON_RST (Output)
+	// P6.4      Missing
+	// P6.5      Missing
+	// P6.6      Missing
+	// P6.7      Missing
+	// P7.0      KEY_UP (Input)
+	// P7.1      KEY_RIGHT (Input)
+	// P7.2      KEY_DOWN (Input)
+	// P7.3      KEY_LEFT (Input)
+	// P7.4      KEY_TRIANGLE (Input)
+	// P7.5      KEY_CIRCLE (Input)
+	// P7.6      KEY_CROSS (Input)
+	// P7.7      KEY_SQUARE (Input)
+	// P12.0     INTP0, PF_DET (Input)
+	// P12.1     Clock 4 MHz
+	// P12.2     Clock 4 MHz
+	// P12.3     Clock 32.768 kHz
+	// P12.4     Clock 32.768 kHz
+	// P13.0     GLUON_RST (Output)
+	// P14.0     INTP6, UMD_SW (Input)
+	// P14.1     INTP7, WLAN SWITCH?
+	// P14.2     Missing
+	// P14.3     Missing
+	// P14.4     Missing
+	// P14.5     Missing
+
+	//
+	// Port differences between TA-085 (78K0/KF2) and TA-086 (78K0/KE2):
+	//
+	// TTP1           TA-085: P6.7,         TA-086: P0.0
+	// HPPWR_ON       TA-085: Not existing, TA-086: P0.2
+	// UMD_DETECT     TA-085: P5.7,         TA-086: P0.3
+	// TACHYON_CS     TA-085: P4.6,         TA-086: P0.4
+	// POMMEL_CS      TA-085: P6.2,         TA-086: P0.6
+	// CPU_SPI1SCK    TA-085: P0.4,         TA-086: P1.0
+	// CPU_SPI1SO     TA-085: P0.3,         TA-086: P1.1
+	// CPU_SPI1SI     TA-085: P0.2,         TA-086: P1.2
+	// KEY_HOME       TA-085: P4.4,         TA-086: P2.0/ANI0
+	// KEY_HOLD       TA-085: P4.5,         TA-086: P2.1/ANI1
+	// STANDBY_SIGNAL TA-085: Not existing, TA-086: P2.3/ANI3
+	// BUFFER_EN      TA-085: Not existing, TA-086: P2.4/ANI4
+	// USB_CE         TA-085: P5.5,         TA-086: Not existing
+	// CPU_RESET      TA-085: P13.0,        TA-086: P6.2
+	// PF_DET         TA-085: Not existing, TA-086: P12.0
+	// GLUON_RST      TA-085: P6.4,         TA-086: P13.0
+	// UMD_SW         TA-085: P0.6,         TA-086: P14.0
+	// WLAN SWITCH?   TA-085: P6.4,         TA-086: P14.1
+
 	private int interruptRequestFlag0; // 16-bit value
 	private int interruptRequestFlag1; // 16-bit value
 	private int interruptMaskFlag0; // 16-bit value
@@ -226,11 +332,11 @@ public class MMIOHandlerSysconFirmwareSfr extends Nec78k0MMIOHandlerBase {
 	private int timerHCompare10;
 	private int timerHCompare01;
 	private int timerHCompare11;
-	private int asynchronousSerialInterfaceOperationMode;
 	private int timerHModeRegister0;
 	private int timerHModeRegister1;
 	private final SysconSerialInterfaceCSI1n serialInterfaceCSI10;
 	private final SysconSerialInterfaceCSI1n serialInterfaceCSI11;
+	private final SysconSerialInterfaceUART6 serialInterfaceUART6;
 	private int internalOscillationMode;
 	private int mainClockMode;
 	private int mainOscillationControl;
@@ -239,12 +345,10 @@ public class MMIOHandlerSysconFirmwareSfr extends Nec78k0MMIOHandlerBase {
 	private int oscillationStabilizationTimeCounterStatus;
 	private int externalInterruptRisingEdgeEnable;
 	private int externalInterruptFallingEdgeEnable;
-	private int clockSelection6;
-	private int baudRateGeneratorControl6;
-	private int asnychronousSerialInterfaceControl6;
 	private int clockOperationModeSelect;
 	private int internalMemorySizeSwitching;
 	private int internalExpansionRAMSizeSwitching;
+	private int keyPowerStartup;
 
 	public MMIOHandlerSysconFirmwareSfr(int baseAddress) {
 		super(baseAddress);
@@ -260,16 +364,25 @@ public class MMIOHandlerSysconFirmwareSfr extends Nec78k0MMIOHandlerBase {
 		timer51 = new SysconTimerEventCounter8(this, scheduler, "Timer51", TMIF51);
 		serialInterfaceCSI10 = new SysconSerialInterfaceCSI1n(this, "CSI10", CSIIF10);
 		serialInterfaceCSI11 = new SysconSerialInterfaceCSI1n(this, "CSI11", CSIIF11);
+		serialInterfaceUART6 = new SysconSerialInterfaceUART6(this);
 
 		reset();
 
 		scheduler.setName("Syscon Scheduler");
 		scheduler.setDaemon(true);
 		scheduler.start();
+	}
 
-		if (dummyTesting) {
-			serialInterfaceCSI11.setBuffer(new int[] { sceSyscon.PSP_SYSCON_CMD_GET_BARYON, 2, 0xFC, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 });
-		}
+	private boolean isKE2() {
+		return Model.getModel() == Model.MODEL_PSP_FAT;
+	}
+
+	private boolean isKF2() {
+		return !isKE2();
+	}
+
+	private SysconSerialInterfaceCSI1n getSysconSerialInterface() {
+		return isKF2() ? serialInterfaceCSI11 : serialInterfaceCSI10;
 	}
 
 	public static int INTtoIF(int vectorTableAddress) {
@@ -312,11 +425,11 @@ public class MMIOHandlerSysconFirmwareSfr extends Nec78k0MMIOHandlerBase {
 		timer50.read(stream);
 		timer51.read(stream);
 		watchTimer.read(stream);
-		asynchronousSerialInterfaceOperationMode = stream.readInt();
 		timerHModeRegister0 = stream.readInt();
 		timerHModeRegister1 = stream.readInt();
 		serialInterfaceCSI10.read(stream);
 		serialInterfaceCSI11.read(stream);
+		serialInterfaceUART6.read(stream);
 		internalOscillationMode = stream.readInt();
 		mainClockMode = stream.readInt();
 		mainOscillationControl = stream.readInt();
@@ -325,9 +438,6 @@ public class MMIOHandlerSysconFirmwareSfr extends Nec78k0MMIOHandlerBase {
 		oscillationStabilizationTimeCounterStatus = stream.readInt();
 		externalInterruptRisingEdgeEnable = stream.readInt();
 		externalInterruptFallingEdgeEnable = stream.readInt();
-		clockSelection6 = stream.readInt();
-		baudRateGeneratorControl6 = stream.readInt();
-		asnychronousSerialInterfaceControl6 = stream.readInt();
 		clockOperationModeSelect = stream.readInt();
 		internalMemorySizeSwitching = stream.readInt();
 		internalExpansionRAMSizeSwitching = stream.readInt();
@@ -358,11 +468,11 @@ public class MMIOHandlerSysconFirmwareSfr extends Nec78k0MMIOHandlerBase {
 		timer50.write(stream);
 		timer51.write(stream);
 		watchTimer.write(stream);
-		stream.writeInt(asynchronousSerialInterfaceOperationMode);
 		stream.writeInt(timerHModeRegister0);
 		stream.writeInt(timerHModeRegister1);
 		serialInterfaceCSI10.write(stream);
 		serialInterfaceCSI11.write(stream);
+		serialInterfaceUART6.write(stream);
 		stream.writeInt(internalOscillationMode);
 		stream.writeInt(mainClockMode);
 		stream.writeInt(mainOscillationControl);
@@ -371,9 +481,6 @@ public class MMIOHandlerSysconFirmwareSfr extends Nec78k0MMIOHandlerBase {
 		stream.writeInt(oscillationStabilizationTimeCounterStatus);
 		stream.writeInt(externalInterruptRisingEdgeEnable);
 		stream.writeInt(externalInterruptFallingEdgeEnable);
-		stream.writeInt(clockSelection6);
-		stream.writeInt(baudRateGeneratorControl6);
-		stream.writeInt(asnychronousSerialInterfaceControl6);
 		stream.writeInt(clockOperationModeSelect);
 		stream.writeInt(internalMemorySizeSwitching);
 		stream.writeInt(internalExpansionRAMSizeSwitching);
@@ -400,11 +507,11 @@ public class MMIOHandlerSysconFirmwareSfr extends Nec78k0MMIOHandlerBase {
 		timer50.reset();
 		timer51.reset();
 		watchTimer.reset();
-		asynchronousSerialInterfaceOperationMode = 0x01;
 		timerHModeRegister0 = 0x00;
 		timerHModeRegister1 = 0x00;
 		serialInterfaceCSI10.reset();
 		serialInterfaceCSI11.reset();
+		serialInterfaceUART6.reset();
 		internalOscillationMode = 0x80;
 		mainClockMode = 0x00;
 		mainOscillationControl = 0x80;
@@ -415,16 +522,39 @@ public class MMIOHandlerSysconFirmwareSfr extends Nec78k0MMIOHandlerBase {
 		// Input P1.6 = 1
 		setPortInputBit(1, 6);
 
-		// Input P3.0 = 1
-//		setPortInputBit(3, 0);
+		keyPowerStartup = 0;
 
-//		setInterruptRequest(PIF0);
-//		setInterruptRequest(PIF1);
-//		setInterruptRequest(PIF5);
+		setInterruptRequest(PIF1);
 	}
 
 	public static long now() {
 		return Emulator.getClock().microTime();
+	}
+
+	public void startSysconCmd(int[] data) {
+		getSysconSerialInterface().setReceiveBuffer(data);
+
+		// Generate a SYSCON_REQ (INTP2) interrupt request
+		setInterruptRequest(PIF2);
+	}
+
+	public void endSysconCmd() {
+		MMIOHandlerSyscon.getInstance().clearData();
+		int data[] = new int[MMIOHandlerSyscon.MAX_DATA_LENGTH];
+		int length = getSysconSerialInterface().getSendBuffer(data);
+		for (int i = 0; i < length; i++) {
+			MMIOHandlerSyscon.getInstance().setDataValue(i, data[i]);
+		}
+		if (log.isDebugEnabled()) {
+			StringBuilder s = new StringBuilder();
+			for (int i = 0; i < length; i++) {
+				if (i > 0) {
+					s.append(", ");
+				}
+				s.append(String.format("0x%02X", data[i]));
+			}
+			log.debug(String.format("End of syscon cmd: %s", s));
+		}
 	}
 
 	/////////////////////
@@ -462,13 +592,37 @@ public class MMIOHandlerSysconFirmwareSfr extends Nec78k0MMIOHandlerBase {
 
 		// Only those ports are connected to keys/buttons
 		switch (port) {
+			case 2:
+				if (isKE2()) {
+					setButtonPortInput(2, 0, PSP_CTRL_HOME, buttons);
+					setButtonPortInput(2, 1, PSP_CTRL_HOLD, buttons);
+				}
+				break;
+			case 3:
+				if (keyPowerStartup > 10) {
+					setButtonPortInput(3, 0, PSP_CTRL_HOLD, buttons);
+				} else {
+					// When booting, the KEY_POWER is pressed,
+					// simulate the release of this key after a short time
+					if (keyPowerStartup == 10) {
+						// Input P3.0 = 1: KEY_POWER is released
+						setPortInputBit(3, 0);
+					} else {
+						// Input P3.0 = 0: KEY_POWER is pressed
+						clearPortInputBit(3, 0);
+					}
+					keyPowerStartup++;
+				}
+				break;
 			case 4:
 				setButtonPortInput(4, 0, PSP_CTRL_SELECT, buttons);
 				setButtonPortInput(4, 1, PSP_CTRL_LTRIGGER, buttons);
 				setButtonPortInput(4, 2, PSP_CTRL_RTRIGGER, buttons);
 				setButtonPortInput(4, 3, PSP_CTRL_START, buttons);
-				setButtonPortInput(4, 4, PSP_CTRL_HOME, buttons);
-				setButtonPortInput(4, 5, PSP_CTRL_HOLD, buttons);
+				if (isKF2()) {
+					setButtonPortInput(4, 4, PSP_CTRL_HOME, buttons);
+					setButtonPortInput(4, 5, PSP_CTRL_HOLD, buttons);
+				}
 				break;
 			case 5:
 				setButtonPortInput(5, 0, PSP_CTRL_VOLUP, buttons);
@@ -491,6 +645,8 @@ public class MMIOHandlerSysconFirmwareSfr extends Nec78k0MMIOHandlerBase {
 
 	private void updatePortInput(int port) {
 		switch (port) {
+			case 2:
+			case 3:
 			case 4:
 			case 5:
 			case 7:
@@ -506,7 +662,21 @@ public class MMIOHandlerSysconFirmwareSfr extends Nec78k0MMIOHandlerBase {
 	}
 
 	private void setPortOutput(int port, int value) {
+		int oldValue = portOutputs[port];
 		portOutputs[port] = value;
+
+		// TACHYON_CS (Output) - is connected to the main processor on GPIO 4 with inverted logic
+		final int tachyonPort = isKF2() ? 4 : 0;
+		final int tachyonBit = isKF2() ? 6 : 4;
+		if (port == tachyonPort) {
+			if (isRaisingBit(oldValue, value, tachyonBit)) {
+				MMIOHandlerGpio.getInstance().clearPort(GPIO_PORT_SYSCON_END_CMD);
+			} else if (isFallingBit(oldValue, value, tachyonBit)) {
+				// End of syscon command
+				endSysconCmd();
+				MMIOHandlerGpio.getInstance().setPort(GPIO_PORT_SYSCON_END_CMD);
+			}
+		}
 	}
 
 	private int getPortMode(int port) {
@@ -523,8 +693,8 @@ public class MMIOHandlerSysconFirmwareSfr extends Nec78k0MMIOHandlerBase {
 
 	private void setWatchdogTimerEnable(int value) {
 		if (value == 0xAC) {
-			if (log.isDebugEnabled()) {
-				log.debug(String.format("Start Watch Dog Timer"));
+			if (log.isTraceEnabled()) {
+				log.trace(String.format("Start Watch Dog Timer"));
 			}
 		}
 	}
@@ -740,7 +910,7 @@ public class MMIOHandlerSysconFirmwareSfr extends Nec78k0MMIOHandlerBase {
 		}
 
 		if (log.isDebugEnabled()) {
-			log.debug(String.format("setInterruptRequest bit=0x%X(%s), interrupts %s, %s", bit, getInterruptName(IFtoINT(bit)), processor.isInterruptEnabled() ? "enabled" : "disabled", debugInterruptRequests()));
+			log.debug(String.format("setInterruptRequest bit=0x%X(%s), interrupts %s, %s", bit, getInterruptName(IFtoINT(bit)), processor == null ? "" : processor.isInterruptEnabled() ? "enabled" : "disabled", debugInterruptRequests()));
 		}
 	}
 
@@ -777,40 +947,19 @@ public class MMIOHandlerSysconFirmwareSfr extends Nec78k0MMIOHandlerBase {
 	}
 
 	private void setInterruptMaskFlag0(int interruptMaskFlag0) {
-		this.interruptMaskFlag0 = interruptMaskFlag0;
-
 		if (dummyTesting) {
-			if (hasBit(serialInterfaceCSI11.getOperationMode(), 7) && notHasBit(interruptMaskFlag0, PIF2)) {
-				// Simulate a SYSCON_REQ
-				setInterruptRequest(PIF2);
+			if (hasBit(getSysconSerialInterface().getOperationMode(), 7) && isFallingBit(this.interruptMaskFlag0, interruptMaskFlag0, PIF2)) {
+				startSysconCmd(new int[] { sceSyscon.PSP_SYSCON_CMD_GET_BARYON, 2, 0xFC, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 });
+//				startSysconCmd(new int[] { sceSyscon.PSP_SYSCON_CMD_GET_TIMESTAMP, 2, 0xEC, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 });
+//				startSysconCmd(new int[] { sceSyscon.PSP_SYSCON_CMD_CTRL_VOLTAGE, 5, 0x01, 0x00, 0x07, 0xB0, 0x00, 0x00, 0x00, 0x00 });
 			}
 		}
+
+		this.interruptMaskFlag0 = interruptMaskFlag0;
 	}
 
 	private void setInterruptMaskFlag1(int interruptMaskFlag1) {
 		this.interruptMaskFlag1 = interruptMaskFlag1;
-	}
-
-	/////////////////////
-	// I2C Interface
-	/////////////////////
-
-	/////////////////////
-	// Serial Interface
-	/////////////////////
-
-	private void setAsynchronousSerialInterfaceOperationMode(int value) {
-		if (hasBit(value, 5)) {
-			log.error(String.format("setAsynchronousSerialInterfaceOperationMode unimplemented reception 0x%02X", value));
-		}
-		if (hasBit(value, 6)) {
-			log.error(String.format("setAsynchronousSerialInterfaceOperationMode unimplemented transmission 0x%02X", value));
-		}
-		if (hasBit(value, 7)) {
-			log.error(String.format("setAsynchronousSerialInterfaceOperationMode unimplemented operation of internal operation clock 0x%02X", value));
-		}
-
-		asynchronousSerialInterfaceOperationMode = value;
 	}
 
 	/////////////////////
@@ -843,6 +992,7 @@ public class MMIOHandlerSysconFirmwareSfr extends Nec78k0MMIOHandlerBase {
 			case 0xFF07: value = getPortValue(7); break;
 			case 0xFF08: value = getByte0(adConverter.getResult()); break;
 			case 0xFF09: value = getByte1(adConverter.getResult()); break;
+			case 0xFF0A: value = serialInterfaceUART6.getReceiveRegister(); break;
 			case 0xFF0C: value = getPortValue(12); break;
 			case 0xFF0D: value = getPortValue(13); break;
 			case 0xFF0E: value = getPortValue(14); break;
@@ -875,7 +1025,11 @@ public class MMIOHandlerSysconFirmwareSfr extends Nec78k0MMIOHandlerBase {
 			case 0xFF43: value = timer51.getTimerModeControl(); break;
 			case 0xFF4A: value = serialInterfaceCSI11.getIOShift(); break;
 			case 0xFF4C: value = serialInterfaceCSI11.getTransmitBuffer(); break;
-			case 0xFF50: value = asynchronousSerialInterfaceOperationMode; break;
+			case 0xFF50: value = serialInterfaceUART6.getOperationMode(); break;
+			case 0xFF53: value = serialInterfaceUART6.getReceptionErrorStatus(); break;
+			case 0xFF56: value = serialInterfaceUART6.getClockSelection(); break;
+			case 0xFF57: value = serialInterfaceUART6.getBaudRateGeneratorControl(); break;
+			case 0xFF58: value = serialInterfaceUART6.getControlRegister(); break;
 			case 0xFF69: value = timerHModeRegister0; break;
 			case 0xFF6B: value = timer50.getTimerModeControl(); break;
 			case 0xFF6C: value = timerHModeRegister1; break;
@@ -899,6 +1053,8 @@ public class MMIOHandlerSysconFirmwareSfr extends Nec78k0MMIOHandlerBase {
 			case 0xFFAC: value = getResetControlFlag(); break;
 			case 0xFFB0: value = getByte0(timer01.getTimerCounter()); break;
 			case 0xFFB1: value = getByte1(timer01.getTimerCounter()); break;
+			case 0xFFB6: value = timer01.getTimerModeControl(); break;
+			case 0xFFBA: value = timer00.getTimerModeControl(); break;
 			case 0xFFE0: value = getByte0(interruptRequestFlag0); break;
 			case 0xFFE1: value = getByte1(interruptRequestFlag0); break;
 			case 0xFFE2: value = getByte0(interruptRequestFlag1); break;
@@ -939,6 +1095,10 @@ public class MMIOHandlerSysconFirmwareSfr extends Nec78k0MMIOHandlerBase {
 			case 0xFF10: value = timer00.getTimerCounter(); break;
 			case SP_ADDRESS: value = processor.getSp(); break;
 			case 0xFFB0: value = timer01.getTimerCounter(); break;
+			case 0xFFE0: value = interruptRequestFlag0; break;
+			case 0xFFE2: value = interruptRequestFlag1; break;
+			case 0xFFE4: value = interruptMaskFlag0; break;
+			case 0xFFE6: value = interruptMaskFlag1; break;
 			default: value = super.read16(address); break;
 		}
 
@@ -1003,6 +1163,7 @@ public class MMIOHandlerSysconFirmwareSfr extends Nec78k0MMIOHandlerBase {
 			case 0xFF05: setPortOutput(5, value8); break;
 			case 0xFF06: setPortOutput(6, value8); break;
 			case 0xFF07: setPortOutput(7, value8); break;
+			case 0xFF0B: serialInterfaceUART6.setTransmitRegister(value8); break;
 			case 0xFF0C: setPortOutput(12, value8); break;
 			case 0xFF0D: setPortOutput(13, value8); break;
 			case 0xFF0E: setPortOutput(14, value8); break;
@@ -1039,10 +1200,10 @@ public class MMIOHandlerSysconFirmwareSfr extends Nec78k0MMIOHandlerBase {
 			case 0xFF48: externalInterruptRisingEdgeEnable = value8; break;
 			case 0xFF49: externalInterruptFallingEdgeEnable = value8; break;
 			case 0xFF4C: serialInterfaceCSI11.setTransmitBuffer(value8); break;
-			case 0xFF50: setAsynchronousSerialInterfaceOperationMode(value8); break;
-			case 0xFF56: clockSelection6 = value8; break;
-			case 0xFF57: baudRateGeneratorControl6 = value8; break;
-			case 0xFF58: asynchronousSerialInterfaceOperationMode = value8; break;
+			case 0xFF50: serialInterfaceUART6.setOperationMode(value8); break;
+			case 0xFF56: serialInterfaceUART6.setClockSelection(value8); break;
+			case 0xFF57: serialInterfaceUART6.setBaudRateGeneratorControl(value8); break;
+			case 0xFF58: serialInterfaceUART6.setControlRegister(value8); break;
 			case 0xFF69: setTimerHModeRegister0(value8); break;
 			case 0xFF6A: timer50.setClockSelection(value8); break;
 			case 0xFF6B: timer50.setTimerModeControl(value8); break;

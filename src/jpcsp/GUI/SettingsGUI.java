@@ -33,8 +33,10 @@ import javax.swing.MutableComboBoxModel;
 
 import jpcsp.Emulator;
 import jpcsp.MainGUI;
+import jpcsp.HLE.Modules;
 import jpcsp.HLE.modules.sceUtility;
 import jpcsp.hardware.Model;
+import jpcsp.memory.mmio.syscon.SysconEmulator;
 import jpcsp.network.BaseNetworkAdapter;
 import jpcsp.settings.Settings;
 
@@ -76,6 +78,16 @@ public class SettingsGUI extends javax.swing.JFrame {
         });
 
         WindowPropSaver.loadWindowProperties(this);
+    }
+
+    private void updateSysconLabel() {
+        if (SysconEmulator.isEnabled() && Modules.rebootModule.isAvailable()) {
+        	sysconLabel.setVisible(true);
+            java.util.ResourceBundle bundle = java.util.ResourceBundle.getBundle("jpcsp/languages/jpcsp");
+            sysconLabel.setText(String.format(bundle.getString("SettingsGUI.sysconLabel.text"), SysconEmulator.getFirmwareFileName()));
+        } else {
+        	sysconLabel.setVisible(false);
+        }
     }
 
     private void setAllComponentsFromSettings() {
@@ -155,6 +167,8 @@ public class SettingsGUI extends javax.swing.JFrame {
                 dlm.addElement(umdPath);
             }
         }
+
+        updateSysconLabel();
     }
 
     private boolean isEnabledSettings(String settingsOption) {
@@ -281,6 +295,8 @@ public class SettingsGUI extends javax.swing.JFrame {
                 break;
             }
         }
+
+        updateSysconLabel();
     }
 
     private void setBoolToSettings(JRadioButton radioButton, String settingsOption) {
@@ -459,6 +475,7 @@ public class SettingsGUI extends javax.swing.JFrame {
         btnUMDPathAdd = new javax.swing.JButton();
         modelLabel = new javax.swing.JLabel();
         modelBox = new javax.swing.JComboBox<>();
+        sysconLabel = new javax.swing.JLabel();
         RegionPanel = new javax.swing.JPanel();
         jPanel1 = new javax.swing.JPanel();
         imposeLabel = new javax.swing.JLabel();
@@ -619,6 +636,8 @@ public class SettingsGUI extends javax.swing.JFrame {
 
         modelBox.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "PSP-1000", "PSP-2000", "PSP-3000", "PSP-3000 (V2)", "PSP-N1000 (GO)" }));
 
+        sysconLabel.setText(bundle.getString("SettingsGUI.sysconLabel.text")); // NOI18N
+
         javax.swing.GroupLayout GeneralPanelLayout = new javax.swing.GroupLayout(GeneralPanel);
         GeneralPanel.setLayout(GeneralPanelLayout);
         GeneralPanelLayout.setHorizontalGroup(
@@ -650,6 +669,8 @@ public class SettingsGUI extends javax.swing.JFrame {
                         .addGroup(GeneralPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addGroup(GeneralPanelLayout.createSequentialGroup()
                                 .addComponent(modelBox, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addGap(10, 10, 10)
+                                .addComponent(sysconLabel, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                                 .addGap(0, 0, Short.MAX_VALUE))
                             .addGroup(GeneralPanelLayout.createSequentialGroup()
                                 .addGroup(GeneralPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
@@ -693,7 +714,8 @@ public class SettingsGUI extends javax.swing.JFrame {
                 .addGap(22, 22, 22)
                 .addGroup(GeneralPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(modelLabel)
-                    .addComponent(modelBox, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addComponent(modelBox, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(sysconLabel))
                 .addContainerGap(141, Short.MAX_VALUE))
         );
 
@@ -1476,6 +1498,7 @@ public class SettingsGUI extends javax.swing.JFrame {
     private javax.swing.JLabel methodMaxInstructionsLabel;
     private javax.swing.JComboBox<String> modelBox;
     private javax.swing.JLabel modelLabel;
+    private javax.swing.JLabel sysconLabel;
     private javax.swing.JPanel networkPanel;
     private javax.swing.JTextField nicknameTextField;
     private javax.swing.JLabel nicknamelLabel;

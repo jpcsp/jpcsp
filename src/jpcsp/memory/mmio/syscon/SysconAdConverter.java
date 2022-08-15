@@ -154,6 +154,7 @@ public class SysconAdConverter implements IState {
 		mode = value;
 
 		switch ((mode >> 1) & 0x1F) {
+			case 0x01: clockStep = 24; break; // 24us?
 			case 0x11: clockStep = 24; break; // 24us
 			default:
 				clockStep = 1000;
@@ -176,7 +177,7 @@ public class SysconAdConverter implements IState {
 	}
 
 	public void setPortConfiguration(int value) {
-		if (value != 0x00) {
+		if (value != 0x00 && value != 0x05) {
 			log.error(String.format("AD Converter setPortConfiguration unimplemented 0x%02X", value));
 		}
 

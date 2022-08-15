@@ -19,6 +19,7 @@ package jpcsp.hardware;
 import org.apache.log4j.Logger;
 
 import jpcsp.Emulator;
+import jpcsp.settings.AbstractIntSettingsListener;
 import jpcsp.settings.Settings;
 
 public class Model {
@@ -34,7 +35,14 @@ public class Model {
 	private static int model = MODEL_PSP_FAT;
 	private static final ModelDescriptor modelDescriptors[] = new ModelDescriptor[8];
 
-	private static class ModelDescriptor {
+    private static class ModelSettingsListener extends AbstractIntSettingsListener {
+        @Override
+        protected void settingsValueChanged(int value) {
+        	setModel(value);
+        }
+    }
+
+    private static class ModelDescriptor {
 		public String modelName;
 		public int generation;
 		public int tachyonVersion;
@@ -82,6 +90,8 @@ public class Model {
 		modelDescriptors[MODEL_PSP_BRITE3] = new ModelDescriptor("PSP-3000 (Brite, 7th Generation)",  7, 0x00810000, 0x012E4000, 0x00000154);
 		modelDescriptors[MODEL_PSP_BRITE4] = new ModelDescriptor("PSP-3000 (Brite, 9th Generation)",  9, 0x00820000, 0x002E4000, 0x00000154);
 		modelDescriptors[MODEL_PSP_STREET] = new ModelDescriptor("PSP-E1000 (Street)"              , 11, 0x00900000, 0x00403000, 0x00000154);
+
+		Settings.getInstance().registerSettingsListener("Model", "emu.model", new ModelSettingsListener());
 	}
 
 	public static void init() {

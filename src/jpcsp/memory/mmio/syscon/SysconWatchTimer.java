@@ -49,6 +49,7 @@ public class SysconWatchTimer implements IState {
 		private final String name;
 		private long nextTimer;
 		private int step;
+		private int triggerCount;
 
 		public TimerAction(String name, int interruptBit) {
 			this.name = name;
@@ -61,7 +62,7 @@ public class SysconWatchTimer implements IState {
 				long now = now();
 				if (now >= nextTimer) {
 					sfr.setInterruptRequest(interruptBit);
-					nextTimer += step;
+					nextTimer = getNextTimer(nextTimer);
 				}
 				scheduler.addAction(nextTimer, this);
 			}
@@ -70,14 +71,30 @@ public class SysconWatchTimer implements IState {
 		public void reset() {
 			nextTimer = 0L;
 			step = 0;
+			triggerCount = 0;
 			scheduler.removeAction(this);
+		}
+
+		private long getNextTimer(long now) {
+			// When booting the syscon firmware, the Watch Timer
+			// interrupt is being triggered too often.
+			// A race condition then occurs and the boot process
+			// cannot complete successfully.
+			// Hence, reducing the frequency of the Watch Timer
+			// interrupt during the first 5 interrupts.
+			if (triggerCount < 5) {
+				triggerCount++;
+				return now + step * 20;
+			}
+
+			return now + step;
 		}
 
 		public void setStep(int step) {
 			this.step = step;
 
 			scheduler.removeAction(this);
-			nextTimer = now() + step;
+			nextTimer = getNextTimer(now());
 			scheduler.addAction(nextTimer, this);
 		}
 

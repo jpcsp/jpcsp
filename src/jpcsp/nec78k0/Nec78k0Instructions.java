@@ -84,7 +84,7 @@ public class Nec78k0Instructions {
 	}
 
 	private static final boolean getSubstractionCY(int value1, int value2, int value) {
-		return value < 0;
+		return hasFlag(value, 0x80);
 	}
 
 	private static final boolean getSubstractionAC(int value1, int value2, int value) {
@@ -577,7 +577,7 @@ public class Nec78k0Instructions {
         @Override
         public void interpret(Nec78k0Processor processor, int insn) {
         	int imm16 = getWord(insn);
-        	processor.jump(imm16);
+        	processor.jump(imm16, false);
         }
 
         @Override
@@ -589,7 +589,7 @@ public class Nec78k0Instructions {
     public static final Nec78k0Instruction BR_AX = new Nec78k0Instruction2() {
         @Override
         public void interpret(Nec78k0Processor processor, int insn) {
-        	processor.jump(processor.getRegisterPair(REG_PAIR_AX));
+        	processor.jump(processor.getRegisterPair(REG_PAIR_AX), true);
         }
 
         @Override
@@ -1561,6 +1561,21 @@ public class Nec78k0Instructions {
         @Override
         public String disasm(int address, int insn) {
             return String.format("cmp %s, %s", getRegisterName(REG_A), getRegisterName(insn));
+        }
+    };
+
+    public static final Nec78k0Instruction CMP_r_A = new Nec78k0Instruction2() {
+        @Override
+        public void interpret(Nec78k0Processor processor, int insn) {
+        	int value1 = processor.getRegister(insn);
+        	int value2 = processor.getRegister(REG_A);
+        	int value = value1 - value2;
+        	processor.setPswResult(value, getSubstractionCY(value1, value2, value), getSubstractionAC(value1, value2, value));
+        }
+
+        @Override
+        public String disasm(int address, int insn) {
+            return String.format("cmp %s, %s", getRegisterName(insn), getRegisterName(REG_A));
         }
     };
 

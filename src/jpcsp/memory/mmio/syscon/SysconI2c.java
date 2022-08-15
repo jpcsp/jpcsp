@@ -17,7 +17,6 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.memory.mmio.syscon;
 
 import static jpcsp.memory.mmio.syscon.MMIOHandlerSysconFirmwareSfr.IICIF0;
-import static jpcsp.memory.mmio.syscon.MMIOHandlerSysconFirmwareSfr.dummyTesting;
 import static jpcsp.memory.mmio.syscon.SysconSfrNames.getSfr1Name;
 import static jpcsp.memory.mmio.syscon.SysconSfrNames.getSfr1Names;
 import static jpcsp.util.Utilities.clearBit;
@@ -28,6 +27,7 @@ import java.io.IOException;
 
 import org.apache.log4j.Logger;
 
+import jpcsp.HLE.Modules;
 import jpcsp.nec78k0.Nec78k0Processor;
 import jpcsp.state.IState;
 import jpcsp.state.StateInputStream;
@@ -58,6 +58,9 @@ public class SysconI2c implements IState {
 	public static final int ACKD0 = 2; // Detection of acknowledge
 	public static final int STD0  = 1; // Detection of start condition
 	public static final int SPD0  = 0; // Detection of stop condition
+	// I2c slave addresses
+	public static final int I2C_SLAVE_ADDRESS_POLESTAR = 0xAA;
+	public static final int I2C_SLAVE_ADDRESS_POMMEL   = 0xD0;
 	//
 	protected final MMIOHandlerSysconFirmwareSfr sfr;
 	private int shift;
@@ -123,7 +126,7 @@ public class SysconI2c implements IState {
 		return shift;
 	}
 
-int n = 0;
+//int n = 0;
 	public void setShift(int value) {
 		if (log.isDebugEnabled()) {
 			log.debug(String.format("I2c setShift 0x%02X", value));
@@ -137,18 +140,49 @@ int n = 0;
 			clearStatusBit(SPD0); // Clear detection of stop condition
 			bufferIndex = 0;
 			if (isRead()) {
-				if (dummyTesting) {
-					if (n <= 1) {
-//						buffer[0] = 0x61;
-						buffer[0] = 0x01;
-//						buffer[0] = 0x21;
-						buffer[1] = 0x00;
-					} else {
-						buffer[0] = 0x01;
-						buffer[1] = 0xC0;
-					}
-					n++;
+				int registerNumber;
+				int registerValue;
+				switch (getSlaveAddress()) {
+					case I2C_SLAVE_ADDRESS_POMMEL:
+						registerNumber = buffer[0];
+						registerValue = Modules.sceSysconModule.readPommelRegister(registerNumber);
+						if (log.isDebugEnabled()) {
+							log.debug(String.format("readPommelRegister(0x%02X)=0x%04X", registerNumber, registerValue));
+						}
+						buffer[0] = (registerValue     ) & 0xFF;
+						buffer[1] = (registerValue >> 8) & 0xFF;
+						break;
+					case I2C_SLAVE_ADDRESS_POLESTAR:
+						registerNumber = buffer[0];
+						registerValue = Modules.sceSysconModule.readPolestarRegister(registerNumber);
+						if (log.isDebugEnabled()) {
+							log.debug(String.format("readPolestarRegister(0x%02X)=0x%04X", registerNumber, registerValue));
+						}
+						buffer[0] = (registerValue     ) & 0xFF;
+						buffer[1] = (registerValue >> 8) & 0xFF;
+						break;
+					default:
+						log.error(String.format("I2c unimplemented read from slaveAddress 0x%02X", getSlaveAddress()));
+						break;
 				}
+//				if (dummyTesting) {
+//					if (n <= 1) {
+//						buffer[0] = Battery.isPresent() ? 0x00 : 0x02;
+//						buffer[0] = 0x62; // Battery not present
+//						buffer[1] = 0xC0;
+//						// first byte will be stored at FEC1
+//						//   bits 0..1: OR-ed at FE7C 0..1 (with inverted bit 1)
+//						//   bits 3..4: OR-ed at FE7C 2..3
+//						//   bits 5..7: possible values 0x00, 0xC0, 0x60
+//						// second byte will be stored at FEC2
+//						//   bit 7: set at FE7C.6
+//						//   bit 6: set at FE7C.7
+//					} else {
+//						buffer[0] = 0x01;
+//						buffer[1] = 0xC0;
+//					}
+//					n++;
+//				}
 			}
 			if (log.isDebugEnabled()) {
 				log.debug(String.format("I2c start %s to slaveAddress 0x%02X", isRead() ? "read" : "write", getSlaveAddress()));

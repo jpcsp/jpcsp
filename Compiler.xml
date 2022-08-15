@@ -12800,6 +12800,24 @@
 0800F578:[00004021]: addu       $t0, $zr, $zr <=> li $t0, 0
 ]]></CodeInstructions>
 	</NativeCodeSequence>
+	<NativeCodeSequence name="TestGpio">
+		<Class>jpcsp.Allegrex.compiler.nativeCode.TestGpio</Class>
+		<Method>call</Method>
+		<IsReturning>true</IsReturning>
+		<CodeInstructions><![CDATA[
+040094A0: [0x3C028000] - lui        $v0, 0x8000 <=> li $v0, 0x80000000
+040094A4: [0x2C850020] - sltiu      $a1, $a0, 32
+040094A8: [0x00801821] - addu       $v1, $a0, $zr <=> move $v1, $a0
+040094AC: [0x10A00005] - beq        $a1, $zr, 0x040094C4
+040094B0: [0x34440102] - ori        $a0, $v0, 258
+040094B4: [0x3C04BE24] - lui        $a0, 0xBE24 <=> li $a0, 0xBE240000
+040094B8: [0x8C840020] - lw         $a0, 32($a0)
+040094BC: [0x00642806] - srlv       $a1, $a0, $v1
+040094C0: [0x30A40001] - andi       $a0, $a1, 1
+040094C4: [0x03E00008] - jr         $ra
+040094C8: [0x00801021] - addu       $v0, $a0, $zr <=> move $v0, $a0
+]]></CodeInstructions>
+	</NativeCodeSequence>
 <!--
 	<NativeCodeSequence name="XXX">
 		<Class>jpcsp.Allegrex.compiler.nativeCode.XXX</Class>

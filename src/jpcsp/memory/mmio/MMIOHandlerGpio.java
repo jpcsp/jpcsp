@@ -228,6 +228,10 @@ public class MMIOHandlerGpio extends MMIOHandlerBase {
 		}
 	}
 
+	public int getInterruptTriggered() {
+		return isInterruptTriggered;
+	}
+
 	@Override
 	public int read32(int address) {
 		int value;
@@ -238,7 +242,7 @@ public class MMIOHandlerGpio extends MMIOHandlerBase {
 			case 0x14: value = isFallingEdge; break;
 			case 0x18: value = isRisingEdge; break;
 			case 0x1C: value = isInterruptEnabled; break;
-			case 0x20: value = isInterruptTriggered; break;
+			case 0x20: value = getInterruptTriggered(); break;
 			case 0x30: value = isCapturePort; break;
 			case 0x34: value = isTimerCaptureEnabled; break;
 			case 0x40: value = isInputOn; break;

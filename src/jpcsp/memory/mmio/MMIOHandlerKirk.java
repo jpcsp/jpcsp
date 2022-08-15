@@ -53,6 +53,7 @@ import jpcsp.HLE.kernel.types.IAction;
 import jpcsp.HLE.modules.sceSysreg;
 import jpcsp.HLE.modules.semaphore;
 import jpcsp.hardware.Model;
+import jpcsp.memory.mmio.syscon.SysconEmulator;
 import jpcsp.scheduler.Scheduler;
 import jpcsp.settings.Settings;
 import jpcsp.state.StateInputStream;
@@ -314,6 +315,11 @@ public class MMIOHandlerKirk extends MMIOHandlerBase {
 
 	public boolean preDecrypt(TPointer outAddr, int outSize, TPointer inAddr, int inSize, int command) {
 		boolean processed = false;
+
+		// If the syscon emulator is used, there is no need to pre-decrypt
+		if (SysconEmulator.isEnabled()) {
+			return processed;
+		}
 
 		if (!initDone && command == PSP_KIRK_CMD_DECRYPT_PRIVATE && Model.getGeneration() >= 3 && inSize > 0xC0) {
 			final int xorKeyIndex = 1;

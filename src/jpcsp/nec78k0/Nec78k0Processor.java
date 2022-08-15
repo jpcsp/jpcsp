@@ -41,7 +41,7 @@ import jpcsp.memory.mmio.syscon.SysconInterruptRequestInfo;
  */
 public class Nec78k0Processor {
 	public static Logger log = Logger.getLogger("78k0");
-	public static final boolean disassembleFunctions = true;
+	public static boolean disassembleFunctions = false;
 	// Interrupt Vector Table addresses
 	public static final int RESET = 0x00;
 	public static final int BRK   = 0x3E;
@@ -180,8 +180,8 @@ public class Nec78k0Processor {
 		registerBank = (hasBit(psw, PSW_BIT_RBS0) ? 1 : 0) | (hasBit(psw, PSW_BIT_RBS1) ? 2 : 0);
 
 		if (isRaisingBit(oldPsw, this.psw, PSW_BIT_IE)) {
-			if (log.isDebugEnabled()) {
-				log.debug(String.format("Enabling interrupts"));
+			if (log.isTraceEnabled()) {
+				log.trace(String.format("Enabling interrupts"));
 			}
 			checkPendingInterrupt();
 		}
@@ -240,6 +240,14 @@ public class Nec78k0Processor {
 		}
 	}
 
+	public static int getValue8(int value) {
+		return value & 0xFF;
+	}
+
+	public static boolean isZero8(int value) {
+		return getValue8(value) == 0x00;
+	}
+
 	public int getRegister(int r) {
 		return getRegister(r, registerBank);
 	}
@@ -268,7 +276,7 @@ public class Nec78k0Processor {
 	}
 
 	public void setPswResult(int result) {
-		if (result == 0) {
+		if (isZero8(result)) {
 			psw = setBit(psw, PSW_BIT_Z);
 		} else {
 			psw = clearBit(psw, PSW_BIT_Z);
@@ -277,7 +285,7 @@ public class Nec78k0Processor {
 
 	public void setPswResult(int result, boolean cy, boolean ac) {
 		psw = clearFlag(psw, PSW_CYACZ_FLAGS);
-		if (result == 0) {
+		if (isZero8(result)) {
 			psw = setBit(psw, PSW_BIT_Z);
 		}
 		if (cy) {
@@ -290,7 +298,7 @@ public class Nec78k0Processor {
 
 	public void setPswResult(int result, boolean ac) {
 		psw = clearFlag(psw, PSW_ACZ_FLAGS);
-		if (result == 0) {
+		if (isZero8(result)) {
 			psw = setBit(psw, PSW_BIT_Z);
 		}
 		if (ac) {
@@ -438,13 +446,20 @@ public class Nec78k0Processor {
 		checkPendingInterrupt();
 	}
 
-	public void jump(int addr) {
+	public void jump(int addr, boolean dynamicAddr) {
 		addr &= 0xFFFF;
 
 		if (addr == 0x0000) {
 			log.error(String.format("Jumping to address 0x%04X, something is wrong", addr));
 			Emulator.PauseEmuWithStatus(EMU_STATUS_UNIMPLEMENTED);
 		}
+
+		if (debugCodeBlockCalls && dynamicAddr) {
+			if (mem.internalRead8(currentInstructionPc - 1) == 0xB3) {
+				debug.call(this, addr);
+			}
+		}
+
 		setPc(addr);
 		checkPendingInterrupt();
 	}

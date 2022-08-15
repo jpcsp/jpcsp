@@ -16,6 +16,8 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules;
 
+import static jpcsp.util.Utilities.setBit;
+
 import java.util.Arrays;
 
 import org.apache.log4j.Logger;
@@ -128,6 +130,7 @@ public class sceSyscon extends HLEModule {
     private final int scratchPad[] = new int[32];
     private int alarm;
     private int tachyonTemp = 13094; // Unsigned value, expected to be larger or equal to 13094
+    private int polestarStatusCount;
 
 	@Override
 	public void start() {
@@ -162,6 +165,8 @@ public class sceSyscon extends HLEModule {
 		}
 
 		alarm = 0;
+
+		polestarStatusCount = 0;
 
 		super.start();
 	}
@@ -320,6 +325,61 @@ public class sceSyscon extends HLEModule {
 
     public int getTachyonTemp() {
     	return tachyonTemp;
+    }
+
+    public int readPommelRegister(int reg) {
+    	int value = 0;
+    	switch (reg) {
+    		case 0x80:
+    			value = Model.getPommelVersion();
+    			break;
+    		default:
+    			log.error(String.format("readPommelRegister unimplemented reg=0x%02X", reg));
+    			break;
+    	}
+
+    	return value;
+    }
+
+    public void writePommelRegister(int reg, int value) {
+    	log.error(String.format("writePommelRegister unimplemented reg=0x%02X, value=0x%04X", reg, value));
+    }
+
+    public int readPolestarRegister(int reg) {
+    	int value = 0;
+    	switch (reg) {
+    		case 0x00:
+    			value = 0x800C; // Polestar version (taken from PSP fat)
+    			break;
+    		case 0x01: // Returning information used by PSP_SYSCON_CMD_GET_POWER_SUPPLY_STATUS
+    			// Values taken from PSP fat (using PSP_SYSCON_CMD_READ_POLESTAR_REG):
+    			// - Battery present and DC plugged    : 0x5100
+    			// - Battery present and DC unplugged  : 0x0000
+    			// - Battery not present and DC plugged: 0x0300 (strange, should have flag 0x0002 set as the battery is not present)
+
+    			// TODO Further investigate the possible values (also test on a PSP slim)
+    			value = 0x0000;
+    			if (polestarStatusCount <= 1) {
+    				// The flag 0x0001 needs to be returned at least during the first 2 read of this register
+    				value = setBit(value, 0);
+    				polestarStatusCount++;
+    			}
+    			// TODO Currently, the Battery logic is not yet completely implemented, just simulate that no Battery is present
+    			if (!Battery.isPresent() || true) {
+    				// Inverted logic, the flag 0x0002 means that the battery is NOT present
+    				value = setBit(value, 1);
+    			}
+    			break;
+    		default:
+    			log.error(String.format("readPolestarRegister unimplemented reg=0x%02X", reg));
+    			break;
+    	}
+
+    	return value;
+    }
+
+    public void writePolestarRegister(int reg, int value) {
+    	log.error(String.format("writePolestarRegister unimplemented reg=0x%02X, value=0x%04X", reg, value));
     }
 
     /**

@@ -137,6 +137,8 @@
                               <Group type="103" groupAlignment="0" attributes="0">
                                   <Group type="102" attributes="0">
                                       <Component id="modelBox" min="-2" max="-2" attributes="0"/>
+		                              <EmptySpace min="10" pref="10" max="10" attributes="0"/>
+	                                  <Component id="sysconLabel" alignment="0" min="-2" max="-2" attributes="0"/>
                                       <EmptySpace min="0" pref="0" max="32767" attributes="0"/>
                                   </Group>
                                   <Group type="102" attributes="0">
@@ -194,6 +196,7 @@
                       <Group type="103" groupAlignment="3" attributes="0">
                           <Component id="modelLabel" alignment="3" min="-2" max="-2" attributes="0"/>
                           <Component id="modelBox" alignment="3" min="-2" max="-2" attributes="0"/>
+                          <Component id="sysconLabel" alignment="3" min="-2" max="-2" attributes="0"/>
                       </Group>
                       <EmptySpace pref="141" max="32767" attributes="0"/>
                   </Group>
@@ -348,6 +351,13 @@
               <AuxValues>
                 <AuxValue name="JavaCodeGenerator_TypeParameters" type="java.lang.String" value="&lt;String&gt;"/>
               </AuxValues>
+            </Component>
+            <Component class="javax.swing.JLabel" name="sysconLabel">
+              <Properties>
+                <Property name="text" type="java.lang.String" editor="org.netbeans.modules.i18n.form.FormI18nStringEditor">
+                  <ResourceString bundle="jpcsp/languages/jpcsp.properties" key="SettingsGUI.sysconLabel.text" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
+                </Property>
+              </Properties>
             </Component>
           </SubComponents>
         </Container>

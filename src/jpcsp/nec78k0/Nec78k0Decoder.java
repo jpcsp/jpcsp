@@ -865,14 +865,14 @@ public class Nec78k0Decoder {
 			SUBC_A_r, // 0x3D
 			SUBC_A_r, // 0x3E
 			SUBC_A_r, // 0x3F
-			UNK2, // 0x40
-			UNK2, // 0x41
-			UNK2, // 0x42
-			UNK2, // 0x43
-			UNK2, // 0x44
-			UNK2, // 0x45
-			UNK2, // 0x46
-			UNK2, // 0x47
+			CMP_r_A, // 0x40
+			CMP_r_A, // 0x41
+			CMP_r_A, // 0x42
+			CMP_r_A, // 0x43
+			CMP_r_A, // 0x44
+			CMP_r_A, // 0x45
+			CMP_r_A, // 0x46
+			CMP_r_A, // 0x47
 			CMP_A_r, // 0x48
 			UNK2, // 0x49
 			CMP_A_r, // 0x4A

@@ -25,6 +25,7 @@ import java.util.ListIterator;
 
 import org.apache.log4j.Logger;
 
+import jpcsp.Allegrex.compiler.RuntimeContext;
 import jpcsp.HLE.kernel.types.IAction;
 import jpcsp.nec78k0.Nec78k0Processor;
 import jpcsp.scheduler.SchedulerAction;
@@ -49,6 +50,8 @@ public class SysconScheduler extends Thread {
 
 	@Override
 	public void run() {
+		RuntimeContext.setLog4jMDC();
+
 		while (true) {
 			waitForNextAction();
 
