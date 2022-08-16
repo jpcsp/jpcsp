@@ -156,6 +156,7 @@ public class SysconAdConverter implements IState {
 		switch ((mode >> 1) & 0x1F) {
 			case 0x01: clockStep = 24; break; // 24us?
 			case 0x11: clockStep = 24; break; // 24us
+			case 0x02: clockStep = 24; break; // Invalid value with LV1=1, according to NEC documentation
 			default:
 				clockStep = 1000;
 				log.error(String.format("AD Converter setMode unimplemented 0x%02X", value));
@@ -177,7 +178,7 @@ public class SysconAdConverter implements IState {
 	}
 
 	public void setPortConfiguration(int value) {
-		if (value != 0x00 && value != 0x05) {
+		if (value != 0x00 && value != 0x03 && value != 0x04 && value != 0x05) {
 			log.error(String.format("AD Converter setPortConfiguration unimplemented 0x%02X", value));
 		}
 

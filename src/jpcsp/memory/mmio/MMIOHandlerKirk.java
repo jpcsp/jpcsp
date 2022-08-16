@@ -316,17 +316,17 @@ public class MMIOHandlerKirk extends MMIOHandlerBase {
 	public boolean preDecrypt(TPointer outAddr, int outSize, TPointer inAddr, int inSize, int command) {
 		boolean processed = false;
 
-		// If the syscon emulator is used, there is no need to pre-decrypt
-		if (SysconEmulator.isEnabled()) {
-			return processed;
-		}
-
 		if (!initDone && command == PSP_KIRK_CMD_DECRYPT_PRIVATE && Model.getGeneration() >= 3 && inSize > 0xC0) {
 			final int xorKeyIndex = 1;
 			if (log.isDebugEnabled()) {
 				log.debug(String.format("Calling descramble03g xorKeyIndex=0x%X", xorKeyIndex));
 			}
 			descramble03g(inAddr, xorKeyIndex);
+		}
+
+		// If the syscon emulator is used, there is no need to pre-decrypt
+		if (SysconEmulator.isEnabled()) {
+			return processed;
 		}
 
 		if (command == PSP_KIRK_CMD_DECRYPT) {

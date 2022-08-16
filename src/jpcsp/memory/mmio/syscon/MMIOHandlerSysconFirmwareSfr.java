@@ -145,7 +145,7 @@ public class MMIOHandlerSysconFirmwareSfr extends Nec78k0MMIOHandlerBase {
 	private final int[] portModes = new int[NUMBER_PORTS];
 	private final int[] pullUpResistorOptions = new int[NUMBER_PORTS];
 	//
-	// Ports for TA-085 (78K0/KF2, PSP Slim and later):
+	// Ports for TA-085 only (78K0/KF2, PSP Slim):
 	//
 	// P0.0      LCD32_ON (Output)
 	// P0.1      HP_DETECT (Input)
@@ -220,7 +220,7 @@ public class MMIOHandlerSysconFirmwareSfr extends Nec78k0MMIOHandlerBase {
 	// P14.5     Unused
 
 	//
-	// Ports for TA-086 (78K0/KE2, PSP Fat):
+	// Ports for TA-086, TA-090, TA-091, TA-093, TA-095, TA-096 (78K0/KE2, PSP Fat, Brite and Street):
 	//
 	// P0.0      TTP1 (Output)
 	// P0.1      Unused
@@ -374,11 +374,11 @@ public class MMIOHandlerSysconFirmwareSfr extends Nec78k0MMIOHandlerBase {
 	}
 
 	private boolean isKE2() {
-		return Model.getModel() == Model.MODEL_PSP_FAT;
+		return !isKF2();
 	}
 
 	private boolean isKF2() {
-		return !isKE2();
+		return Model.getModel() == Model.MODEL_PSP_SLIM;
 	}
 
 	private SysconSerialInterfaceCSI1n getSysconSerialInterface() {
@@ -599,7 +599,8 @@ public class MMIOHandlerSysconFirmwareSfr extends Nec78k0MMIOHandlerBase {
 				}
 				break;
 			case 3:
-				if (keyPowerStartup > 10) {
+				final int keyPowerStartupCount = Model.getModel() == Model.MODEL_PSP_FAT ? 10 : 20;
+				if (keyPowerStartup > keyPowerStartupCount) {
 					setButtonPortInput(3, 0, PSP_CTRL_HOLD, buttons);
 				} else {
 					// When booting, the KEY_POWER is pressed,
