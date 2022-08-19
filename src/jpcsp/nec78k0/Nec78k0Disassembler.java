@@ -35,7 +35,7 @@ import static jpcsp.nec78k0.Nec78k0Instructions.DBNZ_C;
 import static jpcsp.nec78k0.Nec78k0Instructions.DBNZ_saddr;
 import static jpcsp.nec78k0.Nec78k0Instructions.RET;
 import static jpcsp.nec78k0.Nec78k0Instructions.RETI;
-import static jpcsp.nec78k0.Nec78k0Instructions.getWord;
+import static jpcsp.nec78k0.Nec78k0Instructions.getAddressWord;
 import static jpcsp.util.Utilities.internalReadUnaligned32;
 
 import java.util.HashMap;
@@ -107,13 +107,13 @@ public class Nec78k0Disassembler {
 	private void checkBranch(List<Integer> pendingAddresses, int addr, int insn, Nec78k0Instruction instr) {
 		// TODO
 		if (instr == BR_word) {
-			int jumpTo = getWord(insn);
+			int jumpTo = getAddressWord(insn, addr);
 			addJump(pendingAddresses, addr, jumpTo);
 		} else if (instr == BR_jdisp || instr == BZ || instr == BNZ || instr == BNC || instr == BC || instr == BF_A_addr || instr == BF_saddr || instr == BF_sfr || instr == BT_A_addr || instr == BT_saddr || instr == BT_sfr || instr == DBNZ_B || instr == DBNZ_C || instr == DBNZ_saddr) {
 			int jumpTo = getJdisp(addr, insn, instr);
 			addJump(pendingAddresses, addr, jumpTo);
 		} else if (instr == CALL) {
-			int jumpTo = getWord(insn);
+			int jumpTo = getAddressWord(insn, addr);
 			addJumpToFunction(addr, jumpTo);
 		}
 	}

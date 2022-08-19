@@ -26,9 +26,11 @@ import static jpcsp.nec78k0.Nec78k0Processor.REG_PAIR_HL;
 import static jpcsp.nec78k0.Nec78k0Processor.REG_X;
 import static jpcsp.nec78k0.Nec78k0Processor.getSaddr;
 import static jpcsp.nec78k0.Nec78k0Processor.getSfr;
+import static jpcsp.util.Utilities.clearBit;
 import static jpcsp.util.Utilities.hasBit;
 import static jpcsp.util.Utilities.hasFlag;
 import static jpcsp.util.Utilities.notHasBit;
+import static jpcsp.util.Utilities.setBit;
 
 import org.apache.log4j.Logger;
 
@@ -109,6 +111,16 @@ public class Nec78k0Instructions {
 
 	public static final int getJdisp(int address, int insn, int size) {
 		return address + size + getJdisp(insn);
+	}
+
+	public static final int getAddressWord(int insn, int addr) {
+		// When located at an address above 0x8000, a
+		//    call !addr
+		// is actually a
+		//    call !(addr | 0x8000)
+		// Same for
+		//    br !addr
+		return getWord(insn) | (addr & 0x8000);
 	}
 
 	private static final String getBasedAddressing(String base, int value) {
@@ -271,13 +283,13 @@ public class Nec78k0Instructions {
     public static final Nec78k0Instruction CALL = new Nec78k0Instruction3() {
         @Override
         public void interpret(Nec78k0Processor processor, int insn) {
-        	int imm16 = getWord(insn);
+        	int imm16 = getAddressWord(insn, processor.getCurrentInstructionPc());
         	processor.call(imm16);
         }
 
         @Override
         public String disasm(int address, int insn) {
-            return String.format("call !0x%04X", getWord(insn));
+            return String.format("call !0x%04X", getAddressWord(insn, address));
         }
     };
 
@@ -576,13 +588,13 @@ public class Nec78k0Instructions {
     public static final Nec78k0Instruction BR_word = new Nec78k0Instruction3() {
         @Override
         public void interpret(Nec78k0Processor processor, int insn) {
-        	int imm16 = getWord(insn);
+        	int imm16 = getAddressWord(insn, processor.getCurrentInstructionPc());
         	processor.jump(imm16, false);
         }
 
         @Override
         public String disasm(int address, int insn) {
-            return String.format("br !0x%04X", getWord(insn));
+            return String.format("br !0x%04X", getAddressWord(insn, address));
         }
     };
 
@@ -2135,6 +2147,148 @@ public class Nec78k0Instructions {
         @Override
         public String disasm(int address, int insn) {
             return String.format("and %s, %s", getRegisterName(REG_A), getRegisterName(insn));
+        }
+    };
+
+    public static final Nec78k0Instruction XCH_A_DE = new Nec78k0Instruction1() {
+        @Override
+        public void interpret(Nec78k0Processor processor, int insn) {
+        	int tmp = processor.getRegister(REG_A);
+        	int addr = processor.getRegisterPair(REG_PAIR_DE);
+        	processor.setRegister(REG_A, processor.mem.read8(addr));
+        	processor.mem.write8(addr, (byte) tmp);
+        }
+
+        @Override
+        public String disasm(int address, int insn) {
+            return String.format("xch %s, [%s]", getRegisterName(REG_A), getRegisterPairName(REG_PAIR_DE));
+        }
+    };
+
+    public static final Nec78k0Instruction XCH_A_HL = new Nec78k0Instruction1() {
+        @Override
+        public void interpret(Nec78k0Processor processor, int insn) {
+        	int tmp = processor.getRegister(REG_A);
+        	int addr = processor.getRegisterPair(REG_PAIR_HL);
+        	processor.setRegister(REG_A, processor.mem.read8(addr));
+        	processor.mem.write8(addr, (byte) tmp);
+        }
+
+        @Override
+        public String disasm(int address, int insn) {
+            return String.format("xch %s, [%s]", getRegisterName(REG_A), getRegisterPairName(REG_PAIR_HL));
+        }
+    };
+
+    public static final Nec78k0Instruction ADDC_A_saddr = new Nec78k0Instruction2() {
+        @Override
+        public void interpret(Nec78k0Processor processor, int insn) {
+        	int value1 = processor.getRegister(REG_A);
+        	int value2 = processor.mem.read8(getSaddr(insn));
+        	int value = value1 + value2;
+        	if (processor.isCarryFlag()) {
+        		value++;
+        	}
+        	processor.setRegister(REG_A, value);
+        	processor.setPswResult(value, getAdditionCY(value1, value2, value), getAdditionAC(value1, value2, value));
+        }
+
+        @Override
+        public String disasm(int address, int insn) {
+            return String.format("addc %s, %s", getRegisterName(REG_A), getAddressName(getSaddr(insn)));
+        }
+    };
+
+    public static final Nec78k0Instruction ADDC_saddr_byte = new Nec78k0Instruction3() {
+        @Override
+        public void interpret(Nec78k0Processor processor, int insn) {
+        	int saddr = getSaddr(insn >> 8);
+        	int value1 = processor.mem.read8(saddr);
+        	int value2 = getByte(insn);
+        	int value = value1 + value2;
+        	if (processor.isCarryFlag()) {
+        		value++;
+        	}
+        	processor.mem.write8(saddr, (byte) value);
+        	processor.setPswResult(value, getAdditionCY(value1, value2, value), getAdditionAC(value1, value2, value));
+        }
+
+        @Override
+        public String disasm(int address, int insn) {
+            return String.format("addc %s, #0x%02X", getAddressName(getSaddr(insn >> 8)), getByte(insn));
+        }
+    };
+
+	public static final Nec78k0Instruction CLR1_A = new Nec78k0Instruction2() {
+        @Override
+        public void interpret(Nec78k0Processor processor, int insn) {
+        	int bit = (insn >> 4) & 0x7;
+        	processor.setRegister(REG_A, clearBit(processor.getRegister(REG_A), bit));
+        }
+
+        @Override
+        public String disasm(int address, int insn) {
+            return String.format("clr1 %s.%d", getRegisterName(REG_A), (insn >> 4) & 0x7);
+        }
+    };
+
+	public static final Nec78k0Instruction SET1_A = new Nec78k0Instruction2() {
+        @Override
+        public void interpret(Nec78k0Processor processor, int insn) {
+        	int bit = (insn >> 4) & 0x7;
+        	processor.setRegister(REG_A, setBit(processor.getRegister(REG_A), bit));
+        }
+
+        @Override
+        public String disasm(int address, int insn) {
+            return String.format("set1 %s.%d", getRegisterName(REG_A), (insn >> 4) & 0x7);
+        }
+    };
+
+    public static final Nec78k0Instruction ADDC_A_byte = new Nec78k0Instruction2() {
+        @Override
+        public void interpret(Nec78k0Processor processor, int insn) {
+        	int value1 = processor.getRegister(REG_A);
+        	int value2 = getByte(insn);
+        	int value = value1 + value2;
+        	if (processor.isCarryFlag()) {
+        		value++;
+        	}
+        	processor.setRegister(REG_A, value);
+        	processor.setPswResult(value, getAdditionCY(value1, value2, value), getAdditionAC(value1, value2, value));
+        }
+
+        @Override
+        public String disasm(int address, int insn) {
+            return String.format("addc %s, #0x%02X", getRegisterName(REG_A), getByte(insn));
+        }
+    };
+
+	public static final Nec78k0Instruction CLR1_HL = new Nec78k0Instruction2() {
+        @Override
+        public void interpret(Nec78k0Processor processor, int insn) {
+        	int bit = (insn >> 4) & 0x7;
+        	int addr = processor.getRegisterPair(REG_PAIR_HL);
+        	processor.mem.write8(addr, (byte) clearBit(processor.mem.read8(addr), bit));
+        }
+
+        @Override
+        public String disasm(int address, int insn) {
+            return String.format("clr1 [%s].%d", getRegisterPairName(REG_PAIR_HL), (insn >> 4) & 0x7);
+        }
+    };
+
+	public static final Nec78k0Instruction SET1_HL = new Nec78k0Instruction2() {
+        @Override
+        public void interpret(Nec78k0Processor processor, int insn) {
+        	int bit = (insn >> 4) & 0x7;
+        	int addr = processor.getRegisterPair(REG_PAIR_HL);
+        	processor.mem.write8(addr, (byte) setBit(processor.mem.read8(addr), bit));
+        }
+
+        @Override
+        public String disasm(int address, int insn) {
+            return String.format("set1 [%s].%d", getRegisterPairName(REG_PAIR_HL), (insn >> 4) & 0x7);
         }
     };
 }

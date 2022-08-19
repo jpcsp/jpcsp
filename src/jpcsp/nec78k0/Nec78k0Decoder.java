@@ -672,8 +672,8 @@ public class Nec78k0Decoder {
 			UNK2, // 0x7F
 			UNK2, // 0x80
 			UNK2, // 0x81
-			UNK2, // 0x82
-			UNK2, // 0x83
+			SET1_HL, // 0x82
+			CLR1_HL, // 0x83
 			UNK2, // 0x84
 			UNK2, // 0x85
 			UNK2, // 0x86
@@ -688,8 +688,8 @@ public class Nec78k0Decoder {
 			UNK2, // 0x8F
 			UNK2, // 0x90
 			UNK2, // 0x91
-			UNK2, // 0x92
-			UNK2, // 0x93
+			SET1_HL, // 0x92
+			CLR1_HL, // 0x93
 			UNK2, // 0x94
 			UNK2, // 0x95
 			UNK2, // 0x96
@@ -704,8 +704,8 @@ public class Nec78k0Decoder {
 			UNK2, // 0x9F
 			UNK2, // 0xA0
 			UNK2, // 0xA1
-			UNK2, // 0xA2
-			UNK2, // 0xA3
+			SET1_HL, // 0xA2
+			CLR1_HL, // 0xA3
 			UNK2, // 0xA4
 			UNK2, // 0xA5
 			UNK2, // 0xA6
@@ -720,8 +720,8 @@ public class Nec78k0Decoder {
 			UNK2, // 0xAF
 			UNK2, // 0xB0
 			UNK2, // 0xB1
-			UNK2, // 0xB2
-			UNK2, // 0xB3
+			SET1_HL, // 0xB2
+			CLR1_HL, // 0xB3
 			UNK2, // 0xB4
 			UNK2, // 0xB5
 			UNK2, // 0xB6
@@ -736,8 +736,8 @@ public class Nec78k0Decoder {
 			UNK2, // 0xBF
 			UNK2, // 0xC0
 			UNK2, // 0xC1
-			UNK2, // 0xC2
-			UNK2, // 0xC3
+			SET1_HL, // 0xC2
+			CLR1_HL, // 0xC3
 			UNK2, // 0xC4
 			UNK2, // 0xC5
 			UNK2, // 0xC6
@@ -752,8 +752,8 @@ public class Nec78k0Decoder {
 			UNK2, // 0xCF
 			UNK2, // 0xD0
 			UNK2, // 0xD1
-			UNK2, // 0xD2
-			UNK2, // 0xD3
+			SET1_HL, // 0xD2
+			CLR1_HL, // 0xD3
 			UNK2, // 0xD4
 			UNK2, // 0xD5
 			UNK2, // 0xD6
@@ -768,8 +768,8 @@ public class Nec78k0Decoder {
 			UNK2, // 0xDF
 			UNK2, // 0xE0
 			UNK2, // 0xE1
-			UNK2, // 0xE2
-			UNK2, // 0xE3
+			SET1_HL, // 0xE2
+			CLR1_HL, // 0xE3
 			UNK2, // 0xE4
 			UNK2, // 0xE5
 			UNK2, // 0xE6
@@ -784,8 +784,8 @@ public class Nec78k0Decoder {
 			UNK2, // 0xEF
 			UNK2, // 0xF0
 			UNK2, // 0xF1
-			UNK2, // 0xF2
-			UNK2, // 0xF3
+			SET1_HL, // 0xF2
+			CLR1_HL, // 0xF3
 			UNK2, // 0xF4
 			UNK2, // 0xF5
 			UNK2, // 0xF6
@@ -939,8 +939,8 @@ public class Nec78k0Decoder {
 			UNK2, // 0x87
 			UNK2, // 0x88
 			UNK2, // 0x89
-			UNK2, // 0x8A
-			UNK2, // 0x8B
+			SET1_A, // 0x8A
+			CLR1_A, // 0x8B
 			UNK2, // 0x8C
 			UNK2, // 0x8D
 			OR1_A, // 0x8E
@@ -955,8 +955,8 @@ public class Nec78k0Decoder {
 			UNK2, // 0x97
 			UNK2, // 0x98
 			UNK2, // 0x99
-			UNK2, // 0x9A
-			UNK2, // 0x9B
+			SET1_A, // 0x9A
+			CLR1_A, // 0x9B
 			UNK2, // 0x9C
 			UNK2, // 0x9D
 			OR1_A, // 0x9E
@@ -971,8 +971,8 @@ public class Nec78k0Decoder {
 			UNK2, // 0xA7
 			UNK2, // 0xA8
 			UNK2, // 0xA9
-			UNK2, // 0xAA
-			UNK2, // 0xAB
+			SET1_A, // 0xAA
+			CLR1_A, // 0xAB
 			UNK2, // 0xAC
 			UNK2, // 0xAD
 			OR1_A, // 0xAE
@@ -987,8 +987,8 @@ public class Nec78k0Decoder {
 			UNK2, // 0xB7
 			UNK2, // 0xB8
 			UNK2, // 0xB9
-			UNK2, // 0xBA
-			UNK2, // 0xBB
+			SET1_A, // 0xBA
+			CLR1_A, // 0xBB
 			UNK2, // 0xBC
 			UNK2, // 0xBD
 			OR1_A, // 0xBE
@@ -1003,8 +1003,8 @@ public class Nec78k0Decoder {
 			UNK2, // 0xC7
 			UNK2, // 0xC8
 			UNK2, // 0xC9
-			UNK2, // 0xCA
-			UNK2, // 0xCB
+			SET1_A, // 0xCA
+			CLR1_A, // 0xCB
 			MOV1_CY_A, // 0xCC
 			UNK2, // 0xCD
 			OR1_A, // 0xCE
@@ -1019,8 +1019,8 @@ public class Nec78k0Decoder {
 			UNK2, // 0xD7
 			SEL, // 0xD8
 			UNK2, // 0xD9
-			UNK2, // 0xDA
-			UNK2, // 0xDB
+			SET1_A, // 0xDA
+			CLR1_A, // 0xDB
 			UNK2, // 0xDC
 			UNK2, // 0xDD
 			OR1_A, // 0xDE
@@ -1035,8 +1035,8 @@ public class Nec78k0Decoder {
 			UNK2, // 0xE7
 			UNK2, // 0xE8
 			UNK2, // 0xE9
-			UNK2, // 0xEA
-			UNK2, // 0xEB
+			SET1_A, // 0xEA
+			CLR1_A, // 0xEB
 			UNK2, // 0xEC
 			UNK2, // 0xED
 			OR1_A, // 0xEE
@@ -1051,8 +1051,8 @@ public class Nec78k0Decoder {
 			UNK2, // 0xF7
 			SEL, // 0xF8
 			UNK2, // 0xF9
-			UNK2, // 0xFA
-			UNK2, // 0xFB
+			SET1_A, // 0xFA
+			CLR1_A, // 0xFB
 			UNK2, // 0xFC
 			UNK2, // 0xFD
 			OR1_A, // 0xFE
@@ -1067,7 +1067,7 @@ public class Nec78k0Decoder {
 			DBNZ_saddr, // 0x04
 			UNK1, // 0x05
 			UNK1, // 0x06
-			UNK1, // 0x07
+			XCH_A_HL, // 0x07
 			ADD_A_addr, // 0x08
 			ADD_A_HLbyte, // 0x09
 			SET1_saddr, // 0x0A
@@ -1105,8 +1105,8 @@ public class Nec78k0Decoder {
 			SET1_saddr, // 0x2A
 			CLR1_saddr, // 0x2B
 			UNK1, // 0x2C
-			UNK1, // 0x2D
-			UNK1, // 0x2E
+			ADDC_A_byte, // 0x2D
+			ADDC_A_saddr, // 0x2E
 			UNK1, // 0x2F
 			XCH_A_r, // 0x30
 			new Nec78k0Instructions.STUB2() {
@@ -1246,7 +1246,7 @@ public class Nec78k0Decoder {
 			MOV_r_byte, // 0xA5
 			MOV_r_byte, // 0xA6
 			MOV_r_byte, // 0xA7
-			UNK1, // 0xA8
+			ADDC_saddr_byte, // 0xA8
 			MOVW_AX_sfrp, // 0xA9
 			MOV_A_HL_C, // 0xAA
 			MOV_A_HL_B, // 0xAB
