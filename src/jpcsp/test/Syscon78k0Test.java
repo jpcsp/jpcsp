@@ -18,14 +18,7 @@ package jpcsp.test;
 
 import static jpcsp.HLE.modules.sceSyscon.getSysconCmdName;
 import static jpcsp.memory.mmio.syscon.MMIOHandlerSysconFirmwareSfr.getInterruptName;
-import static jpcsp.nec78k0.Nec78k0Memory.BASE_RAM0;
-import static jpcsp.nec78k0.Nec78k0Memory.END_RAM0;
-import static jpcsp.util.Utilities.readUnaligned32;
-
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import static jpcsp.util.Utilities.internalReadUnaligned16;
 
 import org.apache.log4j.Logger;
 import org.apache.log4j.xml.DOMConfigurator;
@@ -70,33 +63,27 @@ public class Syscon78k0Test {
 		model = Model.MODEL_PSP_FAT;
 
 		Model.setModel(model);
-		String fileName = SysconEmulator.getFirmwareFileName();
-		log.debug(String.format("Reading %s", fileName));
-		File inputFile = new File(fileName);
-		byte[] buffer = new byte[(int) inputFile.length()];
-		int length = buffer.length;
-		try {
-			InputStream is = new FileInputStream(inputFile);
-			length = is.read(buffer);
-			is.close();
-		} catch (IOException e) {
-			log.error(e);
-		}
 
 		Nec78k0Memory mem = new Nec78k0Memory(log);
 		Nec78k0Processor processor = new Nec78k0Processor(mem);
 		Nec78k0Interpreter interpreter = new Nec78k0Interpreter(processor);
 
-		int baseAddress = BASE_RAM0;
-		length = Math.min(length, END_RAM0);
-		for (int i = 0; i < length; i += 4) {
-			mem.write32(baseAddress + i, readUnaligned32(buffer, i));
-		}
+		SysconEmulator.load(mem);
 
 		for (int i = 0; i < 0x40; i += 2) {
 			int addr = mem.internalRead16(i);
 			if (addr != 0 && addr != 0xFFFF) {
 				log.info(String.format("Disassembling Vector Table entry 0x%02X(%s): 0x%04X", i, getInterruptName(i), addr));
+				processor.disassemble(addr);
+			}
+		}
+
+		if (mem.internalRead32(0x8100) != 0xFFFFFFFF) {
+			processor.disassemble(0x8100);
+			for (int i = 0; i < 10; i++) {
+				int value = mem.internalRead8(0x9FD2 - i);
+				int addr = internalReadUnaligned16(mem, 0x9FD3 + i * 2);
+				log.info(String.format("Disassembling switch table from 0x816D: case 0x%02X at 0x%04X", value, addr));
 				processor.disassemble(addr);
 			}
 		}
@@ -124,7 +111,6 @@ public class Syscon78k0Test {
 					processor.disassemble(addr);
 				}
 			}
-			processor.disassemble(0x8100);
 			for (int i = 2; i <= 13; i++) {
 				int addr = mem.internalRead16(0x4DA8 + (i - 2) * 2);
 				log.info(String.format("Disassembling switch table from 0x4DA6: case 0x%02X at 0x%04X", i, addr));
@@ -158,7 +144,6 @@ public class Syscon78k0Test {
 					processor.disassemble(addr);
 				}
 			}
-			processor.disassemble(0x8100);
 			for (int i = 1; i <= 12; i++) {
 				int addr = mem.internalRead16(0x25C2 + (i - 1) * 2);
 				log.info(String.format("Disassembling switch table from 0x25C0: case 0x%02X at 0x%04X", i, addr));

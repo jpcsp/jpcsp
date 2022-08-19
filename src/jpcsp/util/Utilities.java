@@ -1090,6 +1090,13 @@ public class Utilities {
         }
     }
 
+    public static int internalReadUnaligned16(Memory mem, int address) {
+    	if ((address & 1) == 0) {
+    		return mem.internalRead16(address);
+    	}
+    	return (mem.internalRead8(address + 1) << 8) | mem.internalRead8(address);
+    }
+
     public static int readUnaligned16(Memory mem, int address) {
     	if ((address & 1) == 0) {
     		return mem.read16(address);

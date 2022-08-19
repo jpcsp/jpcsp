@@ -224,7 +224,12 @@ public abstract class AbstractSysconTimerEventCounter implements IState {
 	private int getTimerCounter(boolean updateTimerCounter) {
 		long start = eventCounterAction.getStart();
 		long now = now();
-		int duration = (int) ((now - start) * 1000 / clockStepNanoSeconds);
+		int duration;
+		if (clockStepNanoSeconds == 0) {
+			duration = 0;
+		} else {
+			duration = (int) ((now - start) * 1000 / clockStepNanoSeconds);
+		}
 		if (log.isTraceEnabled()) {
 			log.trace(String.format("%s getTimerCounter now=0x%X, duration=0x%X, timerCounter=0x%X", name, now, duration, timerCounter + duration));
 		}

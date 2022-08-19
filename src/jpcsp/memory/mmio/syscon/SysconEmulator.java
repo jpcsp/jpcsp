@@ -54,7 +54,7 @@ public class SysconEmulator {
 		@Override
 		public void run() {
 			RuntimeContext.setLog4jMDC();
-			load();
+			load(mem);
 			processor.reset();
 
 			while (!exit) {
@@ -106,8 +106,11 @@ public class SysconEmulator {
 		interpreter = new Nec78k0Interpreter(processor);
 	}
 
-	private void load() {
-		File inputFile = new File(getFirmwareFileName());
+	public static void load(Nec78k0Memory mem) {
+		String firmwareFileName = getFirmwareFileName();
+		log.info(String.format("Loading %s", firmwareFileName));
+
+		File inputFile = new File(firmwareFileName);
 		byte[] buffer = new byte[(int) inputFile.length()];
 		int length = buffer.length;
 		try {
@@ -122,6 +125,22 @@ public class SysconEmulator {
 		length = Math.min(length, END_RAM0);
 		for (int i = 0; i < length; i += 4) {
 			mem.write32(baseAddress + i, readUnaligned32(buffer, i));
+		}
+
+		if (mem.internalRead32(0x8000) == 0xFFFFFFFF) {
+			try {
+				InputStream is = new FileInputStream("TA-086_Full.bin");
+				length = is.read(buffer);
+				is.close();
+
+				baseAddress = 0x8000;
+				length = Math.min(length - 0x8000, 0x2000);
+				for (int i = 0; i < length; i += 4) {
+					mem.write32(baseAddress + i, readUnaligned32(buffer, baseAddress + i));
+				}
+			} catch (IOException e) {
+				log.error(e);
+			}
 		}
 	}
 
