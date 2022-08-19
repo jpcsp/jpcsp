@@ -378,7 +378,7 @@ public class MMIOHandlerSysconFirmwareSfr extends Nec78k0MMIOHandlerBase {
 	}
 
 	private boolean isKF2() {
-		return Model.getModel() == Model.MODEL_PSP_SLIM;
+		return Model.getModel() == Model.MODEL_PSP_SLIM || Model.getModel() == Model.MODEL_PSP_GO;
 	}
 
 	private SysconSerialInterfaceCSI1n getSysconSerialInterface() {
@@ -1040,6 +1040,7 @@ public class MMIOHandlerSysconFirmwareSfr extends Nec78k0MMIOHandlerBase {
 			case 0xFF84: value = serialInterfaceCSI10.getTransmitBuffer(); break;
 			case 0xFF88: value = serialInterfaceCSI11.getOperationMode(); break;
 			case 0xFF89: value = serialInterfaceCSI11.getClockSelection(); break;
+			case 0xFF9F: value = clockOperationModeSelect; break;
 			case 0xFFA0: value = internalOscillationMode; break;
 			case 0xFFA1: value = mainClockMode; break;
 			case 0xFFA2: value = mainOscillationControl; break;
@@ -1056,6 +1057,8 @@ public class MMIOHandlerSysconFirmwareSfr extends Nec78k0MMIOHandlerBase {
 			case 0xFFB1: value = getByte1(timer01.getTimerCounter()); break;
 			case 0xFFB6: value = timer01.getTimerModeControl(); break;
 			case 0xFFBA: value = timer00.getTimerModeControl(); break;
+			case 0xFFC1: value = 0x00; break; // Unknown register, used only on some hardware
+			case 0xFFC4: value = 0x00; break; // Unknown register, used only on some hardware
 			case 0xFFE0: value = getByte0(interruptRequestFlag0); break;
 			case 0xFFE1: value = getByte1(interruptRequestFlag0); break;
 			case 0xFFE2: value = getByte0(interruptRequestFlag1); break;
@@ -1064,6 +1067,7 @@ public class MMIOHandlerSysconFirmwareSfr extends Nec78k0MMIOHandlerBase {
 			case 0xFFE5: value = getByte1(interruptMaskFlag0); break;
 			case 0xFFE6: value = getByte0(interruptMaskFlag1); break;
 			case 0xFFE7: value = getByte1(interruptMaskFlag1); break;
+			case 0xFFF5: value = 0x10; break; // Unknown register, used only on some hardware
 			case 0xFFFB: value = processorClockControl; break;
 			default: value = super.read8(address); break;
 		}
@@ -1237,7 +1241,8 @@ public class MMIOHandlerSysconFirmwareSfr extends Nec78k0MMIOHandlerBase {
 			case 0xFFBC: timer00.setCompareControl(value8); break;
 			case 0xFFBD: timer00.setOutputControl(value8); break;
 			case 0xFFC0: if (value8 != 0xA5) { super.write8(address, value); } break; // Unknown register, used only on some hardware
-			case 0xFFC4: if (value8 != 0x01 && value8 != 0xFE) { super.write8(address, value); } break; // Unknown register, used only on some hardware
+			case 0xFFC1: if (value8 != 0x00 && value8 != 0x80) { super.write8(address, value); } break; // Unknown register, used only on some hardware
+			case 0xFFC4: if (value8 != 0x01 && value8 != 0xFE && value8 != 0x03 && value8 != 0xFC && value8 != 0x09 && value8 != 0xF6 && value8 != 0x00 && value8 != 0xFF) { super.write8(address, value); } break; // Unknown register, used only on some hardware
 			case 0xFFE0: interruptRequestFlag0 = setByte0(interruptRequestFlag0, value8); break;
 			case 0xFFE1: interruptRequestFlag0 = setByte1(interruptRequestFlag0, value8); break;
 			case 0xFFE2: interruptRequestFlag1 = setByte0(interruptRequestFlag1, value8); break;

@@ -178,7 +178,7 @@ public class SysconAdConverter implements IState {
 	}
 
 	public void setPortConfiguration(int value) {
-		if (value != 0x00 && value != 0x03 && value != 0x04 && value != 0x05) {
+		if (value != 0x00 && value != 0x02 && value != 0x03 && value != 0x04 && value != 0x05) {
 			log.error(String.format("AD Converter setPortConfiguration unimplemented 0x%02X", value));
 		}
 
