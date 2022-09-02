@@ -968,7 +968,9 @@ public class sceUtility extends HLEModule {
             	return 50000;
         	}
 
-        	return 0;
+        	// The shutdown still takes some time to complete
+        	// even if no dialog has been shown to the user.
+        	return 2000;
         }
 
         protected int getInitDelay() {
