@@ -349,6 +349,7 @@ public class MMIOHandlerSysconFirmwareSfr extends Nec78k0MMIOHandlerBase {
 	private int internalMemorySizeSwitching;
 	private int internalExpansionRAMSizeSwitching;
 	private int keyPowerStartup;
+	private final SysconSecureFlash secureFlash;
 
 	public MMIOHandlerSysconFirmwareSfr(int baseAddress) {
 		super(baseAddress);
@@ -365,6 +366,7 @@ public class MMIOHandlerSysconFirmwareSfr extends Nec78k0MMIOHandlerBase {
 		serialInterfaceCSI10 = new SysconSerialInterfaceCSI1n(this, "CSI10", CSIIF10);
 		serialInterfaceCSI11 = new SysconSerialInterfaceCSI1n(this, "CSI11", CSIIF11);
 		serialInterfaceUART6 = new SysconSerialInterfaceUART6(this);
+		secureFlash = new SysconSecureFlash(this);
 
 		reset();
 
@@ -383,6 +385,10 @@ public class MMIOHandlerSysconFirmwareSfr extends Nec78k0MMIOHandlerBase {
 
 	private SysconSerialInterfaceCSI1n getSysconSerialInterface() {
 		return isKF2() ? serialInterfaceCSI11 : serialInterfaceCSI10;
+	}
+
+	public SysconSecureFlash getSysconSecureFlash() {
+		return secureFlash;
 	}
 
 	public static int INTtoIF(int vectorTableAddress) {
@@ -441,6 +447,7 @@ public class MMIOHandlerSysconFirmwareSfr extends Nec78k0MMIOHandlerBase {
 		clockOperationModeSelect = stream.readInt();
 		internalMemorySizeSwitching = stream.readInt();
 		internalExpansionRAMSizeSwitching = stream.readInt();
+		secureFlash.read(stream);
 		super.read(stream);
 	}
 
@@ -484,6 +491,7 @@ public class MMIOHandlerSysconFirmwareSfr extends Nec78k0MMIOHandlerBase {
 		stream.writeInt(clockOperationModeSelect);
 		stream.writeInt(internalMemorySizeSwitching);
 		stream.writeInt(internalExpansionRAMSizeSwitching);
+		secureFlash.write(stream);
 		super.write(stream);
 	}
 
@@ -516,6 +524,7 @@ public class MMIOHandlerSysconFirmwareSfr extends Nec78k0MMIOHandlerBase {
 		mainClockMode = 0x00;
 		mainOscillationControl = 0x80;
 		processorClockControl = 0x01;
+		secureFlash.reset();
 
 		// Input P12.0 = 1
 		setPortInputBit(12, 0);
@@ -1057,8 +1066,10 @@ public class MMIOHandlerSysconFirmwareSfr extends Nec78k0MMIOHandlerBase {
 			case 0xFFB1: value = getByte1(timer01.getTimerCounter()); break;
 			case 0xFFB6: value = timer01.getTimerModeControl(); break;
 			case 0xFFBA: value = timer00.getTimerModeControl(); break;
-			case 0xFFC1: value = 0x00; break; // Unknown register, used only on some hardware
-			case 0xFFC4: value = 0x00; break; // Unknown register, used only on some hardware
+			case 0xFFC1: value = secureFlash.getUnknown1(); break;
+			case 0xFFC4: value = secureFlash.getUnknown4(); break;
+			case 0xFFC5: value = secureFlash.getUnknown5(); break;
+			case 0xFFC7: value = secureFlash.getUnknown7(); break;
 			case 0xFFE0: value = getByte0(interruptRequestFlag0); break;
 			case 0xFFE1: value = getByte1(interruptRequestFlag0); break;
 			case 0xFFE2: value = getByte0(interruptRequestFlag1); break;
@@ -1240,9 +1251,15 @@ public class MMIOHandlerSysconFirmwareSfr extends Nec78k0MMIOHandlerBase {
 			case 0xFFBB: timer00.setPrescalerMode(value8); break;
 			case 0xFFBC: timer00.setCompareControl(value8); break;
 			case 0xFFBD: timer00.setOutputControl(value8); break;
-			case 0xFFC0: if (value8 != 0xA5) { super.write8(address, value); } break; // Unknown register, used only on some hardware
-			case 0xFFC1: if (value8 != 0x00 && value8 != 0x80) { super.write8(address, value); } break; // Unknown register, used only on some hardware
-			case 0xFFC4: if (value8 != 0x01 && value8 != 0xFE && value8 != 0x03 && value8 != 0xFC && value8 != 0x09 && value8 != 0xF6 && value8 != 0x00 && value8 != 0xFF) { super.write8(address, value); } break; // Unknown register, used only on some hardware
+			case 0xFFC0: secureFlash.setFlashProtectCommandRegister(value8); break;
+			case 0xFFC1: secureFlash.setUnknown1(value8); break;
+			case 0xFFC4: secureFlash.setUnknown4(value8); break;
+			case 0xFFC5: secureFlash.setUnknown5(value8); break;
+			case 0xFFC6: secureFlash.setUnknown6(value8); break;
+			case 0xFFC7: secureFlash.setUnknown7(value8); break;
+			case 0xFFC8: secureFlash.setAddressLow(value8); break;
+			case 0xFFC9: secureFlash.setAddressHigh(value8); break;
+			case 0xFFCA: secureFlash.setFlashProgrammingModeControlRegister(value8); break;
 			case 0xFFE0: interruptRequestFlag0 = setByte0(interruptRequestFlag0, value8); break;
 			case 0xFFE1: interruptRequestFlag0 = setByte1(interruptRequestFlag0, value8); break;
 			case 0xFFE2: interruptRequestFlag1 = setByte0(interruptRequestFlag1, value8); break;

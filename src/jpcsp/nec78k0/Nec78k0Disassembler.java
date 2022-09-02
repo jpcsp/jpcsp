@@ -36,6 +36,7 @@ import static jpcsp.nec78k0.Nec78k0Instructions.DBNZ_saddr;
 import static jpcsp.nec78k0.Nec78k0Instructions.RET;
 import static jpcsp.nec78k0.Nec78k0Instructions.RETI;
 import static jpcsp.nec78k0.Nec78k0Instructions.getAddressWord;
+import static jpcsp.nec78k0.Nec78k0Instructions.getFunctionName;
 import static jpcsp.util.Utilities.internalReadUnaligned32;
 
 import java.util.HashMap;
@@ -142,7 +143,7 @@ public class Nec78k0Disassembler {
 			return;
 		}
 
-		log(String.format("Disassembling Function 0x%04X", startAddress));
+		log(String.format("Disassembling Function %s", getFunctionName(startAddress)));
 
 		// Store the disassembled instructions, sorted by increasing addresses.
 		TreeMap<Integer, String> disassembled = new TreeMap<Integer, String>();

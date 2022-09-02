@@ -16,6 +16,8 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules;
 
+import static jpcsp.hardware.Model.MODEL_PSP_STREET;
+import static jpcsp.hardware.Model.getModel;
 import static jpcsp.util.Utilities.setBit;
 
 import java.util.Arrays;
@@ -282,15 +284,15 @@ public class sceSyscon extends HLEModule {
     }
 
     public int getBatteryCycle() {
-    	return 0;
+    	return 0x000F;
     }
 
     public int getBatteryLimitTime() {
-    	return 0;
+    	return 1025;
     }
 
     public int getBatteryElec() {
-    	return 0;
+    	return 4200;
     }
 
     public int getPowerStatus() {
@@ -364,8 +366,9 @@ public class sceSyscon extends HLEModule {
     				value = setBit(value, 0);
     				polestarStatusCount++;
     			}
-    			// TODO Currently, the Battery logic is not yet completely implemented, just simulate that no Battery is present
-    			if (!Battery.isPresent() || true) {
+
+    			// The PSP Street has an internal battery, it seems to return that no battery is present in this polestar register
+    			if (!Battery.isPresent() || getModel() == MODEL_PSP_STREET) {
     				// Inverted logic, the flag 0x0002 means that the battery is NOT present
     				value = setBit(value, 1);
     			}

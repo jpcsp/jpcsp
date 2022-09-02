@@ -244,8 +244,16 @@ public class Nec78k0Processor {
 		return value & 0xFF;
 	}
 
+	public static int getValue16(int value) {
+		return value & 0xFFFF;
+	}
+
 	public static boolean isZero8(int value) {
 		return getValue8(value) == 0x00;
+	}
+
+	public static boolean isZero16(int value) {
+		return getValue16(value) == 0x0000;
 	}
 
 	public int getRegister(int r) {
@@ -286,6 +294,19 @@ public class Nec78k0Processor {
 	public void setPswResult(int result, boolean cy, boolean ac) {
 		psw = clearFlag(psw, PSW_CYACZ_FLAGS);
 		if (isZero8(result)) {
+			psw = setBit(psw, PSW_BIT_Z);
+		}
+		if (cy) {
+			psw = setBit(psw, PSW_BIT_CY);
+		}
+		if (ac) {
+			psw = setBit(psw, PSW_BIT_AC);
+		}
+	}
+
+	public void setPswResult16(int result, boolean cy, boolean ac) {
+		psw = clearFlag(psw, PSW_CYACZ_FLAGS);
+		if (isZero16(result)) {
 			psw = setBit(psw, PSW_BIT_Z);
 		}
 		if (cy) {

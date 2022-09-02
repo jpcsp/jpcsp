@@ -32,6 +32,9 @@ import static jpcsp.util.Utilities.hasFlag;
 import static jpcsp.util.Utilities.notHasBit;
 import static jpcsp.util.Utilities.setBit;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import org.apache.log4j.Logger;
 
 import jpcsp.Emulator;
@@ -55,6 +58,7 @@ public class Nec78k0Instructions {
 	private static final String pswName = "PSW";
 	private static final String spName = "SP";
 	private static final String cyName = "CY";
+	private static final Map<Integer, String> functionNames = new HashMap<Integer, String>();
 
 	public static String getRegisterName(int r) {
 		return registerNames[r & 0x7];
@@ -66,6 +70,19 @@ public class Nec78k0Instructions {
 
 	public static String getRegisterBankName(int rbn) {
 		return registerBankNames[rbn & 0x7];
+	}
+
+	public static String getFunctionName(int addr) {
+		String functionName = functionNames.get(addr);
+		if (functionName == null) {
+			return String.format("0x%04X", addr);
+		}
+
+		return String.format("0x%04X (%s)", addr, functionName);
+	}
+
+	public static void registerFunctionName(int addr, String functionName) {
+		functionNames.put(addr, functionName);
 	}
 
 	public static String getAddressName(int addr) {
@@ -81,12 +98,34 @@ public class Nec78k0Instructions {
 		return hasFlag(value, 0x100);
 	}
 
+	private static final boolean getAddition16CY(int value1, int value2, int value) {
+		return hasFlag(value, 0x10000);
+	}
+
 	private static final boolean getAdditionAC(int value1, int value2, int value) {
 		return hasFlag(value, 0x10);
 	}
 
-	private static final boolean getSubstractionCY(int value1, int value2, int value) {
-		return hasFlag(value, 0x80);
+	private static final boolean getSubstractionCY(int value1, int value2, boolean carry) {
+		if (carry) {
+			value2++;
+		}
+		return value1 < value2;
+	}
+
+	private static final boolean getSubstractionCY(int value1, int value2) {
+		return getSubstractionCY(value1, value2, false);
+	}
+
+	private static final boolean getSubstraction16CY(int value1, int value2, boolean carry) {
+		if (carry) {
+			value2++;
+		}
+		return value1 < value2;
+	}
+
+	private static final boolean getSubstraction16CY(int value1, int value2) {
+		return getSubstraction16CY(value1, value2, false);
 	}
 
 	private static final boolean getSubstractionAC(int value1, int value2, int value) {
@@ -289,7 +328,7 @@ public class Nec78k0Instructions {
 
         @Override
         public String disasm(int address, int insn) {
-            return String.format("call !0x%04X", getAddressWord(insn, address));
+            return String.format("call !%s", getFunctionName(getAddressWord(insn, address)));
         }
     };
 
@@ -397,7 +436,7 @@ public class Nec78k0Instructions {
         	int value2 = getWord(insn);
         	int value = value1 - value2;
         	// The AC flag become undefined, just clear it
-        	processor.setPswResult(value, getSubstractionCY(value1, value2, value), false);
+        	processor.setPswResult16(value, getSubstraction16CY(value1, value2), false);
         }
 
         @Override
@@ -412,7 +451,7 @@ public class Nec78k0Instructions {
         	int value1 = processor.getRegister(REG_A);
         	int value2 = getByte(insn);
         	int value = value1 - value2;
-        	processor.setPswResult(value, getSubstractionCY(value1, value2, value), getSubstractionAC(value1, value2, value));
+        	processor.setPswResult(value, getSubstractionCY(value1, value2), getSubstractionAC(value1, value2, value));
         }
 
         @Override
@@ -1028,7 +1067,7 @@ public class Nec78k0Instructions {
         	int value1 = processor.mem.read8(getSaddr(insn >> 8));
         	int value2 = getByte(insn);
         	int value = value1 - value2;
-        	processor.setPswResult(value, getSubstractionCY(value1, value2, value), getSubstractionAC(value1, value2, value));
+        	processor.setPswResult(value, getSubstractionCY(value1, value2), getSubstractionAC(value1, value2, value));
         }
 
         @Override
@@ -1044,7 +1083,7 @@ public class Nec78k0Instructions {
         	int value2 = getByte(insn);
         	int value = value1 - value2;
         	processor.setRegister(REG_A, value);
-        	processor.setPswResult(value, getSubstractionCY(value1, value2, value), getSubstractionAC(value1, value2, value));
+        	processor.setPswResult(value, getSubstractionCY(value1, value2), getSubstractionAC(value1, value2, value));
         }
 
         @Override
@@ -1063,7 +1102,7 @@ public class Nec78k0Instructions {
         		value--;
         	}
         	processor.setRegister(REG_A, value);
-        	processor.setPswResult(value, getSubstractionCY(value1, value2, value), getSubstractionAC(value1, value2, value));
+        	processor.setPswResult(value, getSubstractionCY(value1, value2, processor.isCarryFlag()), getSubstractionAC(value1, value2, value));
         }
 
         @Override
@@ -1092,7 +1131,7 @@ public class Nec78k0Instructions {
         	int value = value1 + value2;
         	processor.setRegisterPair(REG_PAIR_AX, value);
         	// The AC flag become undefined, just clear it
-        	processor.setPswResult(value, getAdditionCY(value1, value2, value), false);
+        	processor.setPswResult16(value, getAddition16CY(value1, value2, value), false);
         }
 
         @Override
@@ -1552,7 +1591,7 @@ public class Nec78k0Instructions {
         	int value1 = processor.getRegister(REG_A);
         	int value2 = processor.mem.read8(getWord(insn));
         	int value = value1 - value2;
-        	processor.setPswResult(value, getSubstractionCY(value1, value2, value), getSubstractionAC(value1, value2, value));
+        	processor.setPswResult(value, getSubstractionCY(value1, value2), getSubstractionAC(value1, value2, value));
         }
 
         @Override
@@ -1567,7 +1606,7 @@ public class Nec78k0Instructions {
         	int value1 = processor.getRegister(REG_A);
         	int value2 = processor.getRegister(insn);
         	int value = value1 - value2;
-        	processor.setPswResult(value, getSubstractionCY(value1, value2, value), getSubstractionAC(value1, value2, value));
+        	processor.setPswResult(value, getSubstractionCY(value1, value2), getSubstractionAC(value1, value2, value));
         }
 
         @Override
@@ -1582,7 +1621,7 @@ public class Nec78k0Instructions {
         	int value1 = processor.getRegister(insn);
         	int value2 = processor.getRegister(REG_A);
         	int value = value1 - value2;
-        	processor.setPswResult(value, getSubstractionCY(value1, value2, value), getSubstractionAC(value1, value2, value));
+        	processor.setPswResult(value, getSubstractionCY(value1, value2), getSubstractionAC(value1, value2, value));
         }
 
         @Override
@@ -1643,7 +1682,7 @@ public class Nec78k0Instructions {
         	int value1 = processor.getRegister(REG_A);
         	int value2 = processor.mem.read8(getSaddr(insn));
         	int value = value1 - value2;
-        	processor.setPswResult(value, getSubstractionCY(value1, value2, value), getSubstractionAC(value1, value2, value));
+        	processor.setPswResult(value, getSubstractionCY(value1, value2), getSubstractionAC(value1, value2, value));
         }
 
         @Override
@@ -1659,7 +1698,7 @@ public class Nec78k0Instructions {
         	int value2 = processor.getRegister(insn);
         	int value = value1 - value2;
         	processor.setRegister(REG_A, value);
-        	processor.setPswResult(value, getSubstractionCY(value1, value2, value), getSubstractionAC(value1, value2, value));
+        	processor.setPswResult(value, getSubstractionCY(value1, value2), getSubstractionAC(value1, value2, value));
         }
 
         @Override
@@ -1678,7 +1717,7 @@ public class Nec78k0Instructions {
         		value--;
         	}
         	processor.setRegister(REG_A, value);
-        	processor.setPswResult(value, getSubstractionCY(value1, value2, value), getSubstractionAC(value1, value2, value));
+        	processor.setPswResult(value, getSubstractionCY(value1, value2, processor.isCarryFlag()), getSubstractionAC(value1, value2, value));
         }
 
         @Override
@@ -1694,7 +1733,7 @@ public class Nec78k0Instructions {
         	int value2 = processor.mem.read8(getWord(insn));
         	int value = value1 - value2;
         	processor.setRegister(REG_A, value);
-        	processor.setPswResult(value, getSubstractionCY(value1, value2, value), getSubstractionAC(value1, value2, value));
+        	processor.setPswResult(value, getSubstractionCY(value1, value2), getSubstractionAC(value1, value2, value));
         }
 
         @Override
@@ -1713,7 +1752,7 @@ public class Nec78k0Instructions {
         		value--;
         	}
         	processor.setRegister(REG_A, value);
-        	processor.setPswResult(value, getSubstractionCY(value1, value2, value), getSubstractionAC(value1, value2, value));
+        	processor.setPswResult(value, getSubstractionCY(value1, value2, processor.isCarryFlag()), getSubstractionAC(value1, value2, value));
         }
 
         @Override
@@ -1729,7 +1768,7 @@ public class Nec78k0Instructions {
         	int value2 = processor.mem.read8(getSaddr(insn));
         	int value = value1 - value2;
         	processor.setRegister(REG_A, value);
-        	processor.setPswResult(value, getSubstractionCY(value1, value2, value), getSubstractionAC(value1, value2, value));
+        	processor.setPswResult(value, getSubstractionCY(value1, value2), getSubstractionAC(value1, value2, value));
         }
 
         @Override
@@ -1748,7 +1787,7 @@ public class Nec78k0Instructions {
         		value--;
         	}
         	processor.setRegister(REG_A, value);
-        	processor.setPswResult(value, getSubstractionCY(value1, value2, value), getSubstractionAC(value1, value2, value));
+        	processor.setPswResult(value, getSubstractionCY(value1, value2, processor.isCarryFlag()), getSubstractionAC(value1, value2, value));
         }
 
         @Override
@@ -1878,7 +1917,7 @@ public class Nec78k0Instructions {
 
         @Override
         public String disasm(int address, int insn) {
-            return String.format("xor %s, %s", getRegisterName(REG_A), getRegisterPairName(REG_PAIR_HL));
+            return String.format("xor %s, [%s]", getRegisterName(REG_A), getRegisterPairName(REG_PAIR_HL));
         }
     };
 
@@ -1889,7 +1928,7 @@ public class Nec78k0Instructions {
         	int value2 = processor.getRegister(REG_A);
         	int value = value1 - value2;
         	processor.setRegister(insn, value);
-        	processor.setPswResult(value, getSubstractionCY(value1, value2, value), getSubstractionAC(value1, value2, value));
+        	processor.setPswResult(value, getSubstractionCY(value1, value2), getSubstractionAC(value1, value2, value));
         }
 
         @Override
@@ -2008,7 +2047,7 @@ public class Nec78k0Instructions {
         	int value1 = processor.getRegister(REG_A);
         	int value2 = processor.mem.read8(processor.getRegisterPair(REG_PAIR_HL));
         	int value = value1 - value2;
-        	processor.setPswResult(value, getSubstractionCY(value1, value2, value), getSubstractionAC(value1, value2, value));
+        	processor.setPswResult(value, getSubstractionCY(value1, value2), getSubstractionAC(value1, value2, value));
         }
 
         @Override
@@ -2100,7 +2139,7 @@ public class Nec78k0Instructions {
         	int value1 = processor.getRegister(REG_A);
         	int value2 = processor.mem.read8(processor.getRegisterPair(REG_PAIR_HL) + (byte) insn);
         	int value = value1 - value2;
-        	processor.setPswResult(value, getSubstractionCY(value1, value2, value), getSubstractionAC(value1, value2, value));
+        	processor.setPswResult(value, getSubstractionCY(value1, value2), getSubstractionAC(value1, value2, value));
         }
 
         @Override

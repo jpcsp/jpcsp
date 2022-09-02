@@ -49,17 +49,36 @@ public class SysconWatchTimer implements IState {
 		private final String name;
 		private long nextTimer;
 		private int step;
-		private int triggerCount;
+		private boolean booting;
 
 		public TimerAction(String name, int interruptBit) {
 			this.name = name;
 			this.interruptBit = interruptBit;
+			booting = true;
 		}
 
 		@Override
 		public void execute() {
 			if (hasBit(operationMode, 0)) {
 				long now = now();
+
+				// When booting the syscon firmware, the Watch Timer
+				// interrupt is being triggered too often.
+				// A race condition then occurs and the boot process
+				// cannot complete successfully.
+				// Hence, wait to trigger the first timer interrupt
+				// until 0xFE31 contains the value 0x03.
+				if (booting) {
+					if (sfr.getMemory().internalRead8(0xFE31) == 0x03) {
+						// Boot process is completed, we can safely
+						// start to trigger the timer interrupts
+						booting = false;
+					} else {
+						// Wait for an additional 1 millisecond
+						nextTimer = now + 1000;
+					}
+				}
+
 				if (now >= nextTimer) {
 					sfr.setInterruptRequest(interruptBit);
 					nextTimer = getNextTimer(nextTimer);
@@ -71,22 +90,11 @@ public class SysconWatchTimer implements IState {
 		public void reset() {
 			nextTimer = 0L;
 			step = 0;
-			triggerCount = 0;
+			booting = true;
 			scheduler.removeAction(this);
 		}
 
 		private long getNextTimer(long now) {
-			// When booting the syscon firmware, the Watch Timer
-			// interrupt is being triggered too often.
-			// A race condition then occurs and the boot process
-			// cannot complete successfully.
-			// Hence, reducing the frequency of the Watch Timer
-			// interrupt during the first 5 interrupts.
-			if (triggerCount < 5) {
-				triggerCount++;
-				return now + step * 20;
-			}
-
 			return now + step;
 		}
 

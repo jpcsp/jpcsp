@@ -108,7 +108,7 @@ public class SysconEmulator {
 
 	public static void load(Nec78k0Memory mem) {
 		String firmwareFileName = getFirmwareFileName();
-		log.info(String.format("Loading %s", firmwareFileName));
+		log.info(String.format("Loading %s for %s", firmwareFileName, Model.getModelName()));
 
 		File inputFile = new File(firmwareFileName);
 		byte[] buffer = new byte[(int) inputFile.length()];
@@ -145,10 +145,6 @@ public class SysconEmulator {
 	}
 
 	public void boot() {
-		if (log.isInfoEnabled()) {
-			log.info(String.format("Using syscon firmware from '%s'", getFirmwareFileName()));
-		}
-
 		if (thread == null) {
 			thread = new SysconProcessorThread();
 			thread.setName("Syscon Nec 78k0 Processor Thread");

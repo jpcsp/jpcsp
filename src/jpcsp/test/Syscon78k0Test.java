@@ -31,6 +31,7 @@ import jpcsp.hardware.Model;
 import jpcsp.hardware.Wlan;
 import jpcsp.memory.mmio.syscon.MMIOHandlerSysconFirmwareSfr;
 import jpcsp.memory.mmio.syscon.SysconEmulator;
+import jpcsp.nec78k0.Nec78k0Instructions;
 import jpcsp.nec78k0.Nec78k0Interpreter;
 import jpcsp.nec78k0.Nec78k0Memory;
 import jpcsp.nec78k0.Nec78k0Processor;
@@ -60,7 +61,7 @@ public class Syscon78k0Test {
 
 	public void testFirmware() {
 		int model = Model.MODEL_PSP_SLIM;
-		model = Model.MODEL_PSP_FAT;
+		model = Model.MODEL_PSP_STREET;
 
 		Model.setModel(model);
 
@@ -69,6 +70,27 @@ public class Syscon78k0Test {
 		Nec78k0Interpreter interpreter = new Nec78k0Interpreter(processor);
 
 		SysconEmulator.load(mem);
+
+		if (model == Model.MODEL_PSP_STREET) {
+			// The below offsets and function names are taken from
+			//     https://github.com/uofw/uofw/blob/master/src/syscon_firmware/firmware_ta096.c
+			Nec78k0Instructions.registerFunctionName(0x4CE0, "do_encrypt");
+			Nec78k0Instructions.registerFunctionName(0x4D02, "aes_key_expand");
+			Nec78k0Instructions.registerFunctionName(0x5011, "memcpy");
+			Nec78k0Instructions.registerFunctionName(0x5039, "memcmp");
+			Nec78k0Instructions.registerFunctionName(0x5076, "xorloop_0x10");
+			Nec78k0Instructions.registerFunctionName(0x50A7, "memset");
+			Nec78k0Instructions.registerFunctionName(0x50C4, "generate_challenge");
+			Nec78k0Instructions.registerFunctionName(0x5103, "final_key_encryption_cbc");
+			Nec78k0Instructions.registerFunctionName(0x55CF, "read_secure_flash");
+		} else if (model == Model.MODEL_PSP_BRITE2) {
+			Nec78k0Instructions.registerFunctionName(0x524A, "do_encrypt");
+			Nec78k0Instructions.registerFunctionName(0x526C, "aes_key_expand");
+			Nec78k0Instructions.registerFunctionName(0x557B, "memcpy");
+			Nec78k0Instructions.registerFunctionName(0x55E0, "xorloop_0x10");
+			Nec78k0Instructions.registerFunctionName(0x566D, "final_key_encryption_cbc");
+			Nec78k0Instructions.registerFunctionName(0x5B42, "read_secure_flash");
+		}
 
 		for (int i = 0; i < 0x40; i += 2) {
 			int addr = mem.internalRead16(i);
@@ -147,6 +169,47 @@ public class Syscon78k0Test {
 			for (int i = 1; i <= 12; i++) {
 				int addr = mem.internalRead16(0x25C2 + (i - 1) * 2);
 				log.info(String.format("Disassembling switch table from 0x25C0: case 0x%02X at 0x%04X", i, addr));
+				processor.disassemble(addr);
+			}
+		} else if (model == Model.MODEL_PSP_BRITE) {
+			// The below offsets are taken from the syscon firmware on the TA-090 motherboard
+			for (int i = 2; i <= 13; i++) {
+				int addr = internalReadUnaligned16(mem, 0x4DD1 + (i - 2) * 2);
+				log.info(String.format("Disassembling switch table from 0x4DCF: case 0x%02X at 0x%04X", i, addr));
+				processor.disassemble(addr);
+			}
+		} else if (model == Model.MODEL_PSP_STREET) {
+			// The below offsets are taken from the syscon firmware on the TA-096 motherboard
+			for (int i = 0x8A; i < 0xB0; i += 2) {
+				int addr = mem.internalRead16(i);
+				if (addr != 0 && addr != 0xFFFF) {
+					log.info(String.format("Disassembling sysconCmdGetOps table 0x%02X(%s): 0x%04X", i, getSysconCmdName((i - 0x8A) / 2), addr));
+					processor.disassemble(addr);
+				}
+			}
+			for (int i = 0xB0; i < 0xDE; i += 2) {
+				int addr = mem.internalRead16(i);
+				if (addr != 0 && addr != 0xFFFF) {
+					log.info(String.format("Disassembling mainOperations table 0x%02X(%s): 0x%04X", i, getSysconCmdName((i - 0xB0) / 2 + 0x20), addr));
+					processor.disassemble(addr);
+				}
+			}
+			for (int i = 0xE0; i < 0x10E; i += 2) {
+				int addr = mem.internalRead16(i);
+				if (addr != 0 && addr != 0xFFFF) {
+					log.info(String.format("Disassembling peripheralOperations table 0x%02X(%s): 0x%04X", i, getSysconCmdName((i - 0xE0) / 2 + 0x40), addr));
+					processor.disassemble(addr);
+				}
+			}
+
+			for (int i = 1; i <= 21; i++) {
+				int addr = mem.internalRead16(0x277A + (i - 1) * 2);
+				log.info(String.format("Disassembling switch table from 0x2778: case 0x%02X at 0x%04X", i, addr));
+				processor.disassemble(addr);
+			}
+			for (int i = 2; i <= 13; i++) {
+				int addr = internalReadUnaligned16(mem, 0x51BA + (i - 2) * 2);
+				log.info(String.format("Disassembling switch table from 0x51B8: case 0x%02X at 0x%04X", i, addr));
 				processor.disassemble(addr);
 			}
 		}
