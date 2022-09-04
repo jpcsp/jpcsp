@@ -1140,6 +1140,23 @@ public class Nec78k0Instructions {
         }
     };
 
+    public static final Nec78k0Instruction SUBW_AX_word = new Nec78k0Instruction3() {
+        @Override
+        public void interpret(Nec78k0Processor processor, int insn) {
+        	int value1 = processor.getRegisterPair(REG_PAIR_AX);
+        	int value2 = getWord(insn);
+        	int value = value1 - value2;
+        	processor.setRegisterPair(REG_PAIR_AX, value);
+        	// The AC flag become undefined, just clear it
+        	processor.setPswResult16(value, getSubstraction16CY(value1, value2), false);
+        }
+
+        @Override
+        public String disasm(int address, int insn) {
+            return String.format("subw %s, #0x%04X", getRegisterPairName(REG_PAIR_AX), getWord(insn));
+        }
+    };
+
 	public static final Nec78k0Instruction XCH_A_r = new Nec78k0Instruction1() {
         @Override
         public void interpret(Nec78k0Processor processor, int insn) {
@@ -2328,6 +2345,38 @@ public class Nec78k0Instructions {
         @Override
         public String disasm(int address, int insn) {
             return String.format("set1 [%s].%d", getRegisterPairName(REG_PAIR_HL), (insn >> 4) & 0x7);
+        }
+    };
+
+    public static final Nec78k0Instruction BTCLR_saddr = new Nec78k0Instruction4() {
+        @Override
+        public void interpret(Nec78k0Processor processor, int insn) {
+        	int bit = (insn >> 20) & 0x7;
+        	int addr = getSaddr(insn >> 8);
+        	if (processor.mem.read1(addr, bit)) {
+            	processor.mem.clear1(addr, bit);
+            	int jdisp = getJdisp(insn);
+            	processor.branch(jdisp);
+        	}
+        }
+
+        @Override
+        public String disasm(int address, int insn) {
+            return String.format("btclr %s.%d, $0x%04X", getAddressName(getSaddr(insn >> 8)), (insn >> 20) & 0x7, getJdisp(address, insn, getInstructionSize()));
+        }
+    };
+
+    public static final Nec78k0Instruction AND_A_HL = new Nec78k0Instruction1() {
+        @Override
+        public void interpret(Nec78k0Processor processor, int insn) {
+        	int value = processor.getRegister(REG_A) & processor.mem.read8(processor.getRegisterPair(REG_PAIR_HL));
+        	processor.setRegister(REG_A, value);
+        	processor.setPswResult(value);
+        }
+
+        @Override
+        public String disasm(int address, int insn) {
+            return String.format("and %s, [%s]", getRegisterName(REG_A), getRegisterPairName(REG_PAIR_HL));
         }
     };
 }

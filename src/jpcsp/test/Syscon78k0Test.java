@@ -101,6 +101,20 @@ public class Syscon78k0Test {
 		}
 
 		if (mem.internalRead32(0x8100) != 0xFFFFFFFF) {
+			for (int i = 0; i < 0x3C; i += 2) {
+				int addr = mem.internalRead16(0x8000 + i) | 0x8000;
+				if (addr != 0 && addr != 0xFFFF) {
+					log.info(String.format("Disassembling Vector Table 0x8000 entry 0x%02X(%s): 0x%04X", i, getInterruptName(i), addr));
+					processor.disassemble(addr);
+				}
+			}
+
+			for (int i = 0; i < 16; i++) {
+				int addr = mem.internalRead16(0x8502 + i * 2) | 0x8000;
+				log.info(String.format("Disassembling switch table from 0x895A: case 0x%02X at 0x%04X", i, addr));
+				processor.disassemble(addr);
+			}
+
 			processor.disassemble(0x8100);
 			for (int i = 0; i < 10; i++) {
 				int value = mem.internalRead8(0x9FD2 - i);

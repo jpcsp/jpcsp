@@ -284,7 +284,7 @@ public class Nec78k0Decoder {
 
 	private static final Nec78k0Instruction[] table_opcode31 = {
 			UNK2, // 0x00
-			UNK2, // 0x01
+			BTCLR_saddr, // 0x01
 			UNK2, // 0x02
 			BF_saddr, // 0x03
 			UNK2, // 0x04
@@ -300,7 +300,7 @@ public class Nec78k0Decoder {
 			BT_A_addr, // 0x0E
 			BF_A_addr, // 0x0F
 			UNK2, // 0x10
-			UNK2, // 0x11
+			BTCLR_saddr, // 0x11
 			UNK2, // 0x12
 			BF_saddr, // 0x13
 			UNK2, // 0x14
@@ -316,7 +316,7 @@ public class Nec78k0Decoder {
 			BT_A_addr, // 0x1E
 			BF_A_addr, // 0x1F
 			UNK2, // 0x20
-			UNK2, // 0x21
+			BTCLR_saddr, // 0x21
 			UNK2, // 0x22
 			BF_saddr, // 0x23
 			UNK2, // 0x24
@@ -332,7 +332,7 @@ public class Nec78k0Decoder {
 			BT_A_addr, // 0x2E
 			BF_A_addr, // 0x2F
 			UNK2, // 0x30
-			UNK2, // 0x31
+			BTCLR_saddr, // 0x31
 			UNK2, // 0x32
 			BF_saddr, // 0x33
 			UNK2, // 0x34
@@ -348,7 +348,7 @@ public class Nec78k0Decoder {
 			BT_A_addr, // 0x3E
 			BF_A_addr, // 0x3F
 			UNK2, // 0x40
-			UNK2, // 0x41
+			BTCLR_saddr, // 0x41
 			UNK2, // 0x42
 			BF_saddr, // 0x43
 			UNK2, // 0x44
@@ -364,7 +364,7 @@ public class Nec78k0Decoder {
 			BT_A_addr, // 0x4E
 			BF_A_addr, // 0x4F
 			UNK2, // 0x50
-			UNK2, // 0x51
+			BTCLR_saddr, // 0x51
 			UNK2, // 0x52
 			BF_saddr, // 0x53
 			UNK2, // 0x54
@@ -380,7 +380,7 @@ public class Nec78k0Decoder {
 			BT_A_addr, // 0x5E
 			BF_A_addr, // 0x5F
 			UNK2, // 0x60
-			UNK2, // 0x61
+			BTCLR_saddr, // 0x61
 			UNK2, // 0x62
 			BF_saddr, // 0x63
 			UNK2, // 0x64
@@ -396,7 +396,7 @@ public class Nec78k0Decoder {
 			BT_A_addr, // 0x6E
 			BF_A_addr, // 0x6F
 			UNK2, // 0x70
-			UNK2, // 0x71
+			BTCLR_saddr, // 0x71
 			UNK2, // 0x72
 			BF_saddr, // 0x73
 			UNK2, // 0x74
@@ -1161,7 +1161,7 @@ public class Nec78k0Decoder {
 			UNK1, // 0x5C
 			AND_A_byte, // 0x5D
 			AND_A_saddr, // 0x5E
-			UNK1, // 0x5F
+			AND_A_HL, // 0x5F
 			MOV_A_r, // 0x60
 			new Nec78k0Instructions.STUB2() {
 				@Override
@@ -1296,7 +1296,7 @@ public class Nec78k0Decoder {
 			CALLT, // 0xD7
 			AND_saddr_byte, // 0xD8
 			CALLT, // 0xD9
-			UNK1, // 0xDA
+			SUBW_AX_word, // 0xDA
 			CALLT, // 0xDB
 			BT_saddr, // 0xDC
 			CALLT, // 0xDD
