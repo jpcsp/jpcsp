@@ -467,7 +467,7 @@ public class CodeInstruction {
         	//    jr  $ra
         	//    nop
         	// Handle the sequence by inserting one nop between the instructions:
-        	//    bne $reg1, $reg2, label
+        	//    beq $reg1, $reg2, label
         	//    nop
         	//    jr  $ra
         	//    nop
@@ -486,15 +486,38 @@ public class CodeInstruction {
     }
 
     private int getBranchingOpcodeBranch2L(CompilerContext context, MethodVisitor mv, int branchingOpcode, int notBranchingOpcode) {
+    	boolean compileDelaySlot = true;
+    	CodeInstruction delaySlotCodeInstruction = getDelaySlotCodeInstruction(context);
+        if (delaySlotCodeInstruction != null && delaySlotCodeInstruction.hasFlags(Instruction.FLAG_HAS_DELAY_SLOT)) {
+        	// We are compiling a sequence where the delay instruction has itself a delay slot:
+        	//    beql $reg1, $reg2, label
+        	//    jr  $ra
+        	//    nop
+        	// Handle the sequence by inserting one nop between the instructions:
+        	//    beql $reg1, $reg2, label
+        	//    nop
+        	//    jr  $ra
+        	//    nop
+        	String lineSeparator = System.getProperty("line.separator");
+        	log.warn(String.format("Instruction in a delay slot having a delay slot:%s%s%s%s", lineSeparator, this, lineSeparator, delaySlotCodeInstruction));
+        	compileDelaySlot = false;
+        }
+
     	// Retrieve the registers for the branching opcode before executing
     	// the delay slot instruction, as it might theoretically modify the
     	// content of these registers.
     	notBranchingOpcode = loadRegistersForBranchingOpcodeBranch2(context, mv, notBranchingOpcode);
     	if (notBranchingOpcode != Opcodes.NOP) {
-    		CodeInstruction afterDelaySlotCodeInstruction = getAfterDelaySlotCodeInstruction(context);
-    		context.visitJump(notBranchingOpcode, afterDelaySlotCodeInstruction);
+    		if (compileDelaySlot) {
+    			CodeInstruction afterDelaySlotCodeInstruction = getAfterDelaySlotCodeInstruction(context);
+    			context.visitJump(notBranchingOpcode, afterDelaySlotCodeInstruction);
+    		} else {
+    			context.visitJump(notBranchingOpcode, delaySlotCodeInstruction);
+    		}
     	}
-        compileDelaySlot(context, mv);
+    	if (compileDelaySlot) {
+    		compileDelaySlot(context, mv);
+    	}
 
         return Opcodes.GOTO;
     }
