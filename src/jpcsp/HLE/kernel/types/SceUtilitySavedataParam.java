@@ -580,6 +580,10 @@ public class SceUtilitySavedataParam extends pspUtilityBaseDialog {
     public void load(Memory mem) throws IOException {
         String path = getBasePath();
 
+    	base.result = 0;
+        bind = BIND_IS_OK;
+        abortStatus = 0;
+
         // Read the main data.
         // The data has to be decrypted if the SFO is marked for encryption and
         // the file is listed in the SFO as a secure file (SAVEDATA_FILE_LIST).
@@ -607,9 +611,6 @@ public class SceUtilitySavedataParam extends pspUtilityBaseDialog {
 
         // Read PARAM.SFO
         loadPsf(mem, path, paramSfoFileName, sfoParam);
-
-        bind = BIND_IS_OK;
-        abortStatus = 0;
     }
 
     private void safeLoad(Memory mem, String filename, PspUtilitySavedataFileData fileData) throws IOException {
@@ -626,6 +627,8 @@ public class SceUtilitySavedataParam extends pspUtilityBaseDialog {
         String path = getBasePath();
 
         Modules.IoFileMgrForUserModule.mkdirs(path);
+
+        base.result = 0;
 
         // Copy the original SAVEDATA key.
         byte[] sdkey = key;
@@ -680,6 +683,7 @@ public class SceUtilitySavedataParam extends pspUtilityBaseDialog {
 	        fileSize = (int) fileInput.length();
 	        if (fileSize > maxLength && maxLength > 0) {
 	            fileSize = maxLength;
+	        	base.result = SceKernelErrors.ERROR_SAVEDATA_LOAD_DATA_BROKEN;
 	        } else if (address == 0) {
 	        	fileSize = 0;
 	        }
@@ -743,6 +747,10 @@ public class SceUtilitySavedataParam extends pspUtilityBaseDialog {
 
 	        CryptoEngine crypto = new CryptoEngine();
 	        byte[] outBuf = crypto.getSAVEDATAEngine().DecryptSavedata(inBuf, fileSize, key);
+
+	        if (outBuf.length > maxLength) {
+	        	base.result = SceKernelErrors.ERROR_SAVEDATA_LOAD_DATA_BROKEN;
+	        }
 
 	        IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(address, 1);
 	        length = Math.min(outBuf.length, maxLength);
