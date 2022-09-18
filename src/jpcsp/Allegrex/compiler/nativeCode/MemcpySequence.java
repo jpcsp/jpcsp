@@ -55,7 +55,7 @@ public class MemcpySequence extends AbstractNativeCodeSequence implements INativ
 		int targetAddr = getRegisterValue(targetAddrReg);
 
 		int length = targetAddr - getRegisterValue(targetReg);
-		memcpy(dstAddr, srcAddr, length);
+		memcpyWithVideoCheck(dstAddr, srcAddr, length);
 
 		// Update registers
 		setRegisterValue(dstAddrReg, dstAddr + length);

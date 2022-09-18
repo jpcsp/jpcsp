@@ -7090,6 +7090,24 @@
 	</NativeCodeSequence>
 	<NativeCodeSequence name="memcpySequence">
 		<Class>jpcsp.Allegrex.compiler.nativeCode.MemcpySequence</Class>
+		<Parameters>$v1,$a1,$v0,$a1</Parameters>
+		<CodeInstructions><![CDATA[
+08C0DF6C:[D8A00000]: lv.q       C000.q, 0($a1)
+08C0DF70:[D8A10010]: lv.q       C010.q, 16($a1)
+08C0DF74:[D8A20020]: lv.q       C020.q, 32($a1)
+08C0DF78:[D8A30030]: lv.q       C030.q, 48($a1)
+08C0DF7C:[24A50040]: addiu      $a1, $a1, 64
+08C0DF80:[F8600002]: vwb.q      C000.q, 0($v1)
+08C0DF84:[F8610012]: vwb.q      C010.q, 16($v1)
+08C0DF88:[F8620022]: vwb.q      C020.q, 32($v1)
+08C0DF8C:[F8630032]: vwb.q      C030.q, 48($v1)
+08C0DF90:[FFFF0000]: vnop
+08C0DF94:[14A2FFF5]: bne        $a1, $v0, 0x08C0DF6C
+08C0DF98:[24630040]: addiu      $v1, $v1, 64
+]]></CodeInstructions>
+	</NativeCodeSequence>
+	<NativeCodeSequence name="memcpySequence">
+		<Class>jpcsp.Allegrex.compiler.nativeCode.MemcpySequence</Class>
 		<Parameters>$t2,$t7,$s4,$t7,0,0,$t3,4</Parameters>
 		<CodeInstructions><![CDATA[
 088DFD48:[8DEB0000]: lw         $t3, 0($t7)
