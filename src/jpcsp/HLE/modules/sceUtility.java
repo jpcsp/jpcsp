@@ -3978,6 +3978,9 @@ public class sceUtility extends HLEModule {
             	if (msgDialogParams.base.totalSizeof() == SceUtilityMsgDialogParams.PSP_UTILITY_MSGDIALOG_SIZE_V3 && (msgDialogParams.options & SceUtilityMsgDialogParams.PSP_UTILITY_MSGDIALOG_OPTION_DISABLE_CANCEL) == SceUtilityMsgDialogParams.PSP_UTILITY_MSGDIALOG_OPTION_ENABLE_CANCEL) {
             		// Only display back button
             		drawBack();
+            	} else if (msgDialogParams.base.totalSizeof() == SceUtilityMsgDialogParams.PSP_UTILITY_MSGDIALOG_SIZE_V2 && (msgDialogParams.options & SceUtilityMsgDialogParams.PSP_UTILITY_MSGDIALOG_OPTION_DISABLE_CANCEL) == SceUtilityMsgDialogParams.PSP_UTILITY_MSGDIALOG_OPTION_ENABLE_CANCEL) {
+            		// Only display back button
+            		drawBack();
             	} else {
             		// In this case, no buttons are displayed to the user.
             		// In the PSP the user waits a few seconds and the dialog closes itself.
