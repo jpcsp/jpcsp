@@ -161,6 +161,8 @@ public class SysconSfrNames {
 		addSfrName(0xFFBD, "TOC00", new String[] { "TOE00", "TOC001", "LVR00", "LVS00", "TOC004", "OSPE00", "OSPT00" });
 		addSfrName(0xFFBE, "LVIM", new String[] { "LVIF", "LVIMD", null, null, "LVISEL", null, null, "LVION" });
 		addSfrName(0xFFBF, "LVIS", new String[] { "LVIS0", "LVIS1", "LVIS2", "LVIS3" });
+		addSfrName(0xFFC0, "PFCMD");
+		addSfrName(0xFFCA, "FLPMC", new String[] { "FLSPM0", "FLSPM1", "FWEPR", "FWEDIS" });
 		addSfrName(0xFFE0, "IF0", "IF0L", "IF0H", new String[] { "LVIIF", "PIF0", "PIF1", "PIF2", "PIF3", "PIF4", "PIF5", "SREIF6", "SRIF6", "STIF6", "CSIIF10", "TMIFH1", "TMIFH0", "TMIF50", "TMIF000", "TMIF010" });
 		addSfrName(0xFFE2, "IF1", "IF1L", "IF1H", new String[] { "ADIF", "SRIF0", "WTIIF", "TMIF51", "KRIF", "WTIF", "PIF6", "PIF7", "IICIF0", "CSIIF11", "TMIF001", "TMIF011", "ACSIIF" });
 		addSfrName(0xFFE4, "MK0", "MK0L", "MK0H", new String[] { "LVIMK", "PMK0", "PMK1", "PMK2", "PMK3", "PMK4", "PMK5", "SREMK6", "SRMK6", "STMK6", "CSIMK10", "TMMKH1", "TMMKH0", "TMMK50", "TMMK000", "TMMK010" });

@@ -17,6 +17,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.nec78k0;
 
 import static jpcsp.nec78k0.Nec78k0Processor.REGISTER_ADDRESS_BANK3;
+import static jpcsp.util.Utilities.u16;
 import static jpcsp.util.Utilities.u8;
 
 /**
@@ -32,6 +33,10 @@ public class Nec78k0MMIORegisterBanks extends Nec78k0MMIOHandlerBase {
 		return address & 0x7;
 	}
 
+	private int getRegisterPairNumber(int address) {
+		return getRegisterNumber(address) >> 1;
+	}
+
 	private int getRegisterBankNumber(int address) {
 		return 3 - ((address >> 3) & 0x3);
 	}
@@ -44,5 +49,15 @@ public class Nec78k0MMIORegisterBanks extends Nec78k0MMIOHandlerBase {
 	@Override
 	public void write8(int address, byte value) {
 		processor.setRegister(getRegisterNumber(address), getRegisterBankNumber(address), u8(value));
+	}
+
+	@Override
+	public int read16(int address) {
+		return processor.getRegisterPair(getRegisterPairNumber(address), getRegisterBankNumber(address));
+	}
+
+	@Override
+	public void write16(int address, short value) {
+		processor.setRegisterPair(getRegisterPairNumber(address), getRegisterBankNumber(address), u16(value));
 	}
 }

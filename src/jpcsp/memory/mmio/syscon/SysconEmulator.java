@@ -42,6 +42,11 @@ import jpcsp.util.Utilities;
  */
 public class SysconEmulator {
     public static Logger log = sceSyscon.log;
+	public static boolean firmwareBootloader = false;
+	private static final int firmwareBootloaderCodeLength = 0x2000;
+	private static final int firmwareBootloaderCodeOffset = 0x8000;
+	private static final int firmwareBootloaderAddress = 0x8000;
+	private static final String firmwareBootloaderFileName = "TA-086_Full.bin";
 	private final Nec78k0Memory mem;
 	private final Nec78k0Processor processor;
 	private final Nec78k0Interpreter interpreter;
@@ -107,39 +112,65 @@ public class SysconEmulator {
 	}
 
 	public static void load(Nec78k0Memory mem) {
-		String firmwareFileName = getFirmwareFileName();
-		log.info(String.format("Loading %s for %s", firmwareFileName, Model.getModelName()));
-
-		File inputFile = new File(firmwareFileName);
-		byte[] buffer = new byte[(int) inputFile.length()];
-		int length = buffer.length;
-		try {
-			InputStream is = new FileInputStream(inputFile);
-			length = is.read(buffer);
-			is.close();
-		} catch (IOException e) {
-			log.error(e);
-		}
-
-		int baseAddress = BASE_RAM0;
-		length = Math.min(length, END_RAM0);
-		for (int i = 0; i < length; i += 4) {
-			mem.write32(baseAddress + i, readUnaligned32(buffer, i));
-		}
-
-		if (mem.internalRead32(0x8000) == 0xFFFFFFFF) {
+		if (firmwareBootloader) {
+			// Just loading the bootloader code located
+			// at file offset 0x8000 to memory address 0x0000
+			log.info(String.format("Loading the bootloader code from %s at address 0x%04X for %s", firmwareBootloaderFileName, 0x0000, Model.getModelName()));
 			try {
-				InputStream is = new FileInputStream("TA-086_Full.bin");
-				length = is.read(buffer);
+				File inputFile = new File(firmwareBootloaderFileName);
+				byte[] buffer = new byte[firmwareBootloaderCodeLength];
+				InputStream is = new FileInputStream(inputFile);
+				is.skip(firmwareBootloaderCodeOffset);
+				int length = is.read(buffer);
 				is.close();
 
-				baseAddress = 0x8000;
-				length = Math.min(length - 0x8000, 0x2000);
 				for (int i = 0; i < length; i += 4) {
-					mem.write32(baseAddress + i, readUnaligned32(buffer, baseAddress + i));
+					mem.write32(i, readUnaligned32(buffer, i));
 				}
 			} catch (IOException e) {
 				log.error(e);
+			}
+		} else {
+			// Loading the firmware file, including
+			// the bootloader code to memory address 0x8000
+			String firmwareFileName = getFirmwareFileName();
+			log.info(String.format("Loading the syscon firmware from %s for %s", firmwareFileName, Model.getModelName()));
+
+			File inputFile = new File(firmwareFileName);
+			byte[] buffer = new byte[(int) inputFile.length()];
+			int length = buffer.length;
+			try {
+				InputStream is = new FileInputStream(inputFile);
+				length = is.read(buffer);
+				is.close();
+			} catch (IOException e) {
+				log.error(e);
+			}
+
+			int baseAddress = BASE_RAM0;
+			length = Math.min(length, END_RAM0);
+			for (int i = 0; i < length; i += 4) {
+				mem.write32(baseAddress + i, readUnaligned32(buffer, i));
+			}
+
+			// If the bootloader code is not included into this
+			// firmware dump, load it from another dump
+			if (mem.internalRead32(firmwareBootloaderAddress) == 0xFFFFFFFF) {
+				// Loading the bootloader code from TA-086_Full.bin
+				// as the code is the same for all syscon firmware versions
+				log.info(String.format("Loading the bootloader code from %s at address 0x%04X", firmwareBootloaderFileName, firmwareBootloaderAddress));
+				try {
+					InputStream is = new FileInputStream(firmwareBootloaderFileName);
+					is.skip(firmwareBootloaderCodeOffset);
+					length = is.read(buffer, 0, firmwareBootloaderCodeLength);
+					is.close();
+
+					for (int i = 0; i < length; i += 4) {
+						mem.write32(firmwareBootloaderAddress + i, readUnaligned32(buffer, i));
+					}
+				} catch (IOException e) {
+					log.error(e);
+				}
 			}
 		}
 	}

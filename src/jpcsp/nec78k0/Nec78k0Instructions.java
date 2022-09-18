@@ -152,14 +152,48 @@ public class Nec78k0Instructions {
 		return address + size + getJdisp(insn);
 	}
 
-	public static final int getAddressWord(int insn, int addr) {
+	public static final int getCallAddressWord(int insn, int addr) {
 		// When located at an address above 0x8000, a
 		//    call !addr
 		// is actually a
 		//    call !(addr | 0x8000)
-		// Same for
-		//    br !addr
+		//
+		// When located at an address below 0x8000, a
+		//    call !addr
+		// is calling the addr, even if addr is above 0x8000
+		//
+		// E.g.:
+		//    0x0200 - call !0x0100   -> calling 0x0100
+		//    0x0200 - call !0x8100   -> calling 0x8100
+		//    0x8200 - call !0x0300   -> calling 0x8300
+		//    0x8200 - call !0x8300   -> calling 0x8300
 		return getWord(insn) | (addr & 0x8000);
+	}
+
+	public static final int getBranchAddressWord(int insn, int addr) {
+		return getBranchAddress(getWord(insn), addr);
+	}
+
+	public static final int getBranchAddress(int branch, int addr) {
+		// When located at an address above 0x8000, a
+		//    br !addr
+		// is actually a
+		//    br !(addr | 0x8000)
+		//
+		// When located at an address below 0x8000, a
+		//    br !addr
+		// is actually a
+		//    br !(addr & 0x7FFF)
+		//
+		// Same for
+		//    br AX
+		//
+		// E.g.:
+		//    0x0200 - br !0x0300   -> branching to 0x0300
+		//    0x0200 - br !0x8300   -> branching to 0x0300
+		//    0x8200 - br !0x8300   -> branching to 0x8300
+		//    0x8200 - br !0x0300   -> branching to 0x8300
+		return (branch & 0x7FFF) | (addr & 0x8000);
 	}
 
 	private static final String getBasedAddressing(String base, int value) {
@@ -322,13 +356,13 @@ public class Nec78k0Instructions {
     public static final Nec78k0Instruction CALL = new Nec78k0Instruction3() {
         @Override
         public void interpret(Nec78k0Processor processor, int insn) {
-        	int imm16 = getAddressWord(insn, processor.getCurrentInstructionPc());
+        	int imm16 = getCallAddressWord(insn, processor.getCurrentInstructionPc());
         	processor.call(imm16);
         }
 
         @Override
         public String disasm(int address, int insn) {
-            return String.format("call !%s", getFunctionName(getAddressWord(insn, address)));
+            return String.format("call !%s", getFunctionName(getCallAddressWord(insn, address)));
         }
     };
 
@@ -627,20 +661,20 @@ public class Nec78k0Instructions {
     public static final Nec78k0Instruction BR_word = new Nec78k0Instruction3() {
         @Override
         public void interpret(Nec78k0Processor processor, int insn) {
-        	int imm16 = getAddressWord(insn, processor.getCurrentInstructionPc());
+        	int imm16 = getBranchAddressWord(insn, processor.getCurrentInstructionPc());
         	processor.jump(imm16, false);
         }
 
         @Override
         public String disasm(int address, int insn) {
-            return String.format("br !0x%04X", getAddressWord(insn, address));
+            return String.format("br !0x%04X", getBranchAddressWord(insn, address));
         }
     };
 
     public static final Nec78k0Instruction BR_AX = new Nec78k0Instruction2() {
         @Override
         public void interpret(Nec78k0Processor processor, int insn) {
-        	processor.jump(processor.getRegisterPair(REG_PAIR_AX), true);
+        	processor.jump(getBranchAddress(processor.getRegisterPair(REG_PAIR_AX), processor.getCurrentInstructionPc()), true);
         }
 
         @Override

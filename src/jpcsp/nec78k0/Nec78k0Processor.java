@@ -100,7 +100,7 @@ public class Nec78k0Processor {
 		mem.setProcessor(this);
 
 		if (debugCodeBlockCalls) {
-			debug = new Nec78k0Debug();
+			debug = new Nec78k0Debug(log);
 		}
 	}
 
@@ -265,8 +265,12 @@ public class Nec78k0Processor {
 	}
 
 	public int getRegisterPair(int rp) {
+		return getRegisterPair(rp, registerBank);
+	}
+
+	public int getRegisterPair(int rp, int rb) {
 		int r = rp << 1;
-		return getRegister(r) | (getRegister(r + 1) << 8);
+		return getRegister(r, rb) | (getRegister(r + 1, rb) << 8);
 	}
 
 	public void setRegister(int r, int value) {
@@ -278,9 +282,13 @@ public class Nec78k0Processor {
 	}
 
 	public void setRegisterPair(int rp, int value) {
+		setRegisterPair(rp, registerBank, value);
+	}
+
+	public void setRegisterPair(int rp, int rb, int value) {
 		int r = rp << 1;
-		setRegister(r, value);
-		setRegister(r + 1, value >> 8);
+		setRegister(r, rb, value);
+		setRegister(r + 1, rb, value >> 8);
 	}
 
 	public void setPswResult(int result) {
@@ -355,6 +363,13 @@ public class Nec78k0Processor {
 	}
 
 	public void push16(int value) {
+		if (debugCodeBlockCalls) {
+			// The bootloader code is using at 2 places a "push" to simulate a kind of "call"
+			if (getCurrentInstructionPc() == 0x09F4 || getCurrentInstructionPc() == 0x0A1F) {
+				debug.call(this, value);
+			}
+		}
+
 		sp -= 2;
 		writeUnaligned16(mem, sp, value);
 	}
@@ -483,13 +498,17 @@ public class Nec78k0Processor {
 
 		setPc(addr);
 		checkPendingInterrupt();
+
+		if (disassembleFunctions) {
+			disassemble(pc);
+		}
 	}
 
 	public void halt() {
 		if (log.isDebugEnabled()) {
 			log.debug(String.format("halt at 0x%04X", getCurrentInstructionPc()));
 			if (debugCodeBlockCalls) {
-				debug.dump(log);
+				debug.dump();
 			}
 		}
 

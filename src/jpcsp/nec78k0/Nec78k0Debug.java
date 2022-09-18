@@ -25,6 +25,7 @@ import org.apache.log4j.Logger;
  *
  */
 public class Nec78k0Debug {
+	private final Logger log;
 	private final StackCallInfo stackCallInfos[] = new StackCallInfo[128];
 	private int stackCallInfoIndex;
 
@@ -36,7 +37,9 @@ public class Nec78k0Debug {
 		public boolean isInterrupt;
 	}
 
-	public Nec78k0Debug() {
+	public Nec78k0Debug(Logger log) {
+		this.log = log;
+
 		for (int i = 0; i < stackCallInfos.length; i++) {
 			stackCallInfos[i] = new StackCallInfo();
 		}
@@ -52,7 +55,11 @@ public class Nec78k0Debug {
 	}
 
 	public void ret() {
-		stackCallInfoIndex--;
+		if (stackCallInfoIndex == 0) {
+			log.error(String.format("Stack underflow"));
+		} else {
+			stackCallInfoIndex--;
+		}
 	}
 
 	public void callInterrupt(Nec78k0Processor processor, int addr, int vectorTableAddr) {
@@ -64,7 +71,7 @@ public class Nec78k0Debug {
 		stackCallInfoIndex++;
 	}
 
-	public void dump(Logger log) {
+	public void dump() {
 		for (int i = 0; i < stackCallInfoIndex; i++) {
 			String interruptName = stackCallInfos[i].isInterrupt ? String.format("(%s)", getInterruptName(stackCallInfos[i].vectorTableAddress)) : "";
 			log.debug(String.format("Stack#0x%02X: 0x%04X - %s !0x%04X%s; sp=0x%04X", i, stackCallInfos[i].pc, stackCallInfos[i].isInterrupt ? "interrupt" : "call", stackCallInfos[i].callAddress, interruptName, stackCallInfos[i].sp));

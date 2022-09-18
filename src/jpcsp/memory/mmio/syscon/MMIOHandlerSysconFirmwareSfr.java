@@ -35,6 +35,7 @@ import static jpcsp.HLE.modules.sceCtrl.PSP_CTRL_UP;
 import static jpcsp.HLE.modules.sceCtrl.PSP_CTRL_VOLDOWN;
 import static jpcsp.HLE.modules.sceCtrl.PSP_CTRL_VOLUP;
 import static jpcsp.memory.mmio.MMIOHandlerGpio.GPIO_PORT_SYSCON_END_CMD;
+import static jpcsp.memory.mmio.syscon.SysconEmulator.firmwareBootloader;
 import static jpcsp.memory.mmio.syscon.SysconSfrNames.getSfr16Name;
 import static jpcsp.memory.mmio.syscon.SysconSfrNames.getSfr1Name;
 import static jpcsp.memory.mmio.syscon.SysconSfrNames.getSfr1Names;
@@ -350,6 +351,7 @@ public class MMIOHandlerSysconFirmwareSfr extends Nec78k0MMIOHandlerBase {
 	private int internalExpansionRAMSizeSwitching;
 	private int keyPowerStartup;
 	private final SysconSecureFlash secureFlash;
+	private int bootloaderP1_4_switch;
 
 	public MMIOHandlerSysconFirmwareSfr(int baseAddress) {
 		super(baseAddress);
@@ -389,6 +391,10 @@ public class MMIOHandlerSysconFirmwareSfr extends Nec78k0MMIOHandlerBase {
 
 	public SysconSecureFlash getSysconSecureFlash() {
 		return secureFlash;
+	}
+
+	public SysconSerialInterfaceUART6 getSysconSerialInterfaceUART6() {
+		return serialInterfaceUART6;
 	}
 
 	public static int INTtoIF(int vectorTableAddress) {
@@ -448,6 +454,7 @@ public class MMIOHandlerSysconFirmwareSfr extends Nec78k0MMIOHandlerBase {
 		internalMemorySizeSwitching = stream.readInt();
 		internalExpansionRAMSizeSwitching = stream.readInt();
 		secureFlash.read(stream);
+		bootloaderP1_4_switch = stream.readInt();
 		super.read(stream);
 	}
 
@@ -492,6 +499,7 @@ public class MMIOHandlerSysconFirmwareSfr extends Nec78k0MMIOHandlerBase {
 		stream.writeInt(internalMemorySizeSwitching);
 		stream.writeInt(internalExpansionRAMSizeSwitching);
 		secureFlash.write(stream);
+		stream.writeInt(bootloaderP1_4_switch);
 		super.write(stream);
 	}
 
@@ -532,6 +540,7 @@ public class MMIOHandlerSysconFirmwareSfr extends Nec78k0MMIOHandlerBase {
 		setPortInputBit(1, 6);
 
 		keyPowerStartup = 0;
+		bootloaderP1_4_switch = 0;
 
 		setInterruptRequest(PIF1);
 	}
@@ -655,6 +664,24 @@ public class MMIOHandlerSysconFirmwareSfr extends Nec78k0MMIOHandlerBase {
 
 	private void updatePortInput(int port) {
 		switch (port) {
+			case 1:
+				// The bootloader firmware requires that P1.4 is alternating its value,
+				// but each value should stay unchanged during at least 2 read operations.
+				// E.g., it should read: 0, 0, 1, 1, 0, 0, 1, 1...
+				if (firmwareBootloader) {
+					if (bootloaderP1_4_switch > 0) {
+						// Alternate P1.4 value
+						if (hasBit(portInputs[port], 4)) {
+							clearPortInputBit(port, 4);
+						} else {
+							setPortInputBit(port, 4);
+						}
+						bootloaderP1_4_switch = 0;
+					} else {
+						bootloaderP1_4_switch++;
+					}
+				}
+				break;
 			case 2:
 			case 3:
 			case 4:
@@ -1037,6 +1064,7 @@ public class MMIOHandlerSysconFirmwareSfr extends Nec78k0MMIOHandlerBase {
 			case 0xFF4C: value = serialInterfaceCSI11.getTransmitBuffer(); break;
 			case 0xFF50: value = serialInterfaceUART6.getOperationMode(); break;
 			case 0xFF53: value = serialInterfaceUART6.getReceptionErrorStatus(); break;
+			case 0xFF55: value = serialInterfaceUART6.getTransmissionStatus(); break;
 			case 0xFF56: value = serialInterfaceUART6.getClockSelection(); break;
 			case 0xFF57: value = serialInterfaceUART6.getBaudRateGeneratorControl(); break;
 			case 0xFF58: value = serialInterfaceUART6.getControlRegister(); break;
@@ -1069,7 +1097,10 @@ public class MMIOHandlerSysconFirmwareSfr extends Nec78k0MMIOHandlerBase {
 			case 0xFFC1: value = secureFlash.getUnknown1(); break;
 			case 0xFFC4: value = secureFlash.getUnknown4(); break;
 			case 0xFFC5: value = secureFlash.getUnknown5(); break;
+			case 0xFFC6: value = secureFlash.getUnknown6(); break;
 			case 0xFFC7: value = secureFlash.getUnknown7(); break;
+			case 0xFFC8: value = secureFlash.getUnknown8(); break;
+			case 0xFFCA: value = secureFlash.getFlashProgrammingModeControl(); break;
 			case 0xFFE0: value = getByte0(interruptRequestFlag0); break;
 			case 0xFFE1: value = getByte1(interruptRequestFlag0); break;
 			case 0xFFE2: value = getByte0(interruptRequestFlag1); break;
@@ -1257,9 +1288,14 @@ public class MMIOHandlerSysconFirmwareSfr extends Nec78k0MMIOHandlerBase {
 			case 0xFFC5: secureFlash.setUnknown5(value8); break;
 			case 0xFFC6: secureFlash.setUnknown6(value8); break;
 			case 0xFFC7: secureFlash.setUnknown7(value8); break;
-			case 0xFFC8: secureFlash.setAddressLow(value8); break;
-			case 0xFFC9: secureFlash.setAddressHigh(value8); break;
+			case 0xFFC8: secureFlash.setAddress(setByte0(secureFlash.getAddress(), value8)); break;
+			case 0xFFC9: secureFlash.setAddress(setByte1(secureFlash.getAddress(), value8)); break;
 			case 0xFFCA: secureFlash.setFlashProgrammingModeControlRegister(value8); break;
+			case 0xFFCB: secureFlash.setUnknownB(value8); break;
+			case 0xFFCC: secureFlash.setWriteData0(value8); break;
+			case 0xFFCD: secureFlash.setWriteData1(value8); break;
+			case 0xFFCE: secureFlash.setWriteData2(value8); break;
+			case 0xFFCF: secureFlash.setWriteData3(value8); break;
 			case 0xFFE0: interruptRequestFlag0 = setByte0(interruptRequestFlag0, value8); break;
 			case 0xFFE1: interruptRequestFlag0 = setByte1(interruptRequestFlag0, value8); break;
 			case 0xFFE2: interruptRequestFlag1 = setByte0(interruptRequestFlag1, value8); break;
@@ -1302,6 +1338,8 @@ public class MMIOHandlerSysconFirmwareSfr extends Nec78k0MMIOHandlerBase {
 			case SP_ADDRESS: processor.setSp(value16); break;
 			case 0xFFB2: timer01.setCompare00(value16); break;
 			case 0xFFB4: timer01.setCompare01(value16); break;
+			case 0xFFC8: secureFlash.setAddress(value16); break;
+			case 0xFFCC: secureFlash.setWriteData2(value16 & 0xFF); secureFlash.setWriteData3(value16 >> 8); break;
 			case 0xFFE0: interruptRequestFlag0 = value16; break;
 			case 0xFFE2: interruptRequestFlag1 = value16; break;
 			case 0xFFE4: setInterruptMaskFlag0(value16); break;

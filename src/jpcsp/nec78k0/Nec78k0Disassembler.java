@@ -36,7 +36,8 @@ import static jpcsp.nec78k0.Nec78k0Instructions.DBNZ_C;
 import static jpcsp.nec78k0.Nec78k0Instructions.DBNZ_saddr;
 import static jpcsp.nec78k0.Nec78k0Instructions.RET;
 import static jpcsp.nec78k0.Nec78k0Instructions.RETI;
-import static jpcsp.nec78k0.Nec78k0Instructions.getAddressWord;
+import static jpcsp.nec78k0.Nec78k0Instructions.getCallAddressWord;
+import static jpcsp.nec78k0.Nec78k0Instructions.getBranchAddressWord;
 import static jpcsp.nec78k0.Nec78k0Instructions.getFunctionName;
 import static jpcsp.util.Utilities.internalReadUnaligned32;
 
@@ -107,28 +108,16 @@ public class Nec78k0Disassembler {
 	}
 
 	private void checkBranch(List<Integer> pendingAddresses, int addr, int insn, Nec78k0Instruction instr) {
-		// TODO
 		if (instr == BR_word) {
-			int jumpTo = getAddressWord(insn, addr);
+			int jumpTo = getBranchAddressWord(insn, addr);
 			addJump(pendingAddresses, addr, jumpTo);
 		} else if (instr == BR_jdisp || instr == BZ || instr == BNZ || instr == BNC || instr == BC || instr == BF_A_addr || instr == BF_saddr || instr == BF_sfr || instr == BT_A_addr || instr == BT_saddr || instr == BT_sfr || instr == DBNZ_B || instr == DBNZ_C || instr == DBNZ_saddr || instr == BTCLR_saddr) {
 			int jumpTo = getJdisp(addr, insn, instr);
 			addJump(pendingAddresses, addr, jumpTo);
 		} else if (instr == CALL) {
-			int jumpTo = getAddressWord(insn, addr);
+			int jumpTo = getCallAddressWord(insn, addr);
 			addJumpToFunction(addr, jumpTo);
 		}
-	}
-
-	private String getAdditionalInfo(int addr, int insn, Nec78k0Instruction instr) {
-		String additionalInfo = null;
-		// TODO
-		return additionalInfo;
-	}
-
-	private boolean isSwitchStart(List<Integer> pendingAddresses, int addr, int insn, Nec78k0Instruction instr) {
-		// TODO
-		return false;
 	}
 
 	private void disasmFunction(int startAddress) {
@@ -179,7 +168,6 @@ public class Nec78k0Disassembler {
 				int nextPc = processor.getNextInstructionPc();
 
 				// Store the disassembled instruction
-				String additionalInfo = getAdditionalInfo(pc, insn, instr);
 				String opcode;
 				String alignment;
 				switch (instr.getInstructionSize()) {
@@ -189,14 +177,12 @@ public class Nec78k0Disassembler {
 					case 4: opcode = String.format("0x%08X", insn); alignment = ""; break;
 					default: opcode = String.format("0x%X", insn); alignment = ""; break;
 				}
-				String disasm = String.format("0x%04X - [%s]%s - %s%s", pc, opcode, alignment, instr.disasm(pc, insn), additionalInfo == null ? "" : additionalInfo);
+				String disasm = String.format("0x%04X - [%s]%s - %s", pc, opcode, alignment, instr.disasm(pc, insn));
 				disassembled.put(pc, disasm);
 
 				// If this instruction is branching,
 				// add the branched address to the pending addresses
 				checkBranch(pendingAddresses, pc, insn, instr);
-				// Verify if we are starting a switch instruction
-				isSwitchStart(pendingAddresses, pc, insn, instr);
 				// Verify if this instruction is the end of this block
 				endOfBlock = isEndOfBlock(pc, insn, instr);
 				pc = nextPc;

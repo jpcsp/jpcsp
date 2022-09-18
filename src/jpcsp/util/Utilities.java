@@ -2476,12 +2476,28 @@ public class Utilities {
 		return getByte0(value >> 8);
 	}
 
+	public static int getByte2(int value) {
+		return getByte0(value >> 16);
+	}
+
+	public static int getByte3(int value) {
+		return getByte0(value >> 24);
+	}
+
 	public static int setByte0(int value, int value8) {
 		return (value & 0xFFFFFF00) | getByte0(value8);
 	}
 
 	public static int setByte1(int value, int value8) {
 		return (value & 0xFFFF00FF) | (getByte0(value8) << 8);
+	}
+
+	public static int setByte2(int value, int value8) {
+		return (value & 0xFF00FFFF) | (getByte0(value8) << 16);
+	}
+
+	public static int setByte3(int value, int value8) {
+		return (value & 0x00FFFFFF) | (getByte0(value8) << 24);
 	}
 
     public static boolean isMatchingPsfTitle(SceModule module, String re) {

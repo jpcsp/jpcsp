@@ -634,7 +634,7 @@ public class SettingsGUI extends javax.swing.JFrame {
 
         modelLabel.setText(bundle.getString("SettingsGUI.modelLabel.text")); // NOI18N
 
-        modelBox.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "PSP-1000", "PSP-2000", "PSP-3000", "PSP-3000 (V2)", "PSP-N1000 (GO)" }));
+        modelBox.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "PSP-1000", "PSP-2000", "PSP-3000", "PSP-3000 (V2)", "PSP-N1000 (GO)", "PSP-3000 (V3)", "PSP-3000 (V4)", "PSP-E1000 (Street)" }));
 
         sysconLabel.setText(bundle.getString("SettingsGUI.sysconLabel.text")); // NOI18N
 
