@@ -499,7 +499,7 @@ public class Nec78k0Processor {
 		setPc(addr);
 		checkPendingInterrupt();
 
-		if (disassembleFunctions) {
+		if (disassembleFunctions && dynamicAddr) {
 			disassemble(pc);
 		}
 	}
