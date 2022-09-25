@@ -544,6 +544,7 @@ public class SysMemForKernel extends HLEModule {
     }
 
     @HLEUnimplemented
+    @HLEFunction(nid = 0x0D547E7F, version = 150)
     @HLEFunction(nid = 0xEF29061C, version = 150)
     public int sceKernelGetGameInfo() {
     	// Has no parameters
