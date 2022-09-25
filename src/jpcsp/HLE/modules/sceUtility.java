@@ -24,10 +24,14 @@ import static jpcsp.HLE.HLEModuleManager.HLESyscallNid;
 import static jpcsp.HLE.Modules.ThreadManForUserModule;
 import static jpcsp.HLE.Modules.sceUtilityModule;
 import static jpcsp.HLE.VFS.local.LocalVirtualFileSystem.getMsFileName;
+import static jpcsp.HLE.kernel.types.SceUtilityGamedataInstallParams.PSP_UTILITY_GAMEDATA_MODE_SHOW_PROGRESS;
 import static jpcsp.HLE.kernel.types.SceUtilitySavedataParam.ERROR_SAVEDATA_CANCELLED;
 import static jpcsp.HLE.kernel.types.SceUtilityScreenshotParams.PSP_UTILITY_SCREENSHOT_FORMAT_JPEG;
 import static jpcsp.HLE.kernel.types.SceUtilityScreenshotParams.PSP_UTILITY_SCREENSHOT_FORMAT_PNG;
 import static jpcsp.HLE.kernel.types.SceUtilityScreenshotParams.PSP_UTILITY_SCREENSHOT_NAMERULE_AUTONUM;
+import static jpcsp.HLE.modules.IoFileMgrForUser.PSP_O_CREAT;
+import static jpcsp.HLE.modules.IoFileMgrForUser.PSP_O_RDONLY;
+import static jpcsp.HLE.modules.IoFileMgrForUser.PSP_O_WRONLY;
 import static jpcsp.HLE.modules.SysMemUserForUser.USER_PARTITION_ID;
 import static jpcsp.HLE.modules.sceFont.PSP_FONT_PIXELFORMAT_4;
 import static jpcsp.HLE.modules.sceSuspendForUser.KERNEL_VOLATILE_MEM_SIZE;
@@ -49,6 +53,8 @@ import static jpcsp.graphics.GeCommands.VTYPE_TRANSFORM_PIPELINE_RAW_COORD;
 import static jpcsp.graphics.RE.IRenderingEngine.GU_TEXTURE_2D;
 import static jpcsp.graphics.VideoEngine.alignBufferWidth;
 import static jpcsp.memory.ImageReader.colorARGBtoABGR;
+import static jpcsp.util.Utilities.add;
+
 import jpcsp.GUI.SettingsGUI;
 import jpcsp.HLE.BufferInfo;
 import jpcsp.HLE.BufferInfo.LengthInfo;
@@ -1029,6 +1035,8 @@ public class sceUtility extends HLEModule {
         protected volatile String saveListSelection;
         protected volatile InputStream saveListSelectionIcon0;
         protected boolean saveListEmpty;
+        // All SAVEDATA modes after MODE_SINGLEDELETE can be called multiple times and keep track of that.
+        private int savedataMultiStatus;
 
         public SavedataUtilityDialogState(String name) {
             super(name);
@@ -1055,8 +1063,6 @@ public class sceUtility extends HLEModule {
 
             return super.checkValidity();
         }
-        // All SAVEDATA modes after MODE_SINGLEDELETE can be called multiple times and keep track of that.
-        private int savedataMultiStatus;
 
         protected int checkMultipleCallStatus(int result) {
             // Check the current multiple call status.
@@ -2255,8 +2261,21 @@ public class sceUtility extends HLEModule {
     }
 
     protected static class GamedataInstallUtilityDialogState extends UtilityDialogState {
-
         protected SceUtilityGamedataInstallParams gamedataInstallParams;
+        private StringBuilder sourceLocalFileName;
+        private StringBuilder destinationLocalFileName;
+        private IVirtualFileSystem ivfs;
+        private IVirtualFileSystem ovfs;
+        private String[] fileNames;
+        private int filenameIndex;
+        private IVirtualFile ivf;
+        private IVirtualFile ovf;
+        private long totalLength;
+        private long totalProcessedLength;
+        private long fileTotalLength;
+        private long fileProcessedLength;
+        private final byte[] buffer = new byte[512 * 1024];
+        private long startMillis;
 
         public GamedataInstallUtilityDialogState(String name) {
             super(name);
@@ -2268,61 +2287,205 @@ public class sceUtility extends HLEModule {
             return gamedataInstallParams;
         }
 
-        @Override
-        protected boolean executeUpdateVisible() {
-            IoFileMgrForUser fileMgr = Modules.IoFileMgrForUserModule;
-            StringBuilder sourceLocalFileName = new StringBuilder();
-            IVirtualFileSystem ivfs = fileMgr.getVirtualFileSystem("disc0:/PSP_GAME/INSDIR", sourceLocalFileName);
-            if (ivfs != null) {
-                String[] fileNames = ivfs.ioDopen(sourceLocalFileName.toString());
-                if (fileNames != null) {
-                    ivfs.ioDclose(sourceLocalFileName.toString());
-
-                    StringBuilder destinationLocalFileName = new StringBuilder();
-                    IVirtualFileSystem ovfs = fileMgr.getVirtualFileSystem(String.format("%s%s%s", SceUtilitySavedataParam.savedataPath, gamedataInstallParams.gameName, gamedataInstallParams.dataName), destinationLocalFileName);
-                    if (ovfs != null) {
-                        int numberFiles = 0;
-                        for (int i = 0; i < fileNames.length; i++) {
-                            String fileName = fileNames[i];
-                            // Skip iso special files
-                            if (!fileName.equals(".") && !fileName.equals("\01") && !fileName.equals("..")) {
-                                String sourceFileName = String.format("%s/%s", sourceLocalFileName.toString(), fileName);
-                                IVirtualFile ivf = ivfs.ioOpen(sourceFileName, IoFileMgrForUser.PSP_O_RDONLY, 0);
-                                if (ivf != null) {
-                                    String destinationFileName = String.format("%s/%s", destinationLocalFileName.toString(), fileName);
-                                    IVirtualFile ovf = ovfs.ioOpen(destinationFileName, IoFileMgrForUser.PSP_O_WRONLY | IoFileMgrForUser.PSP_O_CREAT, 0777);
-                                    if (ovf != null) {
-                                        if (log.isDebugEnabled()) {
-                                            log.debug(String.format("GamedataInstall: copying file disc0:/%s to ms0:/%s", sourceFileName, destinationFileName));
-                                        }
-                                        byte[] buffer = new byte[512 * 1024];
-                                        long restLength = ivf.length();
-                                        while (restLength > 0) {
-                                            int length = buffer.length;
-                                            if (length > restLength) {
-                                                length = (int) restLength;
-                                            }
-                                            length = ivf.ioRead(buffer, 0, length);
-                                            ovf.ioWrite(buffer, 0, length);
-
-                                            restLength -= length;
-                                        }
-                                        ovf.ioClose();
-                                        numberFiles++;
-                                    }
-                                    ivf.ioClose();
-                                }
-                            }
-                        }
-                        // TODO Not sure about the values to return here
-                        gamedataInstallParams.unkResult1 = numberFiles;
-                        gamedataInstallParams.unkResult2 = numberFiles;
-                        gamedataInstallParams.write(paramsAddr);
-                    }
-                }
+		@Override
+		protected int checkValidity() {
+            int paramSize = gamedataInstallParams.base.totalSizeof();
+            // Only these parameter sizes are allowed:
+            if (paramSize != 1424 && paramSize != 1432) {
+                log.warn(String.format("sceGamedataInstallInitStart invalid parameter size %d", paramSize));
+                return SceKernelErrors.ERROR_UTILITY_INVALID_PARAM_SIZE;
             }
 
-            return false;
+            return super.checkValidity();
+		}
+
+		@Override
+        protected boolean executeUpdateVisible() {
+        	boolean keepVisible = true;
+        	int result = 0;
+
+        	switch (dialogState) {
+        		case quit:
+        			// The "SceUtilityInit" thread is setting the dialogState to quit as no dialog is displayed immediately
+        			dialogState = DialogState.init;
+        			break;
+        		case init:
+                    if (gamedataInstallParams.mode > 1) {
+                        log.warn(String.format("sceGamedataInstallInitStart invalid mode %d", gamedataInstallParams.mode));
+                        gamedataInstallParams.base.result = SceKernelErrors.ERROR_UTILITY_GAMEDATA_INVALID_MODE;
+                        keepVisible = false;
+                    } else if (gamedataInstallParams.mode == PSP_UTILITY_GAMEDATA_MODE_SHOW_PROGRESS) {
+                		dialogState = DialogState.confirmation;
+                	} else {
+                		dialogState = DialogState.inProgress;
+                	}
+                    break;
+        		case confirmation:
+                    if (!isDialogOpen()) {
+                        GuGamedataInstallConfirmationDialog gu = new GuGamedataInstallConfirmationDialog(gamedataInstallParams, this);
+                        openDialog(gu);
+                    } else if (!isDialogActive()) {
+                        if (getButtonPressed() != SceUtilityMsgDialogParams.PSP_UTILITY_BUTTON_PRESSED_OK || isNoSelected()) {
+                            // The dialog has been cancelled or the user did not want to install.
+                            cancel();
+                        } else {
+                            closeDialog();
+                            dialogState = DialogState.inProgress;
+                        }
+                    } else {
+                        updateDialog();
+                    }
+                    break;
+        		case inProgress:
+		            if (ivf == null || ovf == null) {
+		                if (ivfs == null || ovfs == null) {
+		    	            IoFileMgrForUser fileMgr = Modules.IoFileMgrForUserModule;
+		    	            sourceLocalFileName = new StringBuilder();
+		    	            ivfs = fileMgr.getVirtualFileSystem("disc0:/PSP_GAME/INSDIR", sourceLocalFileName);
+		    	            if (ivfs != null) {
+		    	                String[] allFileNames = ivfs.ioDopen(sourceLocalFileName.toString());
+		    	                if (allFileNames != null) {
+		    	                    ivfs.ioDclose(sourceLocalFileName.toString());
+
+		    	                    destinationLocalFileName = new StringBuilder();
+		    	                    ovfs = fileMgr.getVirtualFileSystem(String.format("%s%s%s", SceUtilitySavedataParam.savedataPath, gamedataInstallParams.gameName, gamedataInstallParams.dataName), destinationLocalFileName);
+		    	                    if (ovfs != null) {
+		    	                        SceIoStat stat = new SceIoStat();
+		    	                    	fileNames = null;
+		    	                    	totalLength = 0L;
+		    	                    	totalProcessedLength = 0L;
+		    	                        filenameIndex = 0;
+		    	                        startMillis = getNowMillis();
+		    	                    	for (int i = 0; i < allFileNames.length; i++) {
+		    	                    		String fileName = allFileNames[i];
+		    	        	                // Skip iso special files
+		    	        	                if (!fileName.equals(".") && !fileName.equals("\01") && !fileName.equals("..")) {
+		    	        	                    String sourceFileName = String.format("%s/%s", sourceLocalFileName.toString(), fileName);
+		    	        	                	if (ivfs.ioGetstat(sourceFileName, stat) >= 0) {
+		        	        	                	fileNames = add(fileNames, fileName);
+		        	        	                	totalLength += stat.size;
+		    	        	                	}
+		    	        	                }
+		    	                    	}
+
+		    	                    	if (totalLength > MemoryStick.getFreeSize()) {
+		    	                    		result = SceKernelErrors.ERROR_UTILITY_GAMEDATA_MEMSTICK_NO_FREE_SPACE;
+		    	                    		keepVisible = false;
+		    	                    	}
+		    	                    }
+		    	                }
+		    	            }
+		                }
+
+		            	if (keepVisible && fileNames != null && filenameIndex < fileNames.length) {
+		            		String fileName = fileNames[filenameIndex++];
+		                    String sourceFileName = String.format("%s/%s", sourceLocalFileName.toString(), fileName);
+		                    ivf = ivfs.ioOpen(sourceFileName, PSP_O_RDONLY, 0);
+		                    if (ivf != null) {
+		                        fileTotalLength = ivf.length();
+		                        fileProcessedLength = 0L;
+		                        String destinationFileName = String.format("%s/%s", destinationLocalFileName.toString(), fileName);
+		                        ovf = ovfs.ioOpen(destinationFileName, PSP_O_WRONLY | PSP_O_CREAT, 0777);
+		                        if (ovf != null) {
+		                            if (log.isDebugEnabled()) {
+		                                log.debug(String.format("GamedataInstall: copying file disc0:/%s to ms0:/%s", sourceFileName, destinationFileName));
+		                            }
+		                        } else {
+		                        	ivf.ioClose();
+		                        	ivf = null;
+		                        }
+		                    }
+		            	} else {
+	            			gamedataInstallParams.remainingSize = 0L;
+	            			gamedataInstallParams.progress = result == 0 ? 100 : 0;
+				            gamedataInstallParams.memoryStickMissingFreeSpace = Math.max(totalLength - MemoryStick.getFreeSize(), 0L);
+				            gamedataInstallParams.memoryStickMissingFreeSpaceText = MemoryStick.getSizeString(gamedataInstallParams.memoryStickMissingFreeSpace);
+				            gamedataInstallParams.memoryStickFreeSpace = MemoryStick.getFreeSize();
+				            gamedataInstallParams.memoryStickFreeSpaceText = MemoryStick.getSizeString(gamedataInstallParams.memoryStickFreeSpace);
+				            gamedataInstallParams.write(paramsAddr);
+				            quitDialog(result);
+				            keepVisible = false;
+		            	}
+		            }
+
+		            if (ivf != null && ovf != null) {
+		                int length = buffer.length;
+		                long fileRemainingLength = fileTotalLength - fileProcessedLength;
+		                if (length > fileRemainingLength) {
+		                    length = (int) fileRemainingLength;
+		                }
+		                length = ivf.ioRead(buffer, 0, length);
+		                if (length > 0) {
+		                	ovf.ioWrite(buffer, 0, length);
+		                	fileProcessedLength += length;
+		                	totalProcessedLength += length;
+
+		                	gamedataInstallParams.remainingSize = totalLength - totalProcessedLength;
+		                	gamedataInstallParams.progress = (int) (100L * totalProcessedLength / totalLength);
+		                	gamedataInstallParams.writeProgress(paramsAddr);
+
+		                	if (log.isDebugEnabled()) {
+		                		log.debug(String.format("GamedataInstall %d%%, copied %d/%d to %s", gamedataInstallParams.progress, fileProcessedLength, fileTotalLength, ovf));
+		                	}
+		                }
+
+		                if (fileProcessedLength >= fileTotalLength) {
+		                	ivf.ioClose();
+		                	ivf = null;
+		                	ovf.ioClose();
+		                	ovf = null;
+		                }
+		            }
+
+		            if (keepVisible) {
+		            	if (gamedataInstallParams.mode == PSP_UTILITY_GAMEDATA_MODE_SHOW_PROGRESS) {
+		                    if (!isDialogOpen()) {
+		                        GuGamedataInstallProgressDialog gu = new GuGamedataInstallProgressDialog(gamedataInstallParams, this);
+		                        openDialog(gu);
+		                    } else if (!isDialogActive()) {
+		                    	cancel();
+		                    } else {
+		                        updateDialog();
+		                    }
+		            	}
+		            } else {
+		            	// Clean-up
+		            	if (ivf != null) {
+		            		ivf.ioClose();
+		            		ivf = null;
+		            	}
+		            	ivfs = null;
+		            	if (ovf != null) {
+		            		ovf.ioClose();
+		            		ovf = null;
+		            	}
+		            	ovfs = null;
+		            }
+		            break;
+        		case completed:
+        		case display:
+        			keepVisible = false;
+        			break;
+        	}
+
+            return keepVisible;
+        }
+
+        public int getProgress() {
+        	return gamedataInstallParams.progress;
+        }
+
+        private static long getNowMillis() {
+        	return Emulator.getClock().milliTime();
+        }
+
+        public int getSecondsLeft() {
+        	long nowMillis = getNowMillis();
+        	if (getProgress() <= 0) {
+        		return 60;
+        	}
+        	long endMillis = startMillis + 100L * (nowMillis - startMillis) / getProgress();
+        	return (int) ((endMillis - nowMillis + 500) / 1000);
         }
 
         @Override
@@ -2715,6 +2878,7 @@ public class sceUtility extends HLEModule {
         final private String strBack;
         final private String strYes;
         final private String strNo;
+        final private String strCancel;
 
         protected GuUtilityDialog(pspUtilityDialogCommon utilityDialogCommon) {
         	utilityLocale = getUtilityLocale(utilityDialogCommon.language);
@@ -2724,6 +2888,7 @@ public class sceUtility extends HLEModule {
             strBack = ResourceBundle.getBundle("jpcsp/languages/jpcsp", utilityLocale).getString("sceUtilitySavedata.strBack.text");
             strYes = ResourceBundle.getBundle("jpcsp/languages/jpcsp", utilityLocale).getString("sceUtilitySavedata.strYes.text");
             strNo = ResourceBundle.getBundle("jpcsp/languages/jpcsp", utilityLocale).getString("sceUtilitySavedata.strNo.text");
+            strCancel = ResourceBundle.getBundle("jpcsp/languages/jpcsp", utilityLocale).getString("sceUtility.strCancel.text");
         }
 
         protected void createDialog(final UtilityDialogState utilityDialogState) {
@@ -2794,8 +2959,7 @@ public class sceUtility extends HLEModule {
         	return truncatedText + truncation;
         }
 
-        private String wrapText(String text, int width, float scale) {
-        	SceFontInfo fontInfo = getDefaultFontInfo();
+        protected String wrapText(SceFontInfo fontInfo, String text, int width, float scale) {
         	int glyphType = SceFontInfo.FONT_PGF_GLYPH_TYPE_CHAR;
 
         	StringBuilder wrappedText = new StringBuilder();
@@ -2819,8 +2983,11 @@ public class sceUtility extends HLEModule {
             		isSpace = false;
             	}
 
-                int nextX = x + charInfo.sfp26AdvanceH >> 6;
-                if (nextX > scaledWidth) {
+                int nextX = x + (charInfo.sfp26AdvanceH >> 6);
+                if (c == '\n') {
+                	x = 0;
+                	wrappedText.append(c);
+                } else if (nextX > scaledWidth) {
             		x = 0;
             		if (lastSpaceStart >= 0) {
         				wrappedText.replace(lastSpaceStart, lastSpaceEnd, "\n");
@@ -2880,6 +3047,10 @@ public class sceUtility extends HLEModule {
         	return lines;
         }
 
+        protected int centerText(SceFontInfo fontInfo, String s, float scale) {
+        	return centerText(fontInfo, s, 0, Screen.width, scale);
+        }
+
         protected int centerText(SceFontInfo fontInfo, String s, int x0, int x1, float scale) {
         	int textLength = getTextLength(fontInfo, s, scale);
         	int width = x1 - x0 + 1;
@@ -2889,6 +3060,11 @@ public class sceUtility extends HLEModule {
         	return x0 + (width - textLength) / 2;
         }
 
+        protected int rightAlignText(SceFontInfo fontInfo, String s, int x, float scale) {
+        	int textLength = getTextLength(fontInfo, s, scale);
+        	return x - textLength;
+        }
+
         protected int getTextLength(SceFontInfo fontInfo, String s, float scale) {
         	int textLength = getTextLength(fontInfo, s);
         	textLength = (int) (scale * textLength);
@@ -2896,21 +3072,25 @@ public class sceUtility extends HLEModule {
         }
 
         protected int getTextLength(SceFontInfo fontInfo, String s) {
-            int length = 0;
+            int length26 = 0;
 
             for (int i = 0; i < s.length(); i++) {
-                length += getTextLength(fontInfo, s.charAt(i));
+                length26 += getTextLength26(fontInfo, s.charAt(i));
             }
 
-            return length;
+            return length26 >> 6;
         }
 
-        protected int getTextLength(SceFontInfo fontInfo, char c) {
+        private int getTextLength26(SceFontInfo fontInfo, char c) {
             pspCharInfo charInfo = fontInfo.getCharInfo(c, SceFontInfo.FONT_PGF_GLYPH_TYPE_CHAR);
             if (charInfo == null) {
                 return 0;
             }
-            return charInfo.sfp26AdvanceH >> 6;
+            return charInfo.sfp26AdvanceH;
+        }
+
+        protected int getTextLength(SceFontInfo fontInfo, char c) {
+        	return getTextLength26(fontInfo, c) >> 6;
         }
 
         protected void drawTextWithShadow(int textX, int textY, float scale, String s) {
@@ -2918,13 +3098,14 @@ public class sceUtility extends HLEModule {
         }
 
         protected void drawTextWithShadow(int textX, int textY, int textColor, float scale, String s) {
-        	s = wrapText(s, Screen.width - textX, scale);
+        	SceFontInfo fontInfo = getDefaultFontInfo();
+        	s = wrapText(fontInfo, s, Screen.width - textX, scale);
 
             int txtHeight = defaultTextHeight;
             if (s.contains("\n")) {
                 txtHeight = Screen.height - textY;
             }
-            drawTextWithShadow(textX, textY, defaultTextWidth, txtHeight, 20, getDefaultFontInfo(), baseAscender, textColor, shadowColor, scale, s);
+            drawTextWithShadow(textX, textY, defaultTextWidth, txtHeight, 20, fontInfo, baseAscender, textColor, shadowColor, scale, s);
         }
 
         protected void drawTextWithShadow(int textX, int textY, int textWidth, int textHeight, int textLineHeight, SceFontInfo fontInfo, int baseAscender, int textColor, int shadowColor, float scale, String s) {
@@ -3277,12 +3458,16 @@ public class sceUtility extends HLEModule {
             drawTextWithShadow(getBackX(), 254, defaultFontScale, String.format("%s %s", getCancelString(), str));
         }
 
+        protected void drawCancel() {
+            drawTextWithShadow(getBackX(), 254, defaultFontScale, String.format("%s %s", getCancelString(), strCancel));
+        }
+
         protected void drawHeader(String title) {
             // Draw rectangle on the top of the screen
             gu.sceGuDrawRectangle(0, 0, Screen.width, 22, 0x80605C54);
 
             // Draw dialog title in top rectangle
-            drawText(30, 4, 128, 32, 20, getDefaultFontInfo(), 15, 0.82f, 0xFFFFFF, title, SceFontInfo.FONT_PGF_GLYPH_TYPE_CHAR);
+            drawText(30, 4, 256, 32, 20, getDefaultFontInfo(), 15, 0.82f, 0xFFFFFF, title, SceFontInfo.FONT_PGF_GLYPH_TYPE_CHAR);
             // Draw filled circle just before dialog title
             drawText(9, 5, 32, 32, 20, getDefaultFontInfo(), 15, 0.65f, 0xFFFFFF, new String(Character.toChars(0x25CF)), SceFontInfo.FONT_PGF_GLYPH_TYPE_CHAR);
         }
@@ -4074,6 +4259,149 @@ public class sceUtility extends HLEModule {
 
             endDialog();
         }
+    }
+
+    protected static class GuGamedataInstallConfirmationDialog extends GuUtilityDialog {
+		private final String strTitle;
+		private final String strConfirmation;
+
+        public GuGamedataInstallConfirmationDialog(final SceUtilityGamedataInstallParams gamedataInstallParams, GamedataInstallUtilityDialogState gamedataInstallUtilityDialogState) {
+        	super(gamedataInstallParams.base);
+
+        	strTitle = ResourceBundle.getBundle("jpcsp/languages/jpcsp", utilityLocale).getString("sceUtilityGamedataInstall.title");
+        	strConfirmation = ResourceBundle.getBundle("jpcsp/languages/jpcsp", utilityLocale).getString("sceUtilityGamedataInstall.confirmation");
+
+        	createDialog(gamedataInstallUtilityDialogState);
+        }
+
+		@Override
+		protected void updateDialog() {
+            // Shadows are softer in MsgDialog
+            setSoftShadows(true);
+
+            // Clear screen in light gray color. Do not clear depth and stencil values.
+            gu.sceGuClear(CLEAR_COLOR_BUFFER, 0x968681);
+
+        	final float scale = 0.79f;
+
+            String confirmationText = String.format(strConfirmation, State.title);
+            confirmationText = wrapText(getDefaultFontInfo(), confirmationText, 300, scale);
+
+            final int lineHeight = 19;
+            final int lineCount = getTextLines(confirmationText);
+            int textHeight = lineHeight * lineCount;
+            int totalHeight = textHeight + 44;
+            int topLineY = (Screen.height - totalHeight) / 2;
+
+            drawHeader(strTitle);
+
+            final int lineColor = 0xFFDFDAD9;
+            // Draw top line
+            gu.sceGuDrawHorizontalLine(60, 420, topLineY, lineColor);
+            // Draw bottom line
+            gu.sceGuDrawHorizontalLine(60, 420, topLineY + totalHeight, lineColor);
+
+            int y = topLineY + 17;
+            drawTextWithShadow(90, y, scale, confirmationText);
+            y += textHeight;
+
+            drawYesNo(185, 255, y);
+
+            drawEnter();
+            drawBack();
+		}
+
+		@Override
+		protected boolean hasYesNo() {
+			return true;
+		}
+    }
+
+    protected static class GuGamedataInstallProgressDialog extends GuUtilityDialog {
+		private final GamedataInstallUtilityDialogState gamedataInstallUtilityDialogState;
+		private final String strTitle;
+		private final String strInstalling;
+		private final String strWait;
+		private final String strSecondsLeft;
+		private final String strPercent;
+
+        public GuGamedataInstallProgressDialog(final SceUtilityGamedataInstallParams gamedataInstallParams, GamedataInstallUtilityDialogState gamedataInstallUtilityDialogState) {
+        	super(gamedataInstallParams.base);
+
+        	this.gamedataInstallUtilityDialogState = gamedataInstallUtilityDialogState;
+
+        	strTitle = ResourceBundle.getBundle("jpcsp/languages/jpcsp", utilityLocale).getString("sceUtilityGamedataInstall.title");
+        	strInstalling = ResourceBundle.getBundle("jpcsp/languages/jpcsp", utilityLocale).getString("sceUtilityGamedataInstall.installing");
+        	strWait = ResourceBundle.getBundle("jpcsp/languages/jpcsp", utilityLocale).getString("sceUtilityGamedataInstall.wait");
+        	strSecondsLeft = ResourceBundle.getBundle("jpcsp/languages/jpcsp", utilityLocale).getString("sceUtilityGamedataInstall.secondsLeft");
+        	strPercent = ResourceBundle.getBundle("jpcsp/languages/jpcsp", utilityLocale).getString("sceUtilityGamedataInstall.percent");
+
+        	createDialog(gamedataInstallUtilityDialogState);
+        }
+
+		@Override
+		protected void updateDialog() {
+            // Shadows are softer in MsgDialog
+            setSoftShadows(true);
+
+            // Clear screen in light gray color. Do not clear depth and stencil values.
+            gu.sceGuClear(CLEAR_COLOR_BUFFER, 0x968681);
+
+            final float scale = 0.79f;
+            final int lineHeight = 19;
+            final int lineCount = 4;
+            int textHeight = lineHeight * lineCount;
+            int totalHeight = textHeight + 44;
+            int topLineY = (Screen.height - totalHeight) / 2;
+
+            drawHeader(strTitle);
+
+            final int lineColor = 0xFFDFDAD9;
+            // Draw top line
+            gu.sceGuDrawHorizontalLine(60, 420, topLineY, lineColor);
+            // Draw bottom line
+            gu.sceGuDrawHorizontalLine(60, 420, topLineY + totalHeight, lineColor);
+
+            // Center the text
+            int x1 = centerText(getDefaultFontInfo(), strInstalling, scale);
+            int x2 = centerText(getDefaultFontInfo(), strWait, scale);
+            int x = Math.min(x1, x2);
+            int y = topLineY + 17;
+            drawTextWithShadow(x, y, scale, strInstalling);
+            y += lineHeight;
+            drawTextWithShadow(x, y, scale, strWait);
+            y += lineHeight;
+
+            final int progressStart = 70;
+            final int progressEnd = 410;
+
+            y += 10;
+            String secondsLeftText = String.format(strSecondsLeft, gamedataInstallUtilityDialogState.getSecondsLeft());
+            drawTextWithShadow(rightAlignText(getDefaultFontInfo(), secondsLeftText, progressEnd, scale), y, scale, secondsLeftText);
+            y += lineHeight;
+
+            // Draw progress bar
+            y += 1;
+            final int progressLineColor = 0xFFC64732; // Blue color
+            int progress = gamedataInstallUtilityDialogState.getProgress();
+            int progressX = progressStart + progress * (progressEnd - progressStart) / 100;
+            for (int i = 0; i < 5; i++) {
+                gu.sceGuDrawHorizontalLine(progressStart, progressX, y + i, progressLineColor);
+                gu.sceGuDrawHorizontalLine(progressX, progressEnd, y + i, lineColor);
+            }
+            y += 12;
+            String percentText = String.format(strPercent, progress);
+            drawTextWithShadow(centerText(getDefaultFontInfo(), percentText, scale), y, scale, percentText);
+            y += lineHeight;
+
+            drawCancel();
+		}
+
+		@Override
+		protected boolean canConfirm() {
+			// Pressing the confirm button has no effect, can only cancel
+			return false;
+		}
     }
 
     public static String getSystemParamNickname() {

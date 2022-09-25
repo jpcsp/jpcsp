@@ -16,6 +16,10 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.hardware;
 
+import static jpcsp.util.Utilities.GB;
+import static jpcsp.util.Utilities.KB;
+import static jpcsp.util.Utilities.MB;
+
 import jpcsp.util.Utilities;
 
 public class MemoryStick {
@@ -35,12 +39,11 @@ public class MemoryStick {
     // Memory Stick power
     private static boolean msPower = true;
 
+    private final static int sectorSize = 32 * KB;
     // Total size of the memory stick, in bytes
-//    private static long totalSize = 64L * 1024 * 1024; // 64MB
-    private static long totalSize = 16L * 1024 * 1024 * 1024; // 16GB
+    private static long totalSize = 16L * GB;
     // Free size on memory stick, in bytes
-    private static long freeSize = 1L * 1024 * 1024 * 1024;	// 1GB
-    private final static int sectorSize = 32 * 1024; // 32KB
+    private static long freeSize = 1L * GB;
 
     private static boolean locked = false;
 
@@ -84,16 +87,22 @@ public class MemoryStick {
 		return (sizeKb + 31) & ~31;
 	}
 
+	private static long divideWithRounding(long value, long divide) {
+		return (value + divide / 2) / divide;
+	}
+
+	public static String getSizeString(long size) {
+		if (size < 3L * MB) {
+			return String.format("%d KB", divideWithRounding(size, KB));
+		}
+		if (size < 3L * GB) {
+			return String.format("%d MB", divideWithRounding(size, MB));
+		}
+		return String.format("%d GB", divideWithRounding(size, GB));
+	}
+
 	public static String getSizeKbString(int sizeKb) {
-		if (sizeKb < 3 * 1024) {
-			return String.format("%d KB", sizeKb);
-		}
-		sizeKb /= 1024;
-		if (sizeKb < 3 * 1024) {
-			return String.format("%d MB", sizeKb);
-		}
-		sizeKb /= 1024;
-		return String.format("%d GB", sizeKb);
+		return getSizeString(((long) sizeKb) * KB);
 	}
 
 	public static boolean isLocked() {

@@ -16,16 +16,23 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.kernel.types;
 
+import jpcsp.HLE.TPointer;
+
 public class SceUtilityGamedataInstallParams extends pspUtilityBaseDialog {
-    public int unk1;
+	public static final int PSP_UTILITY_GAMEDATA_MODE_SHOW_PROGRESS = 1;
+    public int mode;                               // 0 for silent mode, 1 to show progress UI
     public String gameName;
     public String dataName;
     public String gamedataParamsGameTitle;
     public String gamedataParamsDataTitle;
     public String gamedataParamsData;
-    public int unk2;
-    public int unkResult1;
-    public int unkResult2;
+    public int parentalLevel;
+    public int progress;                           // Progress in percent: [0..100]
+    public long remainingSize;                     // When in progress, remaining size (in bytes) still to be copied
+    public long memoryStickMissingFreeSpace;       // Additional memory stick space (in bytes) that would be required to be able to install the gamedata
+    public String memoryStickMissingFreeSpaceText; // Additional memory stick space (in text form) that would be required to be able to install the gamedata
+    public long memoryStickFreeSpace;              // Memory stick free space (in bytes)
+    public String memoryStickFreeSpaceText;        // Memory stick free space (in text form)
 
     @Override
     protected void read() {
@@ -33,18 +40,21 @@ public class SceUtilityGamedataInstallParams extends pspUtilityBaseDialog {
         read(base);
         setMaxSize(base.totalSizeof());
 
-        unk1 = read32();
+        mode = read32();
         gameName = readStringNZ(13);
         readUnknown(3);
         dataName = readStringNZ(20);
         gamedataParamsGameTitle = readStringNZ(128);
         gamedataParamsDataTitle = readStringNZ(128);
         gamedataParamsData = readStringNZ(1024);
-        unk2 = read8();
-        readUnknown(7);
-        unkResult1 = read32();
-        unkResult2 = read32();
-        readUnknown(48);
+        parentalLevel = read32();
+        progress = read32();
+        remainingSize = read64();
+        memoryStickMissingFreeSpace = read64();
+        memoryStickMissingFreeSpaceText = readStringNZ(8);
+        memoryStickFreeSpace = read64();
+        memoryStickFreeSpaceText = readStringNZ(8);
+        readUnknown(16);
     }
 
     @Override
@@ -52,18 +62,26 @@ public class SceUtilityGamedataInstallParams extends pspUtilityBaseDialog {
         write(base);
         setMaxSize(base.totalSizeof());
 
-        write32(unk1);
+        write32(mode);
         writeStringNZ(13, gameName);
         writeUnknown(3);
         writeStringNZ(20, dataName);
         writeStringNZ(128, gamedataParamsGameTitle);
         writeStringNZ(128, gamedataParamsDataTitle);
         writeStringNZ(1024, gamedataParamsData);
-        write8((byte) unk2);
-        writeUnknown(7);
-        write32(unkResult1);
-        write32(unkResult2);
-        writeUnknown(48);
+        write32(parentalLevel);
+        write32(progress);
+        write64(remainingSize);
+        write64(memoryStickMissingFreeSpace);
+        writeStringNZ(8, memoryStickMissingFreeSpaceText);
+        write64(memoryStickFreeSpace);
+        writeStringNZ(8, memoryStickFreeSpaceText);
+        writeUnknown(16);
+    }
+
+    public void writeProgress(TPointer baseAddress) {
+    	baseAddress.setValue32(1372, progress);
+    	baseAddress.setValue64(1376, remainingSize);
     }
 
     @Override
@@ -73,6 +91,6 @@ public class SceUtilityGamedataInstallParams extends pspUtilityBaseDialog {
 
     @Override
     public String toString() {
-    	return String.format("unk1=0x%08X, gameName='%s', dataName='%s', gameTitle='%s', dataTitle='%s', data='%s', unk2=0x%02X", unk1, gameName, dataName, gamedataParamsGameTitle, gamedataParamsDataTitle, gamedataParamsData, unk2);
+    	return String.format("mode=0x%08X, progress=%d, gameName='%s', dataName='%s', gameTitle='%s', dataTitle='%s', data='%s', parentalLevel=%d", mode, progress, gameName, dataName, gamedataParamsGameTitle, gamedataParamsDataTitle, gamedataParamsData, parentalLevel);
     }
 }

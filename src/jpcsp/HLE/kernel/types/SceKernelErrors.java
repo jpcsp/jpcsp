@@ -376,6 +376,11 @@ public class SceKernelErrors {
 
     public static final int ERROR_SCREENSHOT_CONT_MODE_NOT_INIT                 = 0x80111229;
 
+    public static final int ERROR_UTILITY_GAMEDATA_MEMSTICK_REMOVED             = 0x80111901;
+    public static final int ERROR_UTILITY_GAMEDATA_MEMSTICK_NO_FREE_SPACE       = 0x80111902;
+    public static final int ERROR_UTILITY_GAMEDATA_MEMSTICK_WRITE_PROTECTED     = 0x80111903;
+    public static final int ERROR_UTILITY_GAMEDATA_INVALID_MODE                 = 0x80111908;
+
     public final static int ERROR_UMD_NOT_READY                                 = 0x80210001;
     public final static int ERROR_UMD_LBA_OUT_OF_BOUNDS                         = 0x80210002;
     public final static int ERROR_UMD_NO_DISC                                   = 0x80210003;
