@@ -741,6 +741,9 @@ public class sceUtility extends HLEModule {
                 return SceKernelErrors.ERROR_UTILITY_INVALID_STATUS;
             }
 
+            // Assume Yes is selected by default
+            setYesSelected(true);
+
             this.paramsAddr = paramsAddr;
             this.params = createParams();
 
@@ -1126,7 +1129,6 @@ public class sceUtility extends HLEModule {
                                 }
                             }
 
-                            setYesSelected(true);
                             GuSavedataDialogLoad gu = new GuSavedataDialogLoad(savedataParams, this);
                             openDialog(gu);
                             dialogState = DialogState.confirmation;
@@ -1304,9 +1306,6 @@ public class sceUtility extends HLEModule {
                                 }
                             }
 
-                            // Yes is selected by default if the save does not exist.
-                            // No is selected by default if the save does exist (overwrite).
-                            setYesSelected(!savedataParams.isPresent());
                             GuSavedataDialogSave gu = new GuSavedataDialogSave(savedataParams, this);
                             openDialog(gu);
                             dialogState = DialogState.confirmation;
@@ -2276,6 +2275,7 @@ public class sceUtility extends HLEModule {
         private long fileProcessedLength;
         private final byte[] buffer = new byte[512 * 1024];
         private long startMillis;
+        private int secondsLeft;
 
         public GamedataInstallUtilityDialogState(String name) {
             super(name);
@@ -2297,6 +2297,41 @@ public class sceUtility extends HLEModule {
             }
 
             return super.checkValidity();
+		}
+
+		private void init() {
+			sourceLocalFileName = null;
+			destinationLocalFileName = null;
+			ivfs = null;
+			ovfs = null;
+			fileNames = null;
+			filenameIndex = 0;
+        	if (ivf != null) {
+        		ivf.ioClose();
+        		ivf = null;
+        	}
+        	if (ovf != null) {
+        		ovf.ioClose();
+        		ovf = null;
+        	}
+			totalLength = 0L;
+			totalProcessedLength = 0L;
+			fileTotalLength = 0L;
+			fileProcessedLength = 0L;
+			startMillis = 0L;
+			secondsLeft = 120;
+		}
+
+		@Override
+		public int executeInitStart(TPointer paramsAddr) {
+			init();
+			return super.executeInitStart(paramsAddr);
+		}
+
+		@Override
+		public int executeShutdownStart() {
+			init();
+        	return super.executeShutdownStart();
 		}
 
 		@Override
@@ -2396,6 +2431,7 @@ public class sceUtility extends HLEModule {
 		                        }
 		                    }
 		            	} else {
+		            		gamedataInstallParams.base.result = result;
 	            			gamedataInstallParams.remainingSize = 0L;
 	            			gamedataInstallParams.progress = result == 0 ? 100 : 0;
 				            gamedataInstallParams.memoryStickMissingFreeSpace = Math.max(totalLength - MemoryStick.getFreeSize(), 0L);
@@ -2403,8 +2439,14 @@ public class sceUtility extends HLEModule {
 				            gamedataInstallParams.memoryStickFreeSpace = MemoryStick.getFreeSize();
 				            gamedataInstallParams.memoryStickFreeSpaceText = MemoryStick.getSizeString(gamedataInstallParams.memoryStickFreeSpace);
 				            gamedataInstallParams.write(paramsAddr);
-				            quitDialog(result);
-				            keepVisible = false;
+
+				            if (hasProgressDialog()) {
+					            openDialog(new GuGamedataInstallCompletedDialog(gamedataInstallParams, this));
+					            dialogState = DialogState.completed;
+				            } else {
+				            	quitDialog(result);
+				            	keepVisible = false;
+				            }
 		            	}
 		            }
 
@@ -2438,7 +2480,7 @@ public class sceUtility extends HLEModule {
 		            }
 
 		            if (keepVisible) {
-		            	if (gamedataInstallParams.mode == PSP_UTILITY_GAMEDATA_MODE_SHOW_PROGRESS) {
+		            	if (hasProgressDialog()) {
 		                    if (!isDialogOpen()) {
 		                        GuGamedataInstallProgressDialog gu = new GuGamedataInstallProgressDialog(gamedataInstallParams, this);
 		                        openDialog(gu);
@@ -2463,6 +2505,12 @@ public class sceUtility extends HLEModule {
 		            }
 		            break;
         		case completed:
+                    if (!isDialogActive()) {
+                        quitDialog();
+                    } else {
+                        updateDialog();
+                    }
+        			break;
         		case display:
         			keepVisible = false;
         			break;
@@ -2471,7 +2519,11 @@ public class sceUtility extends HLEModule {
             return keepVisible;
         }
 
-        public int getProgress() {
+		private boolean hasProgressDialog() {
+			return gamedataInstallParams.mode == PSP_UTILITY_GAMEDATA_MODE_SHOW_PROGRESS;
+		}
+
+		public int getProgress() {
         	return gamedataInstallParams.progress;
         }
 
@@ -2481,11 +2533,16 @@ public class sceUtility extends HLEModule {
 
         public int getSecondsLeft() {
         	long nowMillis = getNowMillis();
-        	if (getProgress() <= 0) {
-        		return 60;
+        	if (getProgress() > 0) {
+	        	long endMillis = startMillis + 100L * (nowMillis - startMillis) / getProgress();
+	        	int newSecondsLeft = (int) ((endMillis - nowMillis + 500) / 1000);
+	        	// The PSP is only showing a decreasing number of seconds, i.e. it is never increasing
+	        	if (newSecondsLeft < secondsLeft) {
+	        		secondsLeft = newSecondsLeft;
+	        	}
         	}
-        	long endMillis = startMillis + 100L * (nowMillis - startMillis) / getProgress();
-        	return (int) ((endMillis - nowMillis + 500) / 1000);
+
+        	return secondsLeft;
         }
 
         @Override
@@ -3609,6 +3666,10 @@ public class sceUtility extends HLEModule {
             strAskSaveData = ResourceBundle.getBundle("jpcsp/languages/jpcsp", utilityLocale).getString("sceUtilitySavedata.strAskSaveData.text");
             strAskOverwriteData = ResourceBundle.getBundle("jpcsp/languages/jpcsp", utilityLocale).getString("sceUtilitySavedata.strAskOverwriteData.text");
 
+            // Yes is selected by default if the save does not exist.
+            // No is selected by default if the save does exist (overwrite).
+            savedataDialogState.setYesSelected(!savedataParams.isPresent());
+
             createDialog(savedataDialogState);
         }
 
@@ -3680,6 +3741,9 @@ public class sceUtility extends HLEModule {
 
             strNoData = ResourceBundle.getBundle("jpcsp/languages/jpcsp", utilityLocale).getString("sceUtilitySavedata.strNoData.text");
             strAskLoadData = ResourceBundle.getBundle("jpcsp/languages/jpcsp", utilityLocale).getString("sceUtilitySavedata.strAskLoadData.text");
+
+        	// Yes is selected by default
+            savedataDialogState.setYesSelected(true);
 
             createDialog(savedataDialogState);
         }
@@ -4069,6 +4133,7 @@ public class sceUtility extends HLEModule {
         public GuMsgDialog(final SceUtilityMsgDialogParams msgDialogParams, MsgDialogUtilityDialogState msgDialogState) {
             super(msgDialogParams.base);
             this.msgDialogParams = msgDialogParams;
+
             msgDialogState.setYesSelected(msgDialogParams.isOptionYesNoDefaultYes());
 
             createDialog(msgDialogState);
@@ -4271,6 +4336,9 @@ public class sceUtility extends HLEModule {
         	strTitle = ResourceBundle.getBundle("jpcsp/languages/jpcsp", utilityLocale).getString("sceUtilityGamedataInstall.title");
         	strConfirmation = ResourceBundle.getBundle("jpcsp/languages/jpcsp", utilityLocale).getString("sceUtilityGamedataInstall.confirmation");
 
+        	// Yes is selected by default
+        	gamedataInstallUtilityDialogState.setYesSelected(true);
+
         	createDialog(gamedataInstallUtilityDialogState);
         }
 
@@ -4402,6 +4470,56 @@ public class sceUtility extends HLEModule {
 			// Pressing the confirm button has no effect, can only cancel
 			return false;
 		}
+    }
+
+    protected static class GuGamedataInstallCompletedDialog extends GuUtilityDialog {
+		private final String strTitle;
+		private final String strCompleted;
+
+        public GuGamedataInstallCompletedDialog(final SceUtilityGamedataInstallParams gamedataInstallParams, GamedataInstallUtilityDialogState gamedataInstallUtilityDialogState) {
+        	super(gamedataInstallParams.base);
+
+        	strTitle = ResourceBundle.getBundle("jpcsp/languages/jpcsp", utilityLocale).getString("sceUtilityGamedataInstall.title");
+        	strCompleted = ResourceBundle.getBundle("jpcsp/languages/jpcsp", utilityLocale).getString("sceUtilityGamedataInstall.completed");
+
+        	createDialog(gamedataInstallUtilityDialogState);
+        }
+
+		@Override
+		protected void updateDialog() {
+            // Shadows are softer in MsgDialog
+            setSoftShadows(true);
+
+            // Clear screen in light gray color. Do not clear depth and stencil values.
+            gu.sceGuClear(CLEAR_COLOR_BUFFER, 0x968681);
+
+        	final float scale = 0.79f;
+
+            final int lineHeight = 19;
+            final int lineCount = getTextLines(strCompleted);
+            int textHeight = lineHeight * lineCount;
+            int totalHeight = textHeight + 24;
+            int topLineY = (Screen.height - totalHeight) / 2;
+
+            drawHeader(strTitle);
+
+            final int lineColor = 0xFFDFDAD9;
+            // Draw top line
+            gu.sceGuDrawHorizontalLine(60, 420, topLineY, lineColor);
+            // Draw bottom line
+            gu.sceGuDrawHorizontalLine(60, 420, topLineY + totalHeight, lineColor);
+
+            int y = topLineY + 17;
+            drawTextWithShadow(centerText(getDefaultFontInfo(), strCompleted, scale), y, scale, strCompleted);
+            y += textHeight;
+
+            drawBack();
+		}
+
+        @Override
+        protected boolean canConfirm() {
+            return false;
+        }
     }
 
     public static String getSystemParamNickname() {
