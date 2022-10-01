@@ -2052,13 +2052,20 @@ public class CompilerContext implements ICompilerContext {
     	flushInstructionCount(false, false);
 
     	int code = (opcode >> 6) & 0x000FFFFF;
-    	int syscallAddr = NIDMapper.getInstance().getAddressBySyscall(code);
+    	NIDMapper nidMapper = NIDMapper.getInstance();
+    	int syscallAddr = nidMapper.getAddressBySyscall(code);
     	// Call the HLE method only when it has not been overwritten
     	if (syscallAddr != 0) {
     		if (log.isDebugEnabled()) {
-    			log.debug(String.format("Calling overwritten HLE method '%s' instead of syscall", NIDMapper.getInstance().getNameBySyscall(code)));
+    			String name = nidMapper.getNameBySyscall(code);
+    			if (name != null) {
+    				log.debug(String.format("Calling overwritten HLE method '%s' instead of syscall", name));
+    			} else {
+    				log.debug(String.format("Calling NID 0x%08X from module '%s'", nidMapper.getNidBySyscall(code), nidMapper.getModuleNameBySyscall(code)));
+    			}
     		}
 	        invokeStaticMethod(getClassName(syscallAddr, instanceIndex), getStaticExecMethodName(), getStaticExecMethodDesc());
+            mv.visitInsn(Opcodes.POP);
     	} else {
     		HLEModuleFunction func = HLEModuleManager.getInstance().getFunctionFromSyscallCode(code);
 

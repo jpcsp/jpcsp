@@ -16,6 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.VFS.local;
 
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_UNSUPPORTED_OPERATION;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_MEMSTICK_DEVCTL_BAD_PARAMS;
 import static jpcsp.HLE.modules.IoFileMgrForUser.PSP_O_CREAT;
 import static jpcsp.HLE.modules.IoFileMgrForUser.PSP_O_EXCL;
@@ -348,6 +349,17 @@ public class LocalVirtualFileSystem extends AbstractVirtualFileSystem {
 		int result;
 
 		switch (command) {
+	        // Invalidate the MemoryStick driver cache (fatms0).
+	        case 0x0240D81E: {
+	        	if (!deviceName.equals("fatms0:")) {
+	        		result = ERROR_KERNEL_UNSUPPORTED_OPERATION;
+	        	} else if (inputLength != 0 || outputLength != 0) {
+	            	result = SceKernelErrors.ERROR_ERRNO_INVALID_ARGUMENT;
+	        	} else {
+	        		result = 0;
+	        	}
+	        	break;
+	        }
 	        // Register memorystick insert/eject callback (fatms0).
 	        case 0x02415821: {
 	            log.debug("sceIoDevctl register memorystick insert/eject callback (fatms0)");

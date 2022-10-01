@@ -855,18 +855,13 @@ public class IoFileMgrForUser extends HLEModule {
         String cwd = "";
         String filename = null;
 
-        if (pspfilename.startsWith("flash0:")) {
-        	if (pspfilename.startsWith("flash0:/")) {
-        		return pspfilename.replace("flash0:/", Settings.getInstance().getDirectoryMapping("flash0"));
-        	}
-        	return pspfilename.replace("flash0:", Settings.getInstance().getDirectoryMapping("flash0"));
-        }
-
-        if (pspfilename.startsWith("exdata0:")) {
-        	if (pspfilename.startsWith("exdata0:/")) {
-        		return pspfilename.replace("exdata0:/", Settings.getInstance().getDirectoryMapping("exdata0"));
-        	}
-        	return pspfilename.replace("exdata0:", Settings.getInstance().getDirectoryMapping("exdata0"));
+        for (String deviceName : new String[] { "flash0", "exdata0", "ms0" }) {
+            if (pspfilename.startsWith(deviceName + ":")) {
+            	if (pspfilename.startsWith(deviceName + ":/")) {
+            		return pspfilename.replace(deviceName + ":/", Settings.getInstance().getDirectoryMapping(deviceName));
+            	}
+            	return pspfilename.replace(deviceName + ":", Settings.getInstance().getDirectoryMapping(deviceName));
+            }
         }
 
         if (host0Path != null && pspfilename.startsWith("host0:") && !pspfilename.startsWith("host0:/")) {
@@ -1800,7 +1795,7 @@ public class IoFileMgrForUser extends HLEModule {
 	        		info.result = ERROR_KERNEL_NO_ASYNC_OP;
 	        		result = info.id;
 	                if (log.isDebugEnabled()) {
-	                    log.debug("hleIoOpen assigned id = 0x" + Integer.toHexString(info.id));
+	                    log.debug(String.format("hleIoOpen assigned id=0x%X", info.id));
 	                }
         		}
         	} else if (useVirtualFileSystem) {
@@ -1876,7 +1871,7 @@ public class IoFileMgrForUser extends HLEModule {
 	                            info.result = ERROR_KERNEL_NO_ASYNC_OP;
 	                            result = info.id;
 	                            if (log.isDebugEnabled()) {
-	                                log.debug("hleIoOpen assigned id = 0x" + Integer.toHexString(info.id));
+	        	                    log.debug(String.format("hleIoOpen assigned id=0x%X", info.id));
 	                            }
                             }
                         } catch (FileNotFoundException e) {
@@ -1923,7 +1918,7 @@ public class IoFileMgrForUser extends HLEModule {
                         info.result = ERROR_KERNEL_NO_ASYNC_OP; // sceIoOpenAsync will set this properly
                         result = info.id;
                         if (log.isDebugEnabled()) {
-                            log.debug("hleIoOpen assigned id = 0x" + Integer.toHexString(info.id));
+    	                    log.debug(String.format("hleIoOpen assigned id=0x%X", info.id));
                         }
                     }
                 }
@@ -4269,6 +4264,17 @@ public class IoFileMgrForUser extends HLEModule {
                 	result = -1;
                 }
                 break;
+            }
+            // Invalidate the MemoryStick driver cache (fatms0).
+            case 0x0240D81E: {
+            	if (!devicename.getString().equals("fatms0:")) {
+            		result = ERROR_KERNEL_UNSUPPORTED_OPERATION;
+            	} else if (inlen != 0 || outlen != 0) {
+                	result = SceKernelErrors.ERROR_ERRNO_INVALID_ARGUMENT;
+            	} else {
+            		result = 0;
+            	}
+            	break;
             }
             // Register memorystick insert/eject callback (fatms0).
             case 0x02415821: {

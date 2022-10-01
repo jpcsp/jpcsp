@@ -34,6 +34,7 @@ import jpcsp.HLE.TPointer32;
 
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.IllegalFormatException;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -545,41 +546,42 @@ public class SysMemUserForUser extends HLEModule {
 
     public String hleKernelSprintf(CpuState cpu, String format, Object[] formatParameters) {
     	String formattedMsg = format;
-    	try {
-    		// Translate the C-like format string to a Java format string:
-    		// - %u or %i -> %d
-    		// - %4u -> %4d
-    		// - %lld or %ld -> %d
-    		// - %llx or %lx -> %x
-    		// - %p -> %08X
-    		String javaMsg = format;
-    		javaMsg = javaMsg.replaceAll("\\%(\\d*)l?l?[uid]", "%$1d");
-    		javaMsg = javaMsg.replaceAll("\\%(\\d*)l?l?([xX])", "%$1$2");
-    		javaMsg = javaMsg.replaceAll("\\%p", "%08X");
+		// Translate from the C-like format string to a Java format string:
+		// - %u or %i -> %d
+		// - %4u -> %4d
+		// - %lld or %ld -> %d
+		// - %llx or %lx -> %x
+		// - %p -> %08X
+		String javaMsg = format;
+		javaMsg = javaMsg.replaceAll("%(\\d*)l?l?[uid]", "%$1d");
+		javaMsg = javaMsg.replaceAll("%(\\d*)l?l?([xX])", "%$1$2");
+		javaMsg = javaMsg.replaceAll("%p", "%08X");
 
-    		// Support for "%s" (at any place and can occur multiple times)
-    		int index = -1;
-    		for (int parameterIndex = 0; parameterIndex < formatParameters.length; parameterIndex++) {
-				index = javaMsg.indexOf('%', index + 1);
-				if (index < 0) {
-					break;
+		// Support for "%s" (at any place and can occur multiple times)
+		int index = -1;
+		for (int parameterIndex = 0; parameterIndex < formatParameters.length; parameterIndex++) {
+			index = javaMsg.indexOf('%', index + 1);
+			if (index < 0) {
+				break;
+			}
+			String parameterFormat = javaMsg.substring(index);
+			// Matching "%s" with optional width?
+			if (parameterFormat.matches("%-?\\d*s.*")) {
+				// Convert an integer address to a String by reading
+				// the String at the given address
+				int address = ((Integer) formatParameters[parameterIndex]).intValue();
+				if (address == 0) {
+					formatParameters[parameterIndex] = "(null)";
+				} else {
+					formatParameters[parameterIndex] = Utilities.readStringZ(address);
 				}
-				String parameterFormat = javaMsg.substring(index);
-				if (parameterFormat.startsWith("%s")) {
-					// Convert an integer address to a String by reading
-					// the String at the given address
-					int address = ((Integer) formatParameters[parameterIndex]).intValue();
-					if (address == 0) {
-						formatParameters[parameterIndex] = "(null)";
-					} else {
-						formatParameters[parameterIndex] = Utilities.readStringZ(address);
-					}
-				}
-    		}
+			}
+		}
 
+		try {
     		// String.format: If there are more arguments than format specifiers, the extra arguments are ignored.
     		formattedMsg = String.format(javaMsg, formatParameters);
-    	} catch (Exception e) {
+    	} catch (IllegalFormatException e) {
     		// Ignore formatting exception
     	}
 

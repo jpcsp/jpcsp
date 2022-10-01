@@ -16,9 +16,27 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE;
 
+import static jpcsp.Allegrex.Common._a2;
+import static jpcsp.Allegrex.Common._a3;
+import static jpcsp.Allegrex.Common._ra;
+import static jpcsp.Allegrex.Common._sp;
+import static jpcsp.HLE.modules.SysMemUserForUser.KERNEL_PARTITION_ID;
+import static jpcsp.HLE.modules.SysMemUserForUser.PSP_SMEM_Low;
+import static jpcsp.HLE.modules.SysMemUserForUser.defaultSizeAlignment;
+import static jpcsp.util.HLEUtilities.ADDIU;
+import static jpcsp.util.HLEUtilities.JAL;
+import static jpcsp.util.HLEUtilities.JR;
+import static jpcsp.util.HLEUtilities.LI;
+import static jpcsp.util.HLEUtilities.LW;
 import static jpcsp.util.HLEUtilities.NOP;
+import static jpcsp.util.HLEUtilities.SW;
+import static jpcsp.util.HLEUtilities.SYSCALL;
 
+import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -33,7 +51,6 @@ import jpcsp.AllegrexOpcodes;
 import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.NIDMapper;
-import jpcsp.Allegrex.Common;
 import jpcsp.Allegrex.compiler.RuntimeContext;
 import jpcsp.Allegrex.compiler.RuntimeContextLLE;
 import jpcsp.HLE.VFS.IVirtualFileSystem;
@@ -41,7 +58,10 @@ import jpcsp.HLE.kernel.Managers;
 import jpcsp.HLE.kernel.types.IAction;
 import jpcsp.HLE.kernel.types.SceIoStat;
 import jpcsp.HLE.kernel.types.SceModule;
+import jpcsp.HLE.modules.SysMemUserForUser.SysMemInfo;
 import jpcsp.hardware.Model;
+import jpcsp.memory.IMemoryWriter;
+import jpcsp.memory.MemoryWriter;
 import jpcsp.state.StateInputStream;
 import jpcsp.state.StateOutputStream;
 import jpcsp.util.HLEUtilities;
@@ -140,10 +160,10 @@ public class HLEModuleManager {
         sceDisplay(Modules.sceDisplayModule),
         sceGe_user(Modules.sceGe_userModule),
         sceRtc(Modules.sceRtcModule),
-        KernelLibrary(Modules.Kernel_LibraryModule),
+        KernelLibrary(Modules.Kernel_LibraryModule, new String[] { "usersystemlib", "sceKernelLibrary", "Kernel_Library" }, "flash0:/kd/usersystemlib.prx"),
         ModuleMgrForUser(Modules.ModuleMgrForUserModule),
         LoadCoreForKernel(Modules.LoadCoreForKernelModule),
-        sceCtrl(Modules.sceCtrlModule),
+        sceCtrl(Modules.sceCtrlModule, new String[] { "sceCtrl" }, "flash0:/kd/ctrl.prx"),
         sceAudio(Modules.sceAudioModule),
         sceImpose(Modules.sceImposeModule),
         sceSuspendForUser(Modules.sceSuspendForUserModule),
@@ -343,6 +363,22 @@ public class HLEModuleManager {
 		nidMapper = NIDMapper.getInstance();
 		syscallToFunction = new HashMap<>();
 		nidToFunction = new HashMap<>();
+    }
+
+	public void read(StateInputStream stream) throws IOException {
+    	stream.readVersion(STATE_VERSION);
+    	for (ModuleInfo moduleInfo : ModuleInfo.values()) {
+        	HLEModule hleModule = moduleInfo.getModule();
+        	hleModule.read(stream);
+        }
+    }
+
+    public void write(StateOutputStream stream) throws IOException {
+    	stream.writeVersion(STATE_VERSION);
+    	for (ModuleInfo moduleInfo : ModuleInfo.values()) {
+        	HLEModule hleModule = moduleInfo.getModule();
+        	hleModule.write(stream);
+        }
     }
 
     /** (String)"2.71" to (int)271 */
@@ -546,17 +582,9 @@ public class HLEModuleManager {
 
     		if (func.requiresJumpCall()) {
     			int jumpCallAddress = HLEUtilities.getInstance().allocateInternalMemory(8);
-    			int returnInstruction = // jr $ra
-                	    (AllegrexOpcodes.SPECIAL << 26)
-                	    | AllegrexOpcodes.JR
-                	    | ((Common._ra) << 21);
-                int syscallInstruction = // syscall <code>
-                    (AllegrexOpcodes.SPECIAL << 26)
-                    | AllegrexOpcodes.SYSCALL
-                    | ((syscallCode & 0x000fffff) << 6);
                 Memory mem = Emulator.getMemory(jumpCallAddress);
-                mem.write32(jumpCallAddress + 0, returnInstruction);
-                mem.write32(jumpCallAddress + 4, syscallInstruction);
+                mem.write32(jumpCallAddress + 0, JR());
+                mem.write32(jumpCallAddress + 4, SYSCALL(syscallCode));
     			nidMapper.setNidAddress(func.getModuleName(), nid, jumpCallAddress);
     		}
     	}
@@ -783,7 +811,7 @@ public class HLEModuleManager {
 			return;
 		}
 
-		// This HLE module need to be started in order
+		// This HLE module needs to be started in order
 		// to be able to load and start the available modules.
 		Modules.ModuleMgrForUserModule.start();
 
@@ -822,19 +850,122 @@ public class HLEModuleManager {
     	}
 	}
 
-    public void read(StateInputStream stream) throws IOException {
-    	stream.readVersion(STATE_VERSION);
-    	for (ModuleInfo moduleInfo : ModuleInfo.values()) {
-        	HLEModule hleModule = moduleInfo.getModule();
-        	hleModule.read(stream);
-        }
-    }
+	private void loadPlugins(String sepluginsFileName) {
+		byte[] buffer = Utilities.readCompleteFile(sepluginsFileName);
+		if (buffer == null) {
+			return;
+		}
 
-    public void write(StateOutputStream stream) throws IOException {
-    	stream.writeVersion(STATE_VERSION);
-    	for (ModuleInfo moduleInfo : ModuleInfo.values()) {
-        	HLEModule hleModule = moduleInfo.getModule();
-        	hleModule.write(stream);
-        }
-    }
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("Loading Plug-Ins from '%s'", sepluginsFileName));
+		}
+
+		boolean firstPlugIn = true;
+		try {
+			BufferedReader reader = new BufferedReader(new InputStreamReader(new ByteArrayInputStream(buffer)));
+			while (true) {
+				String line = reader.readLine();
+				if (line == null) {
+					break;
+				}
+				line = line.trim();
+
+				// Ignore lines starting with #
+				if (line.startsWith("#")) {
+					continue;
+				}
+
+				String[] parts = line.split("[ \\t]");
+				if (parts != null && parts.length >= 2 && "1".equals(parts[1])) {
+					if (firstPlugIn) {
+						installFakeKernelCode();
+						firstPlugIn = false;
+					}
+
+					String pluginFileName = parts[0];
+					if (log.isInfoEnabled()) {
+						log.info(String.format("Loading and starting the Plug-In '%s'", pluginFileName));
+					}
+			    	Modules.ModuleMgrForUserModule.hleKernelLoadAndStartModule(pluginFileName, 0x10, null);
+				}
+			}
+			reader.close();
+		} catch (FileNotFoundException e) {
+			log.error("loadPlugins", e);
+		} catch (IOException e) {
+			log.error("loadPlugins", e);
+		}
+	}
+
+	public void loadPlugins() {
+		loadPlugins("ms0:/seplugins/game.txt");
+	}
+
+	private void installFakeKernelCode() {
+		// The homebrew plug-in CheatMaster is patching the following kernel functions:
+		installFakeKernelCode(getFunctionFromNID(0x9E3C6DC6)); // sceDisplaySetBrightness
+		installFakeKernelCode(getFunctionFromNID(0x3A622550)); // sceCtrlPeekBufferPositive
+		installFakeKernelCode(getFunctionFromNID(0xC152080A)); // sceCtrlPeekBufferNegative
+		installFakeKernelCode(getFunctionFromNID(0x1F803938)); // sceCtrlReadBufferPositive
+		installFakeKernelCode(getFunctionFromNID(0x60B81F86)); // sceCtrlReadBufferNegative
+	}
+
+	private void installFakeKernelCode(HLEModuleFunction hleFunction) {
+		if (hleFunction == null) {
+			return;
+		}
+
+		int addr = installFakeKernelCodeForSyscall(hleFunction.getSyscallCode(), hleFunction.getFunctionName());
+		if (addr == 0) {
+			return;
+		}
+
+		nidMapper.addFakeSycall(hleFunction.getModuleName(), hleFunction.getNid(), addr);
+
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("Installed fake kernel code at 0x%08X for %s", addr, hleFunction));
+		}
+	}
+
+	private int installFakeKernelCodeForSyscall(int syscallCode, String functionName) {
+		SysMemInfo sysMemInfo = Modules.SysMemUserForUserModule.malloc(KERNEL_PARTITION_ID, String.format("Fake kernel code for syscall 0x%05X(%s)", syscallCode, functionName), PSP_SMEM_Low, defaultSizeAlignment, 0);
+		if (sysMemInfo == null) {
+			return 0;
+		}
+
+		int addr = sysMemInfo.addr;
+		IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(addr, defaultSizeAlignment, 4);
+
+		if (functionName.startsWith("sceCtrlReadBuffer") || functionName.startsWith("sceCtrlPeekBuffer")) {
+			// The homebrew plug-in CheatMaster is patching these functions by searching for a "jal" instruction inside them
+			int port = 0;
+			int mode = (functionName.contains("Peek") ? 0 : 2) | (functionName.contains("Positive") ? 0 : 1);
+	    	memoryWriter.writeNext(ADDIU(_sp, _sp, -16));
+	    	memoryWriter.writeNext(SW   (_ra, _sp, 0));
+			memoryWriter.writeNext(LI   (_a2, port));
+			memoryWriter.writeNext(JAL  (addr + 8 * 4));
+			memoryWriter.writeNext(LI   (_a3, mode));
+	    	memoryWriter.writeNext(LW   (_ra, _sp, 0));
+			memoryWriter.writeNext(JR   ());
+	    	memoryWriter.writeNext(ADDIU(_sp, _sp, 16));
+
+	    	// This is a HLE syscall supporting the different sceCtrlReadBuffer variants
+	    	syscallCode = Modules.sceCtrlModule.getHleFunctionByName("_sceCtrlReadBuf").getSyscallCode();
+		} else if ("sceDisplaySetBrightness".equals(functionName)) {
+			// The homebrew plug-in CheatMaster is patching this function by searching for a "jal" instruction inside it
+	    	memoryWriter.writeNext(ADDIU(_sp, _sp, -16));
+	    	memoryWriter.writeNext(SW   (_ra, _sp, 0));
+			memoryWriter.writeNext(JAL  (addr + 7 * 4));
+			memoryWriter.writeNext(NOP  ());
+	    	memoryWriter.writeNext(LW   (_ra, _sp, 0));
+			memoryWriter.writeNext(JR   ());
+	    	memoryWriter.writeNext(ADDIU(_sp, _sp, 16));
+		}
+
+		memoryWriter.writeNext(JR     ());
+		memoryWriter.writeNext(SYSCALL(syscallCode));
+		memoryWriter.flush();
+
+		return addr;
+	}
 }

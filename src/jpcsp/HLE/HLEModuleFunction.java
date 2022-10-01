@@ -131,6 +131,6 @@ public class HLEModuleFunction {
 
 	@Override
     public String toString() {
-    	return String.format("HLEModuleFunction(moduleName='%s', functionName='%s', nid=0x%08X, syscallCode=%d)", moduleName, functionName, nid, syscallCode);
+    	return String.format("HLEModuleFunction(moduleName='%s', functionName='%s', nid=0x%08X, syscallCode=0x%05X)", moduleName, functionName, nid, syscallCode);
     }
 }

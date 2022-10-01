@@ -2233,7 +2233,13 @@ public class Utilities {
     		return func.getFunctionName();
     	}
 
-    	return Modules.LoadCoreForKernelModule.getFunctionNameBySyscall(mem, syscallCode);
+    	String name = Modules.LoadCoreForKernelModule.getFunctionNameBySyscall(mem, syscallCode);
+    	if (name != null) {
+    		return name;
+    	}
+
+    	int address = NIDMapper.getInstance().getAddressBySyscall(syscallCode);
+    	return getFunctionNameByAddress(address);
     }
 
     public static void addHex(StringBuilder s, int value) {

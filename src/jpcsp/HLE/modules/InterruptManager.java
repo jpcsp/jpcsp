@@ -17,6 +17,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE.modules;
 
 import jpcsp.Emulator;
+import jpcsp.NIDMapper;
 import jpcsp.Processor;
 import jpcsp.Allegrex.Cp0State;
 import jpcsp.HLE.BufferInfo;
@@ -29,6 +30,7 @@ import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.TPointer32;
+import jpcsp.HLE.TPointerFunction;
 import jpcsp.HLE.kernel.Managers;
 import jpcsp.HLE.kernel.managers.IntrManager;
 import jpcsp.HLE.kernel.types.interrupts.AbstractInterruptHandler;
@@ -235,11 +237,17 @@ public class InterruptManager extends HLEModule {
 	/*
 	 * Returns the syscall number implementing the given function address
 	 */
-	@HLEUnimplemented
 	@HLEFunction(nid = 0x8B61808B, version = 150)
 	@HLEFunction(nid = 0xF153B371, version = 660)
-	public int sceKernelQuerySystemCall(TPointer func) {
-		return -1;
+	public int sceKernelQuerySystemCall(TPointerFunction func) {
+		NIDMapper nidMapper = NIDMapper.getInstance();
+		int syscall = nidMapper.getSyscallByAddress(func.getAddress());
+
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("sceKernelQuerySystemCall func=%s returning syscall=0x%05X (NID 0x%08X from moduleName='%s')", func, syscall, nidMapper.getNidByAddress(func.getAddress()), nidMapper.getModuleNameByAddress(func.getAddress())));
+		}
+
+		return syscall;
 	}
 
 	@HLEUnimplemented

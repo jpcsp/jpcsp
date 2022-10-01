@@ -196,6 +196,7 @@ public class Emulator implements Runnable {
         initNewPsp(fromSyscall);
 
         HLEModuleManager.getInstance().loadAvailableFlash0Modules(fromSyscall);
+        HLEModuleManager.getInstance().loadPlugins();
 
         TPointer loadAddress = getLoadAddress();
     	module = Loader.getInstance().LoadModule(pspfilename, f, loadAddress, USER_PARTITION_ID, USER_PARTITION_ID, false, true, fromSyscall, isSignChecked, key);

@@ -108,10 +108,10 @@ public class Controller {
 
     protected Controller(net.java.games.input.Controller inputController) {
         this.inputController = inputController;
-        Settings.getInstance().registerSettingsListener("hasRightAnalogController", "hasRightAnalogController", new RightAnalogControllerSettingsListener());
     }
 
     private void init() {
+        Settings.getInstance().registerSettingsListener("hasRightAnalogController", "hasRightAnalogController", new RightAnalogControllerSettingsListener());
         keys = new HashMap<Integer, keyCode>(22);
         controllerComponents = new HashMap<keyCode, String>(22);
         loadKeyConfig();
@@ -844,7 +844,7 @@ public class Controller {
     public void setHasRightAnalogController(boolean hasRightAnalogController) {
         if (this.hasRightAnalogController != hasRightAnalogController) {
             this.hasRightAnalogController = hasRightAnalogController;
-            init();
+        	init();
         }
     }
 }

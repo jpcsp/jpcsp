@@ -28,6 +28,8 @@ import jpcsp.HLE.SceKernelErrorException;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.TPointer32;
 
+import static jpcsp.HLE.HLEModuleManager.HLESyscallNid;
+
 import java.util.LinkedList;
 import java.util.List;
 
@@ -585,4 +587,23 @@ public class sceCtrl extends HLEModule {
     	// Has no parameters
     	return 0;
 	}
+
+    // Used by HLEModuleManager.installFakeKernelCodeForSyscall()
+    @HLEFunction(nid = HLESyscallNid, version = 150)
+    public int _sceCtrlReadBuf(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=16, usage=Usage.out) TPointer dataAddr, int numBuf, int port, int mode) {
+    	if (port != 0) {
+        	log.error(String.format("_sceCtrlReadBuf unknown port=%d", port));
+        	return -1;
+    	}
+
+    	switch (mode) {
+    		case 0: return sceCtrlPeekBufferPositive(dataAddr, numBuf);
+    		case 1: return sceCtrlPeekBufferNegative(dataAddr, numBuf);
+    		case 2: return sceCtrlReadBufferPositive(dataAddr, numBuf);
+    		case 3: return sceCtrlReadBufferPositive(dataAddr, numBuf);
+    	}
+
+    	log.error(String.format("_sceCtrlReadBuf unknown mode=%d", mode));
+    	return -1;
+    }
 }

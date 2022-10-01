@@ -28,6 +28,7 @@ import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
  *
  */
 public class TPointerFunction {
+	public static final TPointerFunction NULL = new TPointerFunction();
 	private TPointer32 pointer;
 
     private static class CallbackReturnCode implements IAction {

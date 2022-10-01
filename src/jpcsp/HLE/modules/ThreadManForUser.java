@@ -17,11 +17,17 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE.modules;
 
 import static jpcsp.Allegrex.Common._a0;
+import static jpcsp.Allegrex.Common._a1;
+import static jpcsp.Allegrex.Common._a2;
+import static jpcsp.Allegrex.Common._a3;
 import static jpcsp.Allegrex.Common._s0;
+import static jpcsp.Allegrex.Common._sp;
+import static jpcsp.Allegrex.Common._t0;
 import static jpcsp.Allegrex.Common._v0;
 import static jpcsp.Allegrex.Common._zr;
 import static jpcsp.Emulator.exitCalled;
 import static jpcsp.HLE.HLEModuleManager.HLESyscallNid;
+import static jpcsp.HLE.Modules.ModuleMgrForUserModule;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_ILLEGAL_ARGUMENT;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_ILLEGAL_PRIORITY;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_ILLEGAL_THREAD;
@@ -74,9 +80,12 @@ import static jpcsp.HLE.modules.SysMemUserForUser.USER_PARTITION_ID;
 import static jpcsp.Memory.addressMask;
 import static jpcsp.MemoryMap.END_KERNEL;
 import static jpcsp.MemoryMap.START_KERNEL;
+import static jpcsp.util.HLEUtilities.ADDIU;
 import static jpcsp.util.HLEUtilities.B;
 import static jpcsp.util.HLEUtilities.JR;
+import static jpcsp.util.HLEUtilities.LUI;
 import static jpcsp.util.HLEUtilities.MOVE;
+import static jpcsp.util.HLEUtilities.ORI;
 import static jpcsp.util.HLEUtilities.SYSCALL;
 import static jpcsp.util.Utilities.alignUp;
 import static jpcsp.util.Utilities.hasFlag;
@@ -125,6 +134,7 @@ import jpcsp.HLE.kernel.types.IWaitStateChecker;
 import jpcsp.HLE.kernel.types.SceKernelAlarmInfo;
 import jpcsp.HLE.kernel.types.SceKernelCallbackInfo;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
+import jpcsp.HLE.kernel.types.SceKernelLMOption;
 import jpcsp.HLE.kernel.types.SceKernelSystemStatus;
 import jpcsp.HLE.kernel.types.SceKernelThreadEventHandlerInfo;
 import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
@@ -753,6 +763,42 @@ public class ThreadManForUser extends HLEModule {
         idle0.cpuContext._gp = gp;
         idle1.cpuContext._gp = gp;
 
+        if (moduleid >= 0) {
+	        int startModuleOptionsLength = 20;
+	        int startModuleOptionsAddr = allocateInternalUserMemory(startModuleOptionsLength);
+	        TPointer startModuleOptionsPtr = new TPointer(getMemory(), startModuleOptionsAddr);
+	        startModuleOptionsPtr.setValue32(0, startModuleOptionsLength);
+	        SceKernelLMOption startModuleOptions = new SceKernelLMOption();
+	        startModuleOptions.mpidText = module != null ? module.mpidtext : USER_PARTITION_ID;
+	        startModuleOptions.mpidData = module != null ? module.mpiddata : USER_PARTITION_ID;
+	        startModuleOptions.flags = IoFileMgrForUser.PSP_O_RDONLY;
+	        startModuleOptions.position = SysMemUserForUser.PSP_SMEM_Low;
+	        startModuleOptions.write(startModuleOptionsPtr);
+
+	        int numberInstructions = 11;
+	        int rootThreadMemorySize = numberInstructions * 4;
+	        int rootThreadAddr = allocateInternalUserMemory(rootThreadMemorySize);
+	        IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(rootThreadAddr, rootThreadMemorySize, 4);
+	    	memoryWriter.writeNext(ADDIU(_sp, _sp, -16));
+	    	memoryWriter.writeNext(MOVE(_a2, _a1));
+	    	memoryWriter.writeNext(MOVE(_a1, _a0));
+	    	memoryWriter.writeNext(ADDIU(_a0, _zr, moduleid));
+	    	memoryWriter.writeNext(MOVE(_a3, _zr));
+	    	memoryWriter.writeNext(LUI(_t0, startModuleOptionsAddr >>> 16));
+	    	memoryWriter.writeNext(ORI(_t0, _t0, startModuleOptionsAddr & 0xFFFF));
+	    	memoryWriter.writeNext(SYSCALL(ModuleMgrForUserModule, "sceKernelStartModule"));
+	    	memoryWriter.writeNext(ADDIU(_sp, _sp, 16));
+	    	memoryWriter.writeNext(JR());
+	    	memoryWriter.writeNext(MOVE(_v0, _zr));
+	    	memoryWriter.flush();
+
+	    	rootThread.cpuContext.pc = rootThreadAddr;
+	    	rootThread.cpuContext.npc = rootThreadAddr;
+	    	if (log.isDebugEnabled()) {
+	    		log.debug(String.format("Root thread entry using sceKernelStartModule 0x%08X replacing 0x%08X", rootThreadAddr, entry_addr));
+	    	}
+        }
+
         hleChangeThreadState(rootThread, PSP_THREAD_READY);
 
         hleRescheduleCurrentThread();
@@ -858,7 +904,7 @@ public class ThreadManForUser extends HLEModule {
         IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(THREAD_EXIT_HANDLER_ADDRESS, 12, 4);
         memoryWriter.writeNext(MOVE(_a0, _v0));
         memoryWriter.writeNext(JR());
-        memoryWriter.writeNext(HLEUtilities.SYSCALL(this, "hleKernelExitThread"));
+        memoryWriter.writeNext(SYSCALL(this, "hleKernelExitThread"));
         memoryWriter.flush();
     }
 

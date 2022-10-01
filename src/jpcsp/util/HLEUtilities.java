@@ -93,6 +93,13 @@ public class HLEUtilities {
     	return (AllegrexOpcodes.ADDIU << 26) | (rs << 21) | (rt << 16) | (imm16 & 0xFFFF);
     }
 
+    public static int LI(int rt, int imm16) {
+    	if (imm16 == 0) {
+    		return MOVE(rt, _zr);
+    	}
+    	return ADDIU(rt, _zr, imm16);
+    }
+
     public static int ORI(int rt, int rs, int imm16) {
     	return (AllegrexOpcodes.ORI << 26) | (rs << 21) | (rt << 16) | (imm16 & 0xFFFF);
     }
@@ -118,7 +125,7 @@ public class HLEUtilities {
     }
 
     public static int SYSCALL(int syscallCode) {
-    	return (AllegrexOpcodes.SPECIAL << 26) | AllegrexOpcodes.SYSCALL | (syscallCode << 6);
+    	return (AllegrexOpcodes.SPECIAL << 26) | AllegrexOpcodes.SYSCALL | ((syscallCode & 0xFFFFF) << 6);
     }
 
     public static int SYSCALL(HLEModule hleModule, String hleFunctionName) {

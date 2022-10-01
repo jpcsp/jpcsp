@@ -1109,6 +1109,14 @@ public class LoadCoreForKernel extends HLEModule {
     public int sceKernelFindModuleByName(PspString moduleName) {
         SceModule module = Managers.modules.getModuleByName(moduleName.getString());
         if (module == null) {
+        	int[] moduleIds = HLEModuleManager.getInstance().LoadFlash0Module(moduleName.getString());
+        	if (moduleIds != null) {
+	        	for (int moduleId : moduleIds) {
+	        		module = Managers.modules.getModuleByUID(moduleId);
+	        	}
+        	}
+        }
+        if (module == null) {
             log.warn(String.format("sceKernelFindModuleByName not found moduleName=%s", moduleName));
             return 0; // return NULL
         }

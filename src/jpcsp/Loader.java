@@ -32,6 +32,7 @@ import static jpcsp.util.HLEUtilities.ADDIU;
 import static jpcsp.util.HLEUtilities.JR;
 import static jpcsp.util.HLEUtilities.MOVE;
 import static jpcsp.util.HLEUtilities.NOP;
+import static jpcsp.util.HLEUtilities.SYSCALL;
 import static jpcsp.util.Utilities.patch;
 import static jpcsp.util.Utilities.patchRemoveStringChar;
 import static jpcsp.util.Utilities.readUByte;
@@ -56,7 +57,6 @@ import java.util.List;
 
 import org.apache.log4j.Logger;
 
-import jpcsp.Allegrex.Common;
 import jpcsp.Allegrex.Opcodes;
 import jpcsp.Allegrex.compiler.RuntimeContext;
 import jpcsp.Debugger.ElfHeaderInfo;
@@ -1316,30 +1316,21 @@ public class Loader {
                     //    li $v0, 0
                     // Rem.: "BUST A MOVE GHOST" is testing the return value $v0,
                     //       so it has to be set explicitly to 0.
-                    mem.write32(importAddress + 4, AllegrexOpcodes.ADDU | (2 << 11) | (0 << 16) | (0 << 21)); // addu $v0, $zr, $zr <=> li $v0, 0
+                    mem.write32(importAddress + 4, MOVE(_v0, _zr));
                 } else {
                     // Attempt to fixup stub to known syscalls
                     int code = nidMapper.getSyscallByNid(nid, moduleName);
                     if (code >= 0) {
-                        // Fixup stub, replacing nop with syscall
-                    	int returnInstruction = // jr $ra
-                    	    (AllegrexOpcodes.SPECIAL << 26)
-                    	    | AllegrexOpcodes.JR
-                    	    | ((Common._ra) << 21);
-                        int syscallInstruction = // syscall <code>
-                            (AllegrexOpcodes.SPECIAL << 26)
-                            | AllegrexOpcodes.SYSCALL
-                            | ((code & 0x000fffff) << 6);
-
                         // Some homebrews do not have a "jr $ra" set before the syscall
                         if (mem.read32(importAddress) == 0) {
-                        	mem.write32(importAddress, returnInstruction);
+                        	mem.write32(importAddress, JR());
                         }
-                        mem.write32(importAddress + 4, syscallInstruction);
+                        // Fixup stub, replacing nop with syscall
+                        mem.write32(importAddress + 4, SYSCALL(code));
                         it.remove();
                         numberofmappedNIDS++;
 
-                        if (fromSyscall && log.isDebugEnabled()) {
+                        if ((fromSyscall && log.isDebugEnabled()) || log.isTraceEnabled()) {
                             log.debug(String.format("Mapped import at 0x%08X to syscall 0x%05X [0x%08X] (attempt %d)",
                                 importAddress, code, nid, module.importFixupAttempts));
                         }
@@ -1731,7 +1722,7 @@ public class Loader {
 	                    // the module is a homebrew (loaded from MemoryStick) or
 	                    // this is the EBOOT module.
                         if (Memory.isAddressGood(exportAddress) && ((entHeader.getAttr() & 0x4000) != 0x4000) || module.pspfilename.startsWith("ms0:") || module.pspfilename.startsWith("disc0:/PSP_GAME/SYSDIR/EBOOT.") || module.pspfilename.startsWith("flash0:")) {
-                            nidMapper.addModuleNid(module, moduleName, nid, exportAddress, false);
+                            nidMapper.addModuleNid(module, moduleName, nid, exportAddress, false, entHeader.requiresSyscall());
                             entCount++;
                             if (log.isDebugEnabled()) {
                                 log.debug(String.format("Export found at 0x%08X [0x%08X]", exportAddress, nid));
@@ -1777,7 +1768,7 @@ public class Loader {
 	                        default:
 	                            // Only accept exports from custom modules (attr != 0x4000) and with valid export addresses.
 	                            if (Memory.isAddressGood(exportAddress) && ((entHeader.getAttr() & 0x4000) != 0x4000)) {
-	                                nidMapper.addModuleNid(module, moduleName, nid, exportAddress, false);
+	                                nidMapper.addModuleNid(module, moduleName, nid, exportAddress, false, entHeader.requiresSyscall());
 	                                entCount++;
 	                                if (log.isDebugEnabled()) {
 	                                    log.debug(String.format("Export found at 0x%08X [0x%08X]", exportAddress, nid));
@@ -1834,7 +1825,7 @@ public class Loader {
                         default:
                             // Only accept exports from custom modules (attr != 0x4000) and with valid export addresses.
                             if (Memory.isAddressGood(variableAddr) && ((entHeader.getAttr() & 0x4000) != 0x4000)) {
-                                nidMapper.addModuleNid(module, moduleName, nid, variableAddr, true);
+                                nidMapper.addModuleNid(module, moduleName, nid, variableAddr, true, entHeader.requiresSyscall());
                                 entCount++;
                                 if (log.isDebugEnabled()) {
                                     log.debug(String.format("Export found at 0x%08X [0x%08X]", variableAddr, nid));

@@ -140,4 +140,8 @@ public class Elf32EntHeader {
     public int getOffsetResident() {
         return resident;
     }
+
+    public boolean requiresSyscall() {
+    	return attr == 0x4001;
+    }
 }

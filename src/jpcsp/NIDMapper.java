@@ -39,7 +39,7 @@ public class NIDMapper {
 
 	protected static class NIDInfo {
     	private final int nid;
-		private final int syscall;
+		private int syscall;
     	private int address;
     	private final String name;
     	private final String moduleName;
@@ -48,6 +48,8 @@ public class NIDMapper {
     	private boolean overwritten;
     	private boolean loaded;
     	private boolean validModuleName;
+    	private final boolean isHLE;
+    	private boolean fake;
 
     	/**
     	 * New NIDInfo for a NID from a loaded module.
@@ -62,11 +64,12 @@ public class NIDMapper {
 			this.variableExport = variableExport;
 			setAddress(address);
 			name = null;
-			syscall = -1;
+			setSyscall(-1);
 			firmwareVersion = 999;
 			overwritten = false;
 			loaded = true;
 			validModuleName = true;
+			isHLE = false;
 		}
 
     	/**
@@ -80,13 +83,14 @@ public class NIDMapper {
     	 */
     	public NIDInfo(int nid, int syscall, String name, String moduleName, int firmwareVersion) {
     		this.nid = nid;
-    		this.syscall = syscall;
+    		setSyscall(syscall);
     		this.name = name;
     		this.moduleName = moduleName;
     		variableExport = false;
     		this.firmwareVersion = firmwareVersion;
 			loaded = true;
 			validModuleName = false; // the given moduleName is probably not the correct one...
+			isHLE = true;
     	}
 
     	public int getNid() {
@@ -99,6 +103,10 @@ public class NIDMapper {
 
 		public boolean hasSyscall() {
 			return syscall >= 0;
+		}
+
+		public void setSyscall(int syscall) {
+			this.syscall = syscall;
 		}
 
 		public int getAddress() {
@@ -133,7 +141,8 @@ public class NIDMapper {
 			this.overwritten = overwritten;
 		}
 
-		public void overwrite(int address) {
+		public void overwrite(int address, boolean fake) {
+			this.fake = fake;
 			setOverwritten(true);
 			setAddress(address);
 		}
@@ -169,6 +178,14 @@ public class NIDMapper {
 
 		public boolean isVariableExport() {
 			return variableExport;
+		}
+
+		public boolean isHLE() {
+			return isHLE;
+		}
+
+		public boolean isFake() {
+			return fake;
 		}
 
 		@Override
@@ -346,7 +363,7 @@ public class NIDMapper {
      * @param address    the address of the nid
      * @param variableExport coming from a function or variable export
      */
-    public void addModuleNid(SceModule module, String moduleName, int nid, int address, boolean variableExport) {
+    public void addModuleNid(SceModule module, String moduleName, int nid, int address, boolean variableExport, boolean requiresSyscall) {
     	address &= Memory.addressMask;
 
     	NIDInfo info = getNIDInfoByNid(moduleName, nid);
@@ -364,12 +381,32 @@ public class NIDMapper {
         	if (log.isInfoEnabled()) {
         		log.info(String.format("NID %s[0x%08X] at address 0x%08X from module '%s' overwriting an HLE syscall", info.getName(), nid, address, moduleName));
         	}
-        	info.overwrite(address);
+        	info.overwrite(address, false);
         	addressMap.put(address, info);
     	} else {
     		info = new NIDInfo(nid, address, moduleName, variableExport);
+    		if (requiresSyscall) {
+    			int syscall = getNewSyscallNumber();
+    			info.setSyscall(syscall);;
+    			if (log.isDebugEnabled()) {
+    				log.debug(String.format("Created syscall 0x%05X for NID 0x%08X from module '%s'", syscall, nid, moduleName));
+    			}
+    		}
 
     		addNIDInfo(info);
+    	}
+    }
+
+    public void addFakeSycall(String moduleName, int nid, int address) {
+    	address &= Memory.addressMask;
+
+    	NIDInfo info = getNIDInfoByNid(moduleName, nid);
+    	if (info != null) {
+        	if (log.isInfoEnabled()) {
+        		log.info(String.format("NID %s[0x%08X] at address 0x%08X from module '%s' faking an HLE syscall", info.getName(), nid, address, moduleName));
+        	}
+        	info.overwrite(address, true);
+        	addressMap.put(address, info);
     	}
     }
 
@@ -432,7 +469,19 @@ public class NIDMapper {
 
     public int getAddressBySyscall(int syscall) {
     	NIDInfo info = getNIDInfoBySyscall(syscall);
-    	if (info == null || !info.hasAddress() || !info.isOverwritten()) {
+
+    	// Not found or having no address
+    	if (info == null || !info.hasAddress()) {
+    		return 0;
+    	}
+
+    	// If this is a non-overwritten HLE NID, then we have no address
+    	if (info.isHLE() && !info.isOverwritten()) {
+    		return 0;
+    	}
+
+    	// Fake syscall entries have no address
+    	if (info.isFake()) {
     		return 0;
     	}
 
@@ -496,8 +545,26 @@ public class NIDMapper {
     	return info.getNid();
     }
 
+    public int getSyscallByAddress(int address) {
+    	NIDInfo info = getNIDInfoByAddress(address);
+    	if (info == null || !info.hasSyscall()) {
+    		return -1;
+    	}
+
+    	return info.getSyscall();
+    }
+
     public String getModuleNameByAddress(int address) {
     	NIDInfo info = getNIDInfoByAddress(address);
+    	if (info == null) {
+    		return null;
+    	}
+
+    	return info.getModuleName();
+    }
+
+    public String getModuleNameBySyscall(int syscall) {
+    	NIDInfo info = getNIDInfoBySyscall(syscall);
     	if (info == null) {
     		return null;
     	}

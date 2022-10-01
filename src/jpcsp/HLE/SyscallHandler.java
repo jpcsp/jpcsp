@@ -167,7 +167,7 @@ public class SyscallHandler {
 	        		if (name != null) {
 	        			log.debug(String.format("Jumping to 0x%08X instead of overwritten syscall %s[0x%08X]", address, name, nid));
 	        		} else {
-	        			log.debug(String.format("Jumping to 0x%08X instead of overwritten syscall NID 0x%08X", address, nid));
+	        			log.debug(String.format("Jumping to 0x%08X for syscall NID 0x%08X from module '%s'", address, nid, nidMapper.getModuleNameBySyscall(code)));
 	        		}
 	        	}
 

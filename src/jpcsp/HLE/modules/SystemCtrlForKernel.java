@@ -34,6 +34,7 @@ import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.PspString;
 import jpcsp.HLE.TPointer;
+import jpcsp.HLE.TPointerFunction;
 import jpcsp.HLE.kernel.types.SceKernelLoadExecVSHParam;
 import jpcsp.filesystems.umdiso.UmdIsoReader;
 import jpcsp.settings.Settings;
@@ -82,7 +83,7 @@ public class SystemCtrlForKernel extends HLEModule {
      *
      */
     @HLEFunction(nid = 0x1C90BECB, version = 150)
-    public int sctrlHENSetStartModuleHandler(TPointer startModuleHandler) {
+    public int sctrlHENSetStartModuleHandler(TPointerFunction startModuleHandler) {
     	int previousStartModuleHandler = ModuleMgrForUserModule.getStartModuleHandler();
 
     	ModuleMgrForUserModule.setStartModuleHandler(startModuleHandler.getAddress());
@@ -236,6 +237,14 @@ public class SystemCtrlForKernel extends HLEModule {
 
     @HLEFunction(nid = 0x159AF5CC, version = 150)
     public int sctrlHENFindFunction(@CanBeNull PspString szMod, @CanBeNull PspString szLib, int nid) {
-    	return NIDMapper.getInstance().getAddressByNid(nid, szMod.getString());
+    	int address = NIDMapper.getInstance().getAddressByNid(nid, szMod.getString());
+    	if (address == 0) {
+    		address = NIDMapper.getInstance().getAddressByNid(nid, szLib.getString());
+    		if (address == 0) {
+    			address = NIDMapper.getInstance().getAddressByNid(nid);
+    		}
+    	}
+
+    	return address;
     }
 }
