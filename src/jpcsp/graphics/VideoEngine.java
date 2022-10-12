@@ -77,6 +77,8 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.ListIterator;
+import java.util.Map;
+import java.util.TreeMap;
 import java.util.concurrent.Semaphore;
 
 import javax.imageio.ImageIO;
@@ -263,6 +265,8 @@ public class VideoEngine {
     private boolean isGeProfilerEnabled;
     private int primCount;
     private int nopCount;
+    private final Map<Integer, Integer> unknownCommands = new TreeMap<Integer, Integer>();
+    private static final int UNKNOWN_COMMANDS_REPEATING_COUNT = 5;
     private long listCount;
     private boolean viewportChanged;
     public MatrixUpload projectionMatrixUpload;
@@ -737,6 +741,16 @@ public class VideoEngine {
             if (instance.re != null) {
                 instance.re.exit();
             }
+
+            for (Integer instruction : instance.unknownCommands.keySet()) {
+            	Integer count = instance.unknownCommands.get(instruction);
+            	if (count > UNKNOWN_COMMANDS_REPEATING_COUNT) {
+	            	int command = command(instruction);
+	            	int normalArgument = intArgument(instruction);
+		            log.warn(String.format("Unknown/unimplemented video command [%s]%s repeating %d times", helper.getCommandString(command), getArgumentLog(normalArgument), count));
+            	}
+            }
+
             if (DurationStatistics.collectStatistics) {
                 log.info(instance.statistics);
                 Arrays.sort(instance.commandStatistics);
@@ -1489,7 +1503,7 @@ public class VideoEngine {
         return IntBuffer.wrap(tmp_texture_buffer32);
     }
 
-    private String getArgumentLog(int normalArgument) {
+    private static String getArgumentLog(int normalArgument) {
         if (normalArgument == 0) {
             return "(0)"; // a very common case...
         }
@@ -2073,9 +2087,23 @@ public class VideoEngine {
     }
 
     private void executeCommandUNKNOWN() {
-        if (isLogWarnEnabled) {
-            log.warn(String.format("Unknown/unimplemented video command [%s]%s at 0x%08X", helper.getCommandString(command), getArgumentLog(normalArgument), currentList.getPc() - 4));
-        }
+    	int instruction = (command << 24) | normalArgument;
+    	Integer count = unknownCommands.get(instruction);
+    	if (count == null || count < UNKNOWN_COMMANDS_REPEATING_COUNT) {
+	        if (isLogWarnEnabled) {
+	        	String additionalComment = "";
+	        	if (count != null && count == UNKNOWN_COMMANDS_REPEATING_COUNT - 1) {
+	        		additionalComment = " (further occurrences will no longer be logged)";
+	        	}
+	            log.warn(String.format("Unknown/unimplemented video command [%s]%s at 0x%08X%s", helper.getCommandString(command), getArgumentLog(normalArgument), currentList.getPc() - 4, additionalComment));
+	        }
+    	}
+
+    	if (count == null) {
+    		count = 0;
+    	}
+		count++;
+    	unknownCommands.put(instruction, count);
     }
 
     private void executeCommandCLEAR() {
