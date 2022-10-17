@@ -48,7 +48,6 @@ import jpcsp.HLE.BufferInfo.LengthInfo;
 import jpcsp.HLE.BufferInfo.Usage;
 import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.HLEFunction;
-import jpcsp.HLE.HLELogging;
 import jpcsp.HLE.HLEModule;
 import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.PspString;
@@ -3880,7 +3879,6 @@ public class IoFileMgrForUser extends HLEModule {
      * @param outlen
      */
     @HLEFunction(nid = 0x54F5FB11, version = 150, checkInsideInterrupt = true)
-    @HLELogging(level = "info")
     public int sceIoDevctl(PspString devicename, int cmd, @CanBeNull @BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.in) TPointer indata, int inlen, @CanBeNull @BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.out) TPointer outdata, int outlen) {
     	Map<IoOperation, IoOperationTiming> timings = defaultTimings;
         Memory mem = Processor.memory;
