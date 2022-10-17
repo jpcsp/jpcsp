@@ -739,29 +739,6 @@ public class ThreadManForUser extends HLEModule {
         int rootMpidStack = module != null && module.mpiddata > 0 ? module.mpiddata : USER_PARTITION_ID;
 
         int rootInitPriority = 0x20;
-        // Use the module_start_thread_priority when this information was present in the ELF file
-        if (module != null && module.module_start_thread_priority > 0) {
-            rootInitPriority = module.module_start_thread_priority;
-        }
-        SceKernelThreadInfo rootThread = new SceKernelThreadInfo(rootThreadName, entry_addr, rootInitPriority, rootStackSize, attr, rootMpidStack);
-        if (log.isDebugEnabled()) {
-        	log.debug(String.format("Creating root thread: uid=0x%X, entry=0x%08X, priority=%d, stackSize=0x%X, attr=0x%X", rootThread.uid, entry_addr, rootInitPriority, rootStackSize, attr));
-        }
-        rootThread.moduleid = moduleid;
-        threadMap.put(rootThread.uid, rootThread);
-
-        // Set user mode bit if kernel mode bit is not present
-        if (!rootThread.isKernelMode()) {
-        	rootThread.attr |= PSP_THREAD_ATTR_USER;
-        }
-
-        // Setup args by copying them onto the stack
-        hleKernelSetThreadArguments(rootThread, pspfilename);
-
-        // Setup threads $gp
-        rootThread.cpuContext._gp = gp;
-        idle0.cpuContext._gp = gp;
-        idle1.cpuContext._gp = gp;
 
         if (moduleid >= 0) {
 	        int startModuleOptionsLength = 20;
@@ -792,12 +769,40 @@ public class ThreadManForUser extends HLEModule {
 	    	memoryWriter.writeNext(MOVE(_v0, _zr));
 	    	memoryWriter.flush();
 
-	    	rootThread.cpuContext.pc = rootThreadAddr;
-	    	rootThread.cpuContext.npc = rootThreadAddr;
 	    	if (log.isDebugEnabled()) {
 	    		log.debug(String.format("Root thread entry using sceKernelStartModule 0x%08X replacing 0x%08X", rootThreadAddr, entry_addr));
 	    	}
+	    	entry_addr = rootThreadAddr;
+
+	    	// Start the root thread with a lower priority (i.e. higher priority value)
+	    	// so that optional plug-in modules have time to properly initialize
+	    	rootInitPriority = 0x30;
+        } else {
+            // Use the module_start_thread_priority when this information was present in the ELF file
+            if (module != null && module.module_start_thread_priority > 0) {
+                rootInitPriority = module.module_start_thread_priority;
+            }
         }
+
+        SceKernelThreadInfo rootThread = new SceKernelThreadInfo(rootThreadName, entry_addr, rootInitPriority, rootStackSize, attr, rootMpidStack);
+        if (log.isDebugEnabled()) {
+        	log.debug(String.format("Creating root thread: uid=0x%X, entry=0x%08X, priority=%d, stackSize=0x%X, attr=0x%X", rootThread.uid, entry_addr, rootInitPriority, rootStackSize, attr));
+        }
+        rootThread.moduleid = moduleid;
+        threadMap.put(rootThread.uid, rootThread);
+
+        // Set user mode bit if kernel mode bit is not present
+        if (!rootThread.isKernelMode()) {
+        	rootThread.attr |= PSP_THREAD_ATTR_USER;
+        }
+
+        // Setup args by copying them onto the stack
+        hleKernelSetThreadArguments(rootThread, pspfilename);
+
+        // Setup threads $gp
+        rootThread.cpuContext._gp = gp;
+        idle0.cpuContext._gp = gp;
+        idle1.cpuContext._gp = gp;
 
         hleChangeThreadState(rootThread, PSP_THREAD_READY);
 
@@ -864,6 +869,10 @@ public class ThreadManForUser extends HLEModule {
 
     	int allocatedMem = freeInternalUserMemoryStart;
     	freeInternalUserMemoryStart += size;
+
+    	if (log.isDebugEnabled()) {
+    		log.debug(String.format("allocateInternalUserMemory size=0x%X returning 0x%08X, remaining free size=0x%X", size, allocatedMem, freeInternalUserMemoryEnd - freeInternalUserMemoryStart));
+    	}
 
     	return allocatedMem;
     }

@@ -309,7 +309,12 @@ public class ModuleMgrForUser extends HLEModule {
     }
 
     public int hleKernelLoadAndStartModule(String name, int startPriority, IAction onModuleStartAction) {
-    	return hleKernelLoadAndStartModule(name, startPriority, 0, TPointer.NULL, onModuleStartAction);
+    	// Set the module arguments to point to the module file name
+    	int args = name.length();
+    	TPointer argp = new TPointer(getMemory(), Modules.ThreadManForUserModule.allocateInternalUserMemory(args + 1));
+    	argp.setStringNZ(args + 1, name);
+
+    	return hleKernelLoadAndStartModule(name, startPriority, args, argp, onModuleStartAction);
     }
 
     public int hleKernelLoadAndStartModule(String name, int startPriority, int argSize, TPointer argp, IAction onModuleStartAction) {
