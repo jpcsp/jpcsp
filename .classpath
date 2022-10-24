@@ -23,5 +23,6 @@
 	<classpathentry kind="lib" path="lib/lwjgl-3.2.3/lwjgl-glfw.jar"/>
 	<classpathentry kind="lib" path="lib/lwjgl-3.2.3/lwjgl-glfw-natives-windows.jar"/>
 	<classpathentry kind="lib" path="lib/jide-oss-3.7.12.jar"/>
+	<classpathentry kind="lib" path="lib/xz-1.9.jar" sourcepath="lib/xz-java-1.9.zip"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

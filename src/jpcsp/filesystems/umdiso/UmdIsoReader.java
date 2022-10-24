@@ -77,6 +77,8 @@ public class UmdIsoReader implements IBrowser {
 	        } else if (header[0] == 0 && header[1] == 'P' && header[2] == 'B' && header[3] == 'P') {
 	        	sectorDevice = new PBPFileSectorDevice(fileReader);
 	        	isPBP = true;
+	        } else if ("MComprHD".equals(new String(header, 0, 8))) {
+	        	sectorDevice = new CHDFileSectorDevice(fileReader, umdFilename);
 	        } else {
 	            sectorDevice = new ISOFileSectorDevice(fileReader);
 	        }

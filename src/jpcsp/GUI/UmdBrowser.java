@@ -125,7 +125,7 @@ public class UmdBrowser extends javax.swing.JDialog {
         @Override
         public boolean accept(File file) {
             String lower = file.getName().toLowerCase();
-            if (lower.endsWith(".cso") || lower.endsWith(".iso")) {
+            if (lower.endsWith(".cso") || lower.endsWith(".iso") || lower.endsWith(".chd")) {
                 return true;
             }
             if (isEbootDirectory(file)) {
