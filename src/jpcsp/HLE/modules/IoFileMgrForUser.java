@@ -40,6 +40,8 @@ import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.PSP_THREAD_READY;
 import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.THREAD_CALLBACK_MEMORYSTICK_FAT;
 import static jpcsp.HLE.modules.SysMemUserForUser.KERNEL_PARTITION_ID;
 import static jpcsp.HLE.modules.SysMemUserForUser.PSP_SMEM_Low;
+import static jpcsp.util.Utilities.hasFlag;
+import static jpcsp.util.Utilities.notHasFlag;
 import static jpcsp.util.Utilities.readStringNZ;
 import static jpcsp.util.Utilities.readStringZ;
 
@@ -1180,9 +1182,7 @@ public class IoFileMgrForUser extends HLEModule {
                     log.error("getFile - no umd mounted");
                     return resultFile;
                 // check flags are valid
-                } else if ((flags & PSP_O_WRONLY) == PSP_O_WRONLY ||
-                        (flags & PSP_O_CREAT) == PSP_O_CREAT ||
-                        (flags & PSP_O_TRUNC) == PSP_O_TRUNC) {
+                } else if ((flags & PSP_O_WRONLY) == PSP_O_WRONLY || hasFlag(flags, PSP_O_CREAT) || hasFlag(flags, PSP_O_TRUNC)) {
                     log.error("getFile - refusing to open umd media for write");
                     return resultFile;
                 } else {
@@ -1201,13 +1201,13 @@ public class IoFileMgrForUser extends HLEModule {
             } else {
                 // First check if the file already exists
                 File file = new File(pcfilename);
-                if (file.exists() && (flags & (PSP_O_CREAT | PSP_O_EXCL | PSP_O_TRUNC)) == (PSP_O_CREAT | PSP_O_EXCL)) {
+                if (file.exists() && hasFlag(flags, PSP_O_CREAT) && hasFlag(flags, PSP_O_EXCL) && notHasFlag(flags, PSP_O_TRUNC)) {
                     if (log.isDebugEnabled()) {
                         log.debug("getFile - file already exists (PSP_O_CREAT + PSP_O_EXCL)");
                     }
                 } else {
-                    if (file.exists() && (flags & PSP_O_TRUNC) == PSP_O_TRUNC) {
-                    	if ((flags & (PSP_O_CREAT | PSP_O_EXCL | PSP_O_TRUNC)) == (PSP_O_CREAT | PSP_O_EXCL | PSP_O_TRUNC)) {
+                    if (file.exists() && hasFlag(flags, PSP_O_TRUNC)) {
+                    	if (hasFlag(flags, PSP_O_CREAT) && hasFlag(flags, PSP_O_EXCL) && hasFlag(flags, PSP_O_TRUNC)) {
                     		file.delete();
                     	} else {
                     		log.warn("getFile - file already exists, deleting UNIMPLEMENT (PSP_O_TRUNC)");
@@ -1719,40 +1719,40 @@ public class IoFileMgrForUser extends HLEModule {
             log.info("hleIoOpen filename = " + filename + " flags = " + Integer.toHexString(flags) + " permissions = 0" + Integer.toOctalString(permissions));
         }
         if (log.isDebugEnabled()) {
-            if ((flags & PSP_O_RDONLY) == PSP_O_RDONLY) {
+            if (hasFlag(flags, PSP_O_RDONLY)) {
                 log.debug("PSP_O_RDONLY");
             }
-            if ((flags & PSP_O_WRONLY) == PSP_O_WRONLY) {
+            if (hasFlag(flags, PSP_O_WRONLY)) {
                 log.debug("PSP_O_WRONLY");
             }
-            if ((flags & PSP_O_NBLOCK) == PSP_O_NBLOCK) {
+            if (hasFlag(flags, PSP_O_NBLOCK)) {
                 log.debug("PSP_O_NBLOCK");
             }
-            if ((flags & PSP_O_DIROPEN) == PSP_O_DIROPEN) {
+            if (hasFlag(flags, PSP_O_DIROPEN)) {
                 log.debug("PSP_O_DIROPEN");
             }
-            if ((flags & PSP_O_APPEND) == PSP_O_APPEND) {
+            if (hasFlag(flags, PSP_O_APPEND)) {
                 log.debug("PSP_O_APPEND");
             }
-            if ((flags & PSP_O_CREAT) == PSP_O_CREAT) {
+            if (hasFlag(flags, PSP_O_CREAT)) {
                 log.debug("PSP_O_CREAT");
             }
-            if ((flags & PSP_O_TRUNC) == PSP_O_TRUNC) {
+            if (hasFlag(flags, PSP_O_TRUNC)) {
                 log.debug("PSP_O_TRUNC");
             }
-            if ((flags & PSP_O_EXCL) == PSP_O_EXCL) {
+            if (hasFlag(flags, PSP_O_EXCL)) {
                 log.debug("PSP_O_EXCL");
             }
-            if ((flags & PSP_O_NBUF) == PSP_O_NBUF) {
+            if (hasFlag(flags, PSP_O_NBUF)) {
                 log.debug("PSP_O_NBUF");
             }
-            if ((flags & PSP_O_NOWAIT) == PSP_O_NOWAIT) {
+            if (hasFlag(flags, PSP_O_NOWAIT)) {
                 log.debug("PSP_O_NOWAIT");
             }
-            if ((flags & PSP_O_PLOCK) == PSP_O_PLOCK) {
+            if (hasFlag(flags, PSP_O_PLOCK)) {
                 log.debug("PSP_O_PLOCK");
             }
-            if ((flags & PSP_O_FGAMEDATA) == PSP_O_FGAMEDATA) {
+            if (hasFlag(flags, PSP_O_FGAMEDATA)) {
                 log.debug("PSP_O_FGAMEDATA");
             }
         }
@@ -1770,8 +1770,7 @@ public class IoFileMgrForUser extends HLEModule {
         if (retry != 0) {
             log.info("hleIoOpen - retry count is " + retry);
         }
-        if ((flags & PSP_O_RDONLY) == PSP_O_RDONLY &&
-                (flags & PSP_O_APPEND) == PSP_O_APPEND) {
+        if (hasFlag(flags, PSP_O_RDONLY) && hasFlag(flags, PSP_O_APPEND)) {
             log.warn("hleIoOpen - read and append flags both set!");
         }
 
@@ -1838,9 +1837,7 @@ public class IoFileMgrForUser extends HLEModule {
                         log.warn("hleIoOpen - umd mounted but not activated");
                         result = ERROR_KERNEL_NO_SUCH_DEVICE;
                     // Check flags are valid.
-                    } else if ((flags & PSP_O_WRONLY) == PSP_O_WRONLY ||
-                            (flags & PSP_O_CREAT) == PSP_O_CREAT ||
-                            (flags & PSP_O_TRUNC) == PSP_O_TRUNC) {
+                    } else if (hasFlag(flags, PSP_O_WRONLY) || hasFlag(flags, PSP_O_CREAT) || hasFlag(flags, PSP_O_TRUNC)) {
                         log.error("hleIoOpen - refusing to open umd media for write");
                         result = ERROR_ERRNO_READ_ONLY;
                     } else {
@@ -1890,7 +1887,7 @@ public class IoFileMgrForUser extends HLEModule {
 
                     // First check if the file already exists
                     File file = new File(pcfilename);
-                    if (file.exists() && (flags & (PSP_O_CREAT | PSP_O_EXCL | PSP_O_TRUNC)) == (PSP_O_CREAT | PSP_O_EXCL)) {
+                    if (file.exists() && hasFlag(flags, PSP_O_CREAT) && hasFlag(flags, PSP_O_EXCL) && notHasFlag(flags, PSP_O_TRUNC)) {
                         if (log.isDebugEnabled()) {
                             log.debug("hleIoOpen - file already exists (PSP_O_CREAT + PSP_O_EXCL)");
                         }
@@ -1905,8 +1902,7 @@ public class IoFileMgrForUser extends HLEModule {
 
                         SeekableRandomFile raf = new SeekableRandomFile(pcfilename, mode);
                         info = new IoInfo(filename, raf, mode, flags, permissions);
-                        if ((flags & PSP_O_WRONLY) == PSP_O_WRONLY &&
-                                (flags & PSP_O_TRUNC) == PSP_O_TRUNC) {
+                        if (hasFlag(flags, PSP_O_WRONLY) && hasFlag(flags, PSP_O_TRUNC)) {
                             // When writing, PSP_O_TRUNC truncates the file at the position of the first write.
                         	// E.g.:
                         	//    open(PSP_O_TRUNC)
@@ -2075,7 +2071,7 @@ public class IoFileMgrForUser extends HLEModule {
                 	result = ERROR_KERNEL_BAD_FILE_DESCRIPTOR;
                 } else if (info.vFile != null) {
             		timings = info.vFile.getTimings();
-                    if ((info.flags & PSP_O_APPEND) == PSP_O_APPEND) {
+                    if (hasFlag(info.flags, PSP_O_APPEND)) {
                         info.vFile.ioLseek(info.vFile.length());
                         info.position = info.vFile.length();
                     }
@@ -2105,7 +2101,7 @@ public class IoFileMgrForUser extends HLEModule {
         				result = ERROR_KERNEL_UNSUPPORTED_OPERATION;
         			}
                 } else {
-                    if ((info.flags & PSP_O_APPEND) == PSP_O_APPEND) {
+                    if (hasFlag(info.flags, PSP_O_APPEND)) {
                         info.msFile.seek(info.msFile.length());
                         info.position = info.msFile.length();
                     }
