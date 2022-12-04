@@ -26,10 +26,10 @@ import org.apache.log4j.Logger;
 
 import jpcsp.memory.mmio.IMMIOHandler;
 import jpcsp.memory.mmio.MMIO;
-import jpcsp.memory.mmio.syscon.MMIOHandlerSysconFirmwareSfr;
+import jpcsp.nec78k0.sfr.Nec78k0Sfr;
 
 /**
- * NEC 78k0 Memory map used by the Syscon firmware:
+ * Generic NEC 78k0 Memory map:
  *   - [0x0000..0xFEDF]: RAM
  *   - [0xFEE0..0xFEE7]: Register address banks 3
  *   - [0xFEE8..0xFEEF]: Register address banks 2
@@ -48,35 +48,35 @@ public class Nec78k0Memory extends MMIO {
 	public static final int END_RAM0 = BASE_RAM0 + SIZE_RAM0 - 1;
 	private final Nec78k0BackendMemory backendMemory;
 	private final int[] ram0;
-	private Nec78k0MMIOHandlerReadWrite ram0Handler;
-	private Nec78k0MMIORegisterBanks registerBanksHandler;
-	private MMIOHandlerSysconFirmwareSfr sysconSfrHandler;
+	private final Nec78k0MMIOHandlerReadWrite ram0Handler;
+	private final Nec78k0MMIORegisterBanks registerBanksHandler;
+	private final Nec78k0Sfr sfr;
 
-	public Nec78k0Memory(Logger log) {
+	public Nec78k0Memory(Logger log, Nec78k0Sfr sfr, int baseRam0, int sizeRam0) {
 		super(new Nec78k0BackendMemory());
 
 		backendMemory = (Nec78k0BackendMemory) getBackendMemory();
 
-		ram0 = new int[SIZE_RAM0 >> 2];
-		ram0Handler = new Nec78k0MMIOHandlerReadWrite(BASE_RAM0, SIZE_RAM0, ram0);
+		ram0 = new int[sizeRam0 >> 2];
+		ram0Handler = new Nec78k0MMIOHandlerReadWrite(baseRam0, sizeRam0, ram0);
 		ram0Handler.setLogger(log);
 
 		registerBanksHandler = new Nec78k0MMIORegisterBanks();
 		registerBanksHandler.setLogger(log);
 
-		sysconSfrHandler = new MMIOHandlerSysconFirmwareSfr(SFR_ADDRESS);
-		sysconSfrHandler.setLogger(log);
+		this.sfr = sfr;
+		sfr.setLogger(log);
 	}
 
 	public void setProcessor(Nec78k0Processor processor) {
 		backendMemory.setProcessor(processor);
 		ram0Handler.setProcessor(processor);
 		registerBanksHandler.setProcessor(processor);
-		sysconSfrHandler.setProcessor(processor);
+		sfr.setProcessor(processor);
 	}
 
-	public MMIOHandlerSysconFirmwareSfr getSysconSfr() {
-		return sysconSfrHandler;
+	public Nec78k0Sfr getSfr() {
+		return sfr;
 	}
 
 	@Override
@@ -88,7 +88,7 @@ public class Nec78k0Memory extends MMIO {
 			return registerBanksHandler;
 		}
 		if (isSfrHandler(address)) {
-			return sysconSfrHandler;
+			return sfr;
 		}
 
 		return super.getHandler(address);
@@ -115,7 +115,7 @@ public class Nec78k0Memory extends MMIO {
 	public boolean read1(int address, int bit) {
 		boolean value;
 		if (isSfrHandler(address)) {
-			value = sysconSfrHandler.read1(address, bit);
+			value = sfr.read1(address, bit);
 		} else {
 			value = hasBit(read8(address), bit);
 		}
@@ -125,7 +125,7 @@ public class Nec78k0Memory extends MMIO {
 
 	public void write1(int address, int bit, boolean value) {
 		if (isSfrHandler(address)) {
-			sysconSfrHandler.write1(address, bit, value);
+			sfr.write1(address, bit, value);
 		} else {
 			int value8 = read8(address);
 			if (value) {
@@ -139,7 +139,7 @@ public class Nec78k0Memory extends MMIO {
 
 	public void set1(int address, int bit) {
 		if (isSfrHandler(address)) {
-			sysconSfrHandler.set1(address, bit);
+			sfr.set1(address, bit);
 		} else {
 			write1(address, bit, true);
 		}
@@ -147,7 +147,7 @@ public class Nec78k0Memory extends MMIO {
 
 	public void clear1(int address, int bit) {
 		if (isSfrHandler(address)) {
-			sysconSfrHandler.clear1(address, bit);
+			sfr.clear1(address, bit);
 		} else {
 			write1(address, bit, false);
 		}

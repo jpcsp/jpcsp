@@ -27,7 +27,7 @@ import jpcsp.state.StateInputStream;
 import jpcsp.state.StateOutputStream;
 
 public class MMIOHandlerBase implements IMMIOHandler {
-	protected Logger log = Logger.getLogger("mmio");
+	public Logger log = Logger.getLogger("mmio");
 	private static final int STATE_VERSION = 0;
 	protected final int baseAddress;
 

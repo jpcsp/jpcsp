@@ -14,7 +14,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
-package jpcsp.memory.mmio.syscon;
+package jpcsp.nec78k0.sfr;
 
 import static jpcsp.memory.mmio.syscon.MMIOHandlerSysconFirmwareSfr.NUMBER_SPECIAL_FUNCTION_REGISTERS;
 import static jpcsp.nec78k0.Nec78k0Processor.PSW_ADDRESS;
@@ -26,7 +26,7 @@ import static jpcsp.util.Utilities.hasFlag;
  * @author gid15
  *
  */
-public class SysconSfrNames {
+public class Nec78k0SfrNames {
 	private static final String[][] sfr1Names = new String[NUMBER_SPECIAL_FUNCTION_REGISTERS][8];
 	private static final String[] sfr8Names = new String[NUMBER_SPECIAL_FUNCTION_REGISTERS];
 	private static final String[] sfr16Names = new String[NUMBER_SPECIAL_FUNCTION_REGISTERS];

@@ -14,7 +14,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
-package jpcsp.memory.mmio.syscon;
+package jpcsp.nec78k0.sfr;
 
 import static jpcsp.memory.mmio.syscon.MMIOHandlerSysconFirmwareSfr.IFtoINT;
 import static jpcsp.memory.mmio.syscon.MMIOHandlerSysconFirmwareSfr.getInterruptName;
@@ -29,14 +29,14 @@ import jpcsp.state.StateOutputStream;
  * @author gid15
  *
  */
-public class SysconTimerEventCounter8 extends AbstractSysconTimerEventCounter {
+public class Nec78k0TimerEventCounter8 extends AbstractSysconTimerEventCounter {
 	private static final int STATE_VERSION = 0;
 	private final int interruptFlagCompare;
 	private int timerModeControl;
 	private int clockSelection;
 	private int compare;
 
-	public SysconTimerEventCounter8(MMIOHandlerSysconFirmwareSfr sfr, SysconScheduler scheduler, String name, int interruptFlagCompare) {
+	public Nec78k0TimerEventCounter8(Nec78k0Sfr sfr, Nec78k0Scheduler scheduler, String name, int interruptFlagCompare) {
 		super(sfr, scheduler, name, 0xFF);
 		this.interruptFlagCompare = interruptFlagCompare;
 	}
@@ -46,6 +46,7 @@ public class SysconTimerEventCounter8 extends AbstractSysconTimerEventCounter {
 		stream.readVersion(STATE_VERSION);
 		timerModeControl = stream.readInt();
 		clockSelection = stream.readInt();
+		compare = stream.readInt();
 
 		super.read(stream);
 	}
@@ -55,6 +56,7 @@ public class SysconTimerEventCounter8 extends AbstractSysconTimerEventCounter {
 		stream.writeVersion(STATE_VERSION);
 		stream.writeInt(timerModeControl);
 		stream.writeInt(clockSelection);
+		stream.writeInt(compare);
 
 		super.write(stream);
 	}
@@ -104,12 +106,26 @@ public class SysconTimerEventCounter8 extends AbstractSysconTimerEventCounter {
 		return timerModeControl & 0xF3;
 	}
 
+	public int getClockSelection() {
+		return clockSelection;
+	}
+
 	public void setClockSelection(int value) {
 		clockSelection = value;
+
+		switch (clockSelection & 0x07) {
+			case 2: setClockStep(200); break; // 5MHz
+			case 3: setClockStep(400); break; // 2.5 MHz
+			case 4: setClockStep(800); break; // 1.25 MHz
+			case 5: setClockStep(12800); break; // 78.13 kHz
+			case 6: setClockStep(51200); break; // 19.53 kHz
+			case 7: setClockStep(1639340); break; // 0.61 kHz
+			default: log.error(String.format("%s setClockSelection unimplemented 0x%02X", name, value)); break;
+		}
 	}
 
 	private void updateCompare() {
-		setCompare0(compare);
+		setCompareValue0(compare);
 	}
 
 	public void setCompare(int value) {

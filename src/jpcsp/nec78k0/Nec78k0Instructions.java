@@ -35,8 +35,6 @@ import static jpcsp.util.Utilities.setBit;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.log4j.Logger;
-
 import jpcsp.Emulator;
 import jpcsp.Allegrex.compiler.ICompilerContext;
 
@@ -45,7 +43,6 @@ import jpcsp.Allegrex.compiler.ICompilerContext;
  *
  */
 public class Nec78k0Instructions {
-	public static Logger log = Nec78k0Instruction.log;
 	private static final String[] registerNames = {
 		"X", "A", "C", "B", "E", "D", "L", "H"
 	};
@@ -79,6 +76,15 @@ public class Nec78k0Instructions {
 		}
 
 		return String.format("0x%04X (%s)", addr, functionName);
+	}
+
+	public static String getCalltFunctionName(int addr) {
+		String functionName = functionNames.get(addr);
+		if (functionName == null) {
+			return String.format("[0x%04X]", addr);
+		}
+
+		return String.format("[0x%04X] (%s)", addr, functionName);
 	}
 
 	public static void registerFunctionName(int addr, String functionName) {
@@ -357,7 +363,10 @@ public class Nec78k0Instructions {
         @Override
         public void interpret(Nec78k0Processor processor, int insn) {
         	int imm16 = getCallAddressWord(insn, processor.getCurrentInstructionPc());
-        	processor.call(imm16);
+
+        	if (!handleHLECall(processor, imm16, insn)) {
+            	processor.call(imm16);
+        	}
         }
 
         @Override
@@ -511,6 +520,23 @@ public class Nec78k0Instructions {
         }
     };
 
+    public static final Nec78k0Instruction SUB_saddr_byte = new Nec78k0Instruction3() {
+        @Override
+        public void interpret(Nec78k0Processor processor, int insn) {
+        	int saddr = getSaddr(insn >> 8);
+        	int value1 = processor.mem.read8(saddr);
+        	int value2 = getByte(insn);
+        	int value = value1 - value2;
+        	processor.mem.write8(saddr, (byte) value);
+        	processor.setPswResult(value, getSubstractionCY(value1, value2), getSubstractionAC(value1, value2, value));
+        }
+
+        @Override
+        public String disasm(int address, int insn) {
+            return String.format("sub %s, #0x%02X", getAddressName(getSaddr(insn >> 8)), getByte(insn));
+        }
+    };
+
     public static final Nec78k0Instruction BZ = new Nec78k0Instruction2() {
         @Override
         public void interpret(Nec78k0Processor processor, int insn) {
@@ -522,7 +548,7 @@ public class Nec78k0Instructions {
 
         @Override
         public String disasm(int address, int insn) {
-            return String.format("bz $0x%04X", getJdisp(address, insn, getInstructionSize()));
+            return String.format("bz $0x%04X ; branch if ==", getJdisp(address, insn, getInstructionSize()));
         }
     };
 
@@ -537,7 +563,7 @@ public class Nec78k0Instructions {
 
         @Override
         public String disasm(int address, int insn) {
-            return String.format("bnz $0x%04X", getJdisp(address, insn, getInstructionSize()));
+            return String.format("bnz $0x%04X ; branch if !=", getJdisp(address, insn, getInstructionSize()));
         }
     };
 
@@ -552,7 +578,7 @@ public class Nec78k0Instructions {
 
         @Override
         public String disasm(int address, int insn) {
-            return String.format("bc $0x%04X", getJdisp(address, insn, getInstructionSize()));
+            return String.format("bc $0x%04X ; branch if <", getJdisp(address, insn, getInstructionSize()));
         }
     };
 
@@ -567,7 +593,7 @@ public class Nec78k0Instructions {
 
         @Override
         public String disasm(int address, int insn) {
-            return String.format("bnc $0x%04X", getJdisp(address, insn, getInstructionSize()));
+            return String.format("bnc $0x%04X ; branch if >=", getJdisp(address, insn, getInstructionSize()));
         }
     };
 
@@ -1095,6 +1121,20 @@ public class Nec78k0Instructions {
         }
     };
 
+    public static final Nec78k0Instruction OR_A_HLbyte = new Nec78k0Instruction2() {
+        @Override
+        public void interpret(Nec78k0Processor processor, int insn) {
+        	int value = processor.getRegister(REG_A) | processor.mem.read8(processor.getRegisterPair(REG_PAIR_HL) + (byte) insn);
+        	processor.setRegister(REG_A, value);
+        	processor.setPswResult(value);
+        }
+
+        @Override
+        public String disasm(int address, int insn) {
+            return String.format("or %s, %s", getRegisterName(REG_A), getBasedAddressing(getRegisterPairName(REG_PAIR_HL), insn));
+        }
+    };
+
     public static final Nec78k0Instruction CMP_saddr_byte = new Nec78k0Instruction3() {
         @Override
         public void interpret(Nec78k0Processor processor, int insn) {
@@ -1345,6 +1385,22 @@ public class Nec78k0Instructions {
         }
     };
 
+    public static final Nec78k0Instruction SUB_A_HL = new Nec78k0Instruction1() {
+        @Override
+        public void interpret(Nec78k0Processor processor, int insn) {
+        	int value1 = processor.getRegister(REG_A);
+        	int value2 = processor.mem.read8(processor.getRegisterPair(REG_PAIR_HL));
+        	int value = value1 - value2;
+        	processor.setRegister(REG_A, value);
+        	processor.setPswResult(value, getSubstractionCY(value1, value2), getSubstractionAC(value1, value2, value));
+        }
+
+        @Override
+        public String disasm(int address, int insn) {
+            return String.format("sub %s, [%s]", getRegisterName(REG_A), getRegisterPairName(REG_PAIR_HL));
+        }
+    };
+
     public static final Nec78k0Instruction ADDC_A_HLbyte = new Nec78k0Instruction2() {
         @Override
         public void interpret(Nec78k0Processor processor, int insn) {
@@ -1364,6 +1420,25 @@ public class Nec78k0Instructions {
         }
     };
 
+    public static final Nec78k0Instruction SUBC_A_HLbyte = new Nec78k0Instruction2() {
+        @Override
+        public void interpret(Nec78k0Processor processor, int insn) {
+        	int value1 = processor.getRegister(REG_A);
+        	int value2 = processor.mem.read8(processor.getRegisterPair(REG_PAIR_HL) + (byte) insn);
+        	int value = value1 - value2;
+        	if (processor.isCarryFlag()) {
+        		value--;
+        	}
+        	processor.setRegister(REG_A, value);
+        	processor.setPswResult(value, getSubstractionCY(value1, value2), getSubstractionAC(value1, value2, value));
+        }
+
+        @Override
+        public String disasm(int address, int insn) {
+            return String.format("subc %s, %s", getRegisterName(REG_A), getBasedAddressing(getRegisterPairName(REG_PAIR_HL), insn));
+        }
+    };
+
     public static final Nec78k0Instruction ADD_A_HLbyte = new Nec78k0Instruction2() {
         @Override
         public void interpret(Nec78k0Processor processor, int insn) {
@@ -1377,6 +1452,22 @@ public class Nec78k0Instructions {
         @Override
         public String disasm(int address, int insn) {
             return String.format("add %s, %s", getRegisterName(REG_A), getBasedAddressing(getRegisterPairName(REG_PAIR_HL), insn));
+        }
+    };
+
+    public static final Nec78k0Instruction SUB_A_HLbyte = new Nec78k0Instruction2() {
+        @Override
+        public void interpret(Nec78k0Processor processor, int insn) {
+        	int value1 = processor.getRegister(REG_A);
+        	int value2 = processor.mem.read8(processor.getRegisterPair(REG_PAIR_HL) + (byte) insn);
+        	int value = value1 - value2;
+        	processor.setRegister(REG_A, value);
+        	processor.setPswResult(value, getSubstractionCY(value1, value2), getSubstractionAC(value1, value2, value));
+        }
+
+        @Override
+        public String disasm(int address, int insn) {
+            return String.format("sub %s, %s", getRegisterName(REG_A), getBasedAddressing(getRegisterPairName(REG_PAIR_HL), insn));
         }
     };
 
@@ -1579,7 +1670,7 @@ public class Nec78k0Instructions {
 
         @Override
         public String disasm(int address, int insn) {
-            return String.format("callt [0x%04X]", (insn & 0x3E) | 0x40);
+            return String.format("callt %s", getCalltFunctionName((insn & 0x3E) | 0x40));
         }
     };
 
@@ -1774,6 +1865,25 @@ public class Nec78k0Instructions {
         @Override
         public String disasm(int address, int insn) {
             return String.format("subc %s, %s", getRegisterName(REG_A), getRegisterName(insn));
+        }
+    };
+
+    public static final Nec78k0Instruction SUBC_r_A = new Nec78k0Instruction2() {
+        @Override
+        public void interpret(Nec78k0Processor processor, int insn) {
+        	int value1 = processor.getRegister(insn);
+        	int value2 = processor.getRegister(REG_A);
+        	int value = value1 - value2;
+        	if (processor.isCarryFlag()) {
+        		value--;
+        	}
+        	processor.setRegister(insn, value);
+        	processor.setPswResult(value, getSubstractionCY(value1, value2, processor.isCarryFlag()), getSubstractionAC(value1, value2, value));
+        }
+
+        @Override
+        public String disasm(int address, int insn) {
+            return String.format("subc %s, %s", getRegisterName(insn), getRegisterName(REG_A));
         }
     };
 

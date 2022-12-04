@@ -14,20 +14,20 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
-package jpcsp.memory.mmio.syscon;
+package jpcsp.nec78k0.sfr;
 
 import static jpcsp.memory.mmio.syscon.MMIOHandlerSysconFirmwareSfr.SRIF6;
 import static jpcsp.memory.mmio.syscon.MMIOHandlerSysconFirmwareSfr.STIF6;
 
 import static jpcsp.util.Utilities.clearBit;
 import static jpcsp.util.Utilities.hasBit;
+import static jpcsp.util.Utilities.isFallingBit;
 import static jpcsp.util.Utilities.isRaisingBit;
 
 import java.io.IOException;
 
 import org.apache.log4j.Logger;
 
-import jpcsp.nec78k0.Nec78k0Processor;
 import jpcsp.state.IState;
 import jpcsp.state.StateInputStream;
 import jpcsp.state.StateOutputStream;
@@ -40,28 +40,20 @@ import jpcsp.state.StateOutputStream;
  * @author gid15
  *
  */
-public class SysconSerialInterfaceUART6 implements IState {
-	public static Logger log = Nec78k0Processor.log;
+public class Nec78k0SerialInterfaceUART6 implements IState {
 	private static final int STATE_VERSION = 0;
-	private final MMIOHandlerSysconFirmwareSfr sfr;
-	private final ISysconSerialInterface serialInterfaceEmulator;
+	private final Nec78k0Sfr sfr;
+	private Logger log;
+	private Nec78k0SerialInterface serialInterfaceEmulator;
 	private int operationMode;
 	private int controlRegister;
 	private int clockSelection;
 	private int baudRateGeneratorControl;
 	private int receptionErrorStatus;
 
-	public SysconSerialInterfaceUART6(MMIOHandlerSysconFirmwareSfr sfr) {
+	public Nec78k0SerialInterfaceUART6(Nec78k0Sfr sfr) {
 		this.sfr = sfr;
-
-		// When emulating the firmware bootloader,
-		// the serial interface is connected to an external system.
-		// Otherwise, the serial interface is connected to the PSP battery.
-		if (SysconEmulator.firmwareBootloader) {
-			serialInterfaceEmulator = new SysconBootloaderEmulator(sfr);
-		} else {
-			serialInterfaceEmulator = new SysconBatteryEmulator(sfr, this);
-		}
+		log = sfr.log;
 	}
 
 	@Override
@@ -72,7 +64,9 @@ public class SysconSerialInterfaceUART6 implements IState {
 		clockSelection = stream.readInt();
 		baudRateGeneratorControl = stream.readInt();
 		receptionErrorStatus = stream.readInt();
-		serialInterfaceEmulator.read(stream);
+		if (serialInterfaceEmulator != null) {
+			serialInterfaceEmulator.read(stream);
+		}
 	}
 
 	@Override
@@ -83,7 +77,13 @@ public class SysconSerialInterfaceUART6 implements IState {
 		stream.writeInt(clockSelection);
 		stream.writeInt(baudRateGeneratorControl);
 		stream.writeInt(receptionErrorStatus);
-		serialInterfaceEmulator.write(stream);
+		if (serialInterfaceEmulator != null) {
+			serialInterfaceEmulator.write(stream);
+		}
+	}
+
+	public void setLogger(Logger log) {
+		this.log = log;
 	}
 
 	public void reset() {
@@ -92,10 +92,16 @@ public class SysconSerialInterfaceUART6 implements IState {
 		clockSelection = 0x00;
 		baudRateGeneratorControl = 0xFF;
 		receptionErrorStatus = 0x00;
-		serialInterfaceEmulator.reset();
+		if (serialInterfaceEmulator != null) {
+			serialInterfaceEmulator.reset();
+		}
 	}
 
-	public ISysconSerialInterface getConnectedSerialInterface() {
+	public void setSerialInterface(Nec78k0SerialInterface serialInterfaceEmulator) {
+		this.serialInterfaceEmulator = serialInterfaceEmulator;
+	}
+
+	public Nec78k0SerialInterface getConnectedSerialInterface() {
 		return serialInterfaceEmulator;
 	}
 
@@ -112,15 +118,24 @@ public class SysconSerialInterfaceUART6 implements IState {
 			log.debug(String.format("UART6 setOperationMode 0x%02X", value));
 		}
 
-		if (isRaisingBit(operationMode, value, 6)) {
+		int oldOperationMode = operationMode;
+		operationMode = value;
+
+		if (isRaisingBit(oldOperationMode, operationMode, 6)) {
 			// Starting transmission
 			serialInterfaceEmulator.startTransmission();
-		} else if (isRaisingBit(operationMode, value, 5)) {
-			// Starting reception
-			serialInterfaceEmulator.startReception();
+		} else if (isFallingBit(oldOperationMode, operationMode, 6)) {
+			// Ending transmission
+			serialInterfaceEmulator.endTransmission();
 		}
 
-		operationMode = value;
+		if (isRaisingBit(oldOperationMode, operationMode, 5)) {
+			// Starting reception
+			serialInterfaceEmulator.startReception();
+		} else if (isFallingBit(oldOperationMode, operationMode, 5)) {
+			// Ending reception
+			serialInterfaceEmulator.endReception();
+		}
 	}
 
 	public int getOperationMode() {
@@ -201,7 +216,9 @@ public class SysconSerialInterfaceUART6 implements IState {
 		if (isReceptionEnabled()) {
 			value = serialInterfaceEmulator.receive();
 
-			sfr.setInterruptRequest(SRIF6);
+			if (serialInterfaceEmulator.hasReceived()) {
+				sfr.setInterruptRequest(SRIF6);
+			}
 
 			if (log.isDebugEnabled()) {
 				log.debug(String.format("UART6 getReceiveRegister returning 0x%02X", value));

@@ -2433,9 +2433,17 @@ public class Utilities {
 			return null;
 		}
 
-		byte[] bytes = new byte[array.length];
-    	for (int i = 0; i < array.length; i++) {
-    		bytes[i] = (byte) array[i];
+		return intArrayToByteArray(array, 0, array.length);
+	}
+
+	public static byte[] intArrayToByteArray(int[] array, int offset, int length) {
+		if (array == null) {
+			return null;
+		}
+
+		byte[] bytes = new byte[length];
+    	for (int i = 0; i < length; i++) {
+    		bytes[i] = (byte) array[offset + i];
     	}
 
     	return bytes;

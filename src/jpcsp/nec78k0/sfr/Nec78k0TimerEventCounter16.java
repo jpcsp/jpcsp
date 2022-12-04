@@ -14,7 +14,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
-package jpcsp.memory.mmio.syscon;
+package jpcsp.nec78k0.sfr;
 
 import static jpcsp.memory.mmio.syscon.MMIOHandlerSysconFirmwareSfr.IFtoINT;
 import static jpcsp.memory.mmio.syscon.MMIOHandlerSysconFirmwareSfr.getInterruptName;
@@ -30,7 +30,7 @@ import jpcsp.state.StateOutputStream;
  * @author gid15
  *
  */
-public class SysconTimerEventCounter16 extends AbstractSysconTimerEventCounter {
+public class Nec78k0TimerEventCounter16 extends AbstractSysconTimerEventCounter {
 	private static final int STATE_VERSION = 0;
 	private final int interruptFlagCompare0;
 	private final int interruptFlagCompare1;
@@ -41,7 +41,7 @@ public class SysconTimerEventCounter16 extends AbstractSysconTimerEventCounter {
 	private int compare00;
 	private int compare01;
 
-	public SysconTimerEventCounter16(MMIOHandlerSysconFirmwareSfr sfr, SysconScheduler scheduler, String name, int interruptFlagCompare0, int interruptFlagCompare1) {
+	public Nec78k0TimerEventCounter16(Nec78k0Sfr sfr, Nec78k0Scheduler scheduler, String name, int interruptFlagCompare0, int interruptFlagCompare1) {
 		super(sfr, scheduler, name, 0xFFFF);
 		this.interruptFlagCompare0 = interruptFlagCompare0;
 		this.interruptFlagCompare1 = interruptFlagCompare1;
@@ -140,18 +140,18 @@ public class SysconTimerEventCounter16 extends AbstractSysconTimerEventCounter {
 	private void updateCompare() {
 		if (hasBit(compareControl, 0)) {
 			// Acting as a capture register
-			setCompare0(-1);
+			setCompareValue0(-1);
 		} else {
 			// Acting as a compare register
-			setCompare0(compare00);
+			setCompareValue0(compare00);
 		}
 
 		if (hasBit(compareControl, 2)) {
 			// Acting as a capture register
-			setCompare0(-1);
+			setCompareValue1(-1);
 		} else {
 			// Acting as a compare register
-			setCompare0(compare01);
+			setCompareValue1(compare01);
 		}
 	}
 

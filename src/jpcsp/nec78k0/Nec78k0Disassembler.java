@@ -66,6 +66,7 @@ public class Nec78k0Disassembler {
 	private final Set<Integer> branchingTargets = new HashSet<Integer>();
 	private final Map<Integer, String> labels = new HashMap<Integer, String>();
 	private final Set<Integer> dataAddresses = new HashSet<Integer>();
+	public  final Set<Integer> disassembledAddresses = new HashSet<Integer>();
 
 	public Nec78k0Disassembler(Logger log, Level level, Nec78k0Processor processor) {
 		this.log = log;
@@ -180,6 +181,11 @@ public class Nec78k0Disassembler {
 				String disasm = String.format("0x%04X - [%s]%s - %s", pc, opcode, alignment, instr.disasm(pc, insn));
 				disassembled.put(pc, disasm);
 
+				int size = instr.getInstructionSize();
+				for (int i = 0; i < size; i++) {
+					disassembledAddresses.add(pc + i);
+				}
+
 				// If this instruction is branching,
 				// add the branched address to the pending addresses
 				checkBranch(pendingAddresses, pc, insn, instr);
@@ -241,5 +247,15 @@ public class Nec78k0Disassembler {
 		pendingFunctions.add(addr);
 		branchingTargets.add(addr);
 		disasmAll();
+	}
+
+	public void setData(int addr, int size) {
+		for (int i = 0; i < size; i++) {
+			disassembledAddresses.add(addr + i);
+		}
+	}
+
+	public void setDataRange(int addrStart, int addrEnd) {
+		setData(addrStart, addrEnd - addrStart + 1);
 	}
 }

@@ -849,14 +849,14 @@ public class Nec78k0Decoder {
 			ADDC_A_r, // 0x2D
 			ADDC_A_r, // 0x2E
 			ADDC_A_r, // 0x2F
-			UNK2, // 0x30
-			UNK2, // 0x31
-			UNK2, // 0x32
-			UNK2, // 0x33
-			UNK2, // 0x34
-			UNK2, // 0x35
-			UNK2, // 0x36
-			UNK2, // 0x37
+			SUBC_r_A, // 0x30
+			SUBC_r_A, // 0x31
+			SUBC_r_A, // 0x32
+			SUBC_r_A, // 0x33
+			SUBC_r_A, // 0x34
+			SUBC_r_A, // 0x35
+			SUBC_r_A, // 0x36
+			SUBC_r_A, // 0x37
 			SUBC_A_r, // 0x38
 			UNK2, // 0x39
 			SUBC_A_r, // 0x3A
@@ -941,7 +941,7 @@ public class Nec78k0Decoder {
 			UNK2, // 0x89
 			SET1_A, // 0x8A
 			CLR1_A, // 0x8B
-			UNK2, // 0x8C
+			MOV1_CY_A, // 0x8C
 			UNK2, // 0x8D
 			OR1_A, // 0x8E
 			UNK2, // 0x8F
@@ -957,7 +957,7 @@ public class Nec78k0Decoder {
 			UNK2, // 0x99
 			SET1_A, // 0x9A
 			CLR1_A, // 0x9B
-			UNK2, // 0x9C
+			MOV1_CY_A, // 0x9C
 			UNK2, // 0x9D
 			OR1_A, // 0x9E
 			UNK2, // 0x9F
@@ -973,7 +973,7 @@ public class Nec78k0Decoder {
 			UNK2, // 0xA9
 			SET1_A, // 0xAA
 			CLR1_A, // 0xAB
-			UNK2, // 0xAC
+			MOV1_CY_A, // 0xAC
 			UNK2, // 0xAD
 			OR1_A, // 0xAE
 			UNK2, // 0xAF
@@ -989,7 +989,7 @@ public class Nec78k0Decoder {
 			UNK2, // 0xB9
 			SET1_A, // 0xBA
 			CLR1_A, // 0xBB
-			UNK2, // 0xBC
+			MOV1_CY_A, // 0xBC
 			UNK2, // 0xBD
 			OR1_A, // 0xBE
 			UNK2, // 0xBF
@@ -1021,7 +1021,7 @@ public class Nec78k0Decoder {
 			UNK2, // 0xD9
 			SET1_A, // 0xDA
 			CLR1_A, // 0xDB
-			UNK2, // 0xDC
+			MOV1_CY_A, // 0xDC
 			UNK2, // 0xDD
 			OR1_A, // 0xDE
 			UNK2, // 0xDF
@@ -1037,7 +1037,7 @@ public class Nec78k0Decoder {
 			UNK2, // 0xE9
 			SET1_A, // 0xEA
 			CLR1_A, // 0xEB
-			UNK2, // 0xEC
+			MOV1_CY_A, // 0xEC
 			UNK2, // 0xED
 			OR1_A, // 0xEE
 			UNK2, // 0xEF
@@ -1053,7 +1053,7 @@ public class Nec78k0Decoder {
 			UNK2, // 0xF9
 			SET1_A, // 0xFA
 			CLR1_A, // 0xFB
-			UNK2, // 0xFC
+			MOV1_CY_A, // 0xFC
 			UNK2, // 0xFD
 			OR1_A, // 0xFE
 			UNK2  // 0xFF
@@ -1085,13 +1085,13 @@ public class Nec78k0Decoder {
 			MOVW_rp_word, // 0x16
 			UNK1, // 0x17
 			SUB_A_addr, // 0x18
-			UNK1, // 0x19
+			SUB_A_HLbyte, // 0x19
 			SET1_saddr, // 0x1A
 			CLR1_saddr, // 0x1B
 			UNK1, // 0x1C
 			SUB_A_byte, // 0x1D
 			SUB_A_saddr, // 0x1E
-			UNK1, // 0x1F
+			SUB_A_HL, // 0x1F
 			SET1_CY, // 0x20
 			CLR1_CY, // 0x21
 			PUSH_PSW, // 0x22
@@ -1123,7 +1123,7 @@ public class Nec78k0Decoder {
 			XCH_A_r, // 0x36
 			XCH_A_r, // 0x37
 			SUBC_A_addr, // 0x38
-			UNK1, // 0x39
+			SUBC_A_HLbyte, // 0x39
 			SET1_saddr, // 0x3A
 			CLR1_saddr, // 0x3B
 			UNK1, // 0x3C
@@ -1177,7 +1177,7 @@ public class Nec78k0Decoder {
 			MOV_A_r, // 0x66
 			MOV_A_r, // 0x67
 			UNK1, // 0x68
-			UNK1, // 0x69
+			OR_A_HLbyte, // 0x69
 			SET1_saddr, // 0x6A
 			CLR1_saddr, // 0x6B
 			UNK1, // 0x6C
@@ -1230,7 +1230,7 @@ public class Nec78k0Decoder {
 			MOV_DE_A, // 0x95
 			DECW, // 0x96
 			MOV_HL_A, // 0x97
-			UNK1, // 0x98
+			SUB_saddr_byte, // 0x98
 			MOVW_saddrp_AX, // 0x99
 			CALL, // 0x9A
 			BR_word, // 0x9B

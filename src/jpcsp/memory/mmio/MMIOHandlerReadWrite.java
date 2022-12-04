@@ -24,12 +24,15 @@ import static jpcsp.memory.FastMemory.memory8Shift;
 import java.io.IOException;
 import java.util.Arrays;
 
+import org.apache.log4j.Level;
+
 import jpcsp.state.StateInputStream;
 import jpcsp.state.StateOutputStream;
 
 public class MMIOHandlerReadWrite extends MMIOHandlerBase {
 	private static final int STATE_VERSION = 0;
 	private final int[] memory;
+	private Level logLevel = Level.TRACE;
 
 	public MMIOHandlerReadWrite(int baseAddress, int length) {
 		super(baseAddress);
@@ -64,6 +67,10 @@ public class MMIOHandlerReadWrite extends MMIOHandlerBase {
 		Arrays.fill(memory, 0);
 	}
 
+	public void setLogLevel(Level logLevel) {
+		this.logLevel = logLevel;
+	}
+
 	public int[] getInternalMemory() {
 		return memory;
 	}
@@ -83,8 +90,8 @@ public class MMIOHandlerReadWrite extends MMIOHandlerBase {
 	@Override
 	public int read32(int address) {
 		int data = internalRead32(address);
-		if (log.isTraceEnabled()) {
-			log.trace(String.format(getTraceFormatRead32(), getPc(), address, data));
+		if (log.isEnabledFor(logLevel)) {
+			log.log(logLevel, String.format(getTraceFormatRead32(), getPc(), address, data));
 		}
 
 		return data;
@@ -93,8 +100,8 @@ public class MMIOHandlerReadWrite extends MMIOHandlerBase {
 	@Override
 	public int read16(int address) {
 		int data = internalRead16(address);
-		if (log.isTraceEnabled()) {
-			log.trace(String.format(getTraceFormatRead16(), getPc(), address, data));
+		if (log.isEnabledFor(logLevel)) {
+			log.log(logLevel, String.format(getTraceFormatRead16(), getPc(), address, data));
 		}
 
 		return data;
@@ -103,8 +110,8 @@ public class MMIOHandlerReadWrite extends MMIOHandlerBase {
 	@Override
 	public int read8(int address) {
 		int data = internalRead8(address);
-		if (log.isTraceEnabled()) {
-			log.trace(String.format(getTraceFormatRead8(), getPc(), address, data));
+		if (log.isEnabledFor(logLevel)) {
+			log.log(logLevel, String.format(getTraceFormatRead8(), getPc(), address, data));
 		}
 	
 		return data;
@@ -139,8 +146,8 @@ public class MMIOHandlerReadWrite extends MMIOHandlerBase {
 
 	@Override
 	public void write32(int address, int value) {
-		if (log.isTraceEnabled()) {
-			log.trace(String.format(getTraceFormatWrite32(), getPc(), address, value));
+		if (log.isEnabledFor(logLevel)) {
+			log.log(logLevel, String.format(getTraceFormatWrite32(), getPc(), address, value));
 		}
 
 		memory[(address - baseAddress) >> 2] = value;
@@ -148,8 +155,8 @@ public class MMIOHandlerReadWrite extends MMIOHandlerBase {
 
 	@Override
 	public void write16(int address, short value) {
-		if (log.isTraceEnabled()) {
-			log.trace(String.format(getTraceFormatWrite16(), getPc(), address, value & 0xFFFF));
+		if (log.isEnabledFor(logLevel)) {
+			log.log(logLevel, String.format(getTraceFormatWrite16(), getPc(), address, value & 0xFFFF));
 		}
 
 		int index = address & 0x02;
@@ -160,8 +167,8 @@ public class MMIOHandlerReadWrite extends MMIOHandlerBase {
 
 	@Override
 	public void write8(int address, byte value) {
-		if (log.isTraceEnabled()) {
-			log.trace(String.format(getTraceFormatWrite8(), getPc(), address, value & 0xFF));
+		if (log.isEnabledFor(logLevel)) {
+			log.log(logLevel, String.format(getTraceFormatWrite8(), getPc(), address, value & 0xFF));
 		}
 
 		int index = address & 0x03;

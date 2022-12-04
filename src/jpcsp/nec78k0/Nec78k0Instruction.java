@@ -16,8 +16,6 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.nec78k0;
 
-import org.apache.log4j.Logger;
-
 import jpcsp.Processor;
 import jpcsp.Allegrex.Common.Instruction;
 
@@ -26,7 +24,6 @@ import jpcsp.Allegrex.Common.Instruction;
  *
  */
 public abstract class Nec78k0Instruction extends Instruction {
-	public static Logger log = Nec78k0Processor.log;
 	public abstract void interpret(Nec78k0Processor processor, int insn);
 	public abstract int getInstructionSize();
 
@@ -37,6 +34,17 @@ public abstract class Nec78k0Instruction extends Instruction {
 	@Override
 	public void interpret(Processor processor, int insn) {
 		log.error("Unsupported for Nec78k0Instruction");
+	}
+
+	protected boolean handleHLECall(Nec78k0Processor processor, int addr, int insn) {
+		INec78k0HLECall hleCall = processor.interpreter.getHLECall(addr);
+		if (hleCall == null) {
+			return false;
+		}
+
+		hleCall.call(processor, insn);
+
+		return true;
 	}
 
 	@Override

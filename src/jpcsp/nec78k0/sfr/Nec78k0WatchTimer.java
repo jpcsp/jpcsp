@@ -14,7 +14,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
-package jpcsp.memory.mmio.syscon;
+package jpcsp.nec78k0.sfr;
 
 import static jpcsp.memory.mmio.syscon.MMIOHandlerSysconFirmwareSfr.WTIF;
 import static jpcsp.memory.mmio.syscon.MMIOHandlerSysconFirmwareSfr.WTIIF;
@@ -26,7 +26,6 @@ import java.io.IOException;
 import org.apache.log4j.Logger;
 
 import jpcsp.HLE.kernel.types.IAction;
-import jpcsp.nec78k0.Nec78k0Processor;
 import jpcsp.state.IState;
 import jpcsp.state.StateInputStream;
 import jpcsp.state.StateOutputStream;
@@ -35,11 +34,11 @@ import jpcsp.state.StateOutputStream;
  * @author gid15
  *
  */
-public class SysconWatchTimer implements IState {
+public class Nec78k0WatchTimer implements IState {
 	private static final int STATE_VERSION = 0;
-	private Logger log = Nec78k0Processor.log;
-	private final MMIOHandlerSysconFirmwareSfr sfr;
-	private final SysconScheduler scheduler;
+	private final Nec78k0Sfr sfr;
+	private final Nec78k0Scheduler scheduler;
+	private Logger log;
 	private final TimerAction watchTimer;
 	private final TimerAction intervalTimer;
 	private int operationMode;
@@ -112,9 +111,10 @@ public class SysconWatchTimer implements IState {
 		}
 	}
 
-	public SysconWatchTimer(MMIOHandlerSysconFirmwareSfr sfr, SysconScheduler scheduler) {
+	public Nec78k0WatchTimer(Nec78k0Sfr sfr, Nec78k0Scheduler scheduler) {
 		this.sfr = sfr;
 		this.scheduler = scheduler;
+		log = sfr.log;
 
 		watchTimer = new TimerAction("Watch Timer", WTIF);
 		intervalTimer = new TimerAction("Interval Timer", WTIIF);
@@ -190,7 +190,7 @@ public class SysconWatchTimer implements IState {
 			}
 
 			if (log.isDebugEnabled()) {
-				log.debug(String.format("setWatchTimerOperationMode WTM=0x%02X, %s, %s", operationMode, watchTimer, intervalTimer));
+				log.debug(String.format("WatchTimer.setOperationMode WTM=0x%02X, %s, %s", operationMode, watchTimer, intervalTimer));
 			}
 		}
 	}

@@ -46,13 +46,16 @@ import jpcsp.autotests.AutoTestsRunner;
 import jpcsp.hardware.Battery;
 import jpcsp.hardware.Model;
 import jpcsp.hardware.Wlan;
+import jpcsp.memory.mmio.battery.BatteryEmulator;
+import jpcsp.memory.mmio.syscon.MMIOHandlerSyscon;
 import jpcsp.memory.mmio.syscon.MMIOHandlerSysconFirmwareSfr;
 import jpcsp.memory.mmio.syscon.SysconBootloaderEmulator;
 import jpcsp.memory.mmio.syscon.SysconEmulator;
-import jpcsp.memory.mmio.syscon.SysconSerialInterfaceUART6;
+import jpcsp.memory.mmio.syscon.SysconMemory;
 import jpcsp.nec78k0.Nec78k0Interpreter;
 import jpcsp.nec78k0.Nec78k0Memory;
 import jpcsp.nec78k0.Nec78k0Processor;
+import jpcsp.nec78k0.sfr.Nec78k0SerialInterfaceUART6;
 import jpcsp.util.LWJGLFixer;
 import jpcsp.util.Utilities;
 
@@ -83,12 +86,12 @@ public class Syscon78k0Test {
 
 	private static class SerialInterfaceSimulatorThread extends Thread {
 		private final Nec78k0Processor processor;
-		private final SysconSerialInterfaceUART6 serialInterface;
+		private final Nec78k0SerialInterfaceUART6 serialInterface;
 		private final SysconBootloaderEmulator bootloaderEmulator;
 
 		public SerialInterfaceSimulatorThread(Nec78k0Processor processor) {
 			this.processor = processor;
-			serialInterface = processor.mem.getSysconSfr().getSysconSerialInterfaceUART6();
+			serialInterface = processor.mem.getSfr().getSerialInterfaceUART6();
 			bootloaderEmulator = (SysconBootloaderEmulator) serialInterface.getConnectedSerialInterface();
 		}
 
@@ -219,7 +222,7 @@ public class Syscon78k0Test {
 	public static void main(String[] args) {
         LWJGLFixer.fixOnce();
         DOMConfigurator.configure("LogSettings.xml");
-        log = Nec78k0Processor.log;
+        log = SysconEmulator.log;
 		RuntimeContext.setLog4jMDC();
 		Wlan.initialize();
 		Battery.initialize();
@@ -234,11 +237,12 @@ public class Syscon78k0Test {
 	public void testFirmware() {
 		int model = Model.MODEL_PSP_SLIM;
 		model = Model.MODEL_PSP_STREET;
+		model = Model.MODEL_PSP_BRITE2;
 
 		Model.setModel(model);
 
 		firmwareBootloader = false;
-		Nec78k0Memory mem = new Nec78k0Memory(log);
+		Nec78k0Memory mem = new SysconMemory(log);
 		Nec78k0Processor processor = new Nec78k0Processor(mem);
 		Nec78k0Interpreter interpreter = new Nec78k0Interpreter(processor);
 
@@ -257,12 +261,18 @@ public class Syscon78k0Test {
 			registerFunctionName(0x5103, "final_key_encryption_cbc");
 			registerFunctionName(0x55CF, "read_secure_flash");
 		} else if (model == Model.MODEL_PSP_BRITE2) {
+			registerFunctionName(0x0723, "mainLoop");
 			registerFunctionName(0x524A, "do_encrypt");
 			registerFunctionName(0x526C, "aes_key_expand");
 			registerFunctionName(0x557B, "memcpy");
+			registerFunctionName(0x55A3, "memcmp");
 			registerFunctionName(0x55E0, "xorloop_0x10");
+			registerFunctionName(0x5611, "memset");
 			registerFunctionName(0x566D, "final_key_encryption_cbc");
+			registerFunctionName(0x5A80, "check_if_service_or_autoboot_battery");
 			registerFunctionName(0x5B42, "read_secure_flash");
+			registerFunctionName(0x4CAD, "aes128_encrypt_key_0xFD3C_data_0xF5D0");
+			registerFunctionName(0x4916, "aes128_encrypt_key_0xFCFA_data_0xFE20");
 		}
 
 		if (mem.internalRead32(0x8100) != 0xFFFFFFFF || firmwareBootloader) {
@@ -471,7 +481,7 @@ public class Syscon78k0Test {
 						processor.disassemble(addr);
 					}
 				}
-	
+
 				for (int i = 1; i <= 21; i++) {
 					int addr = mem.internalRead16(0x277A + (i - 1) * 2);
 					log.info(String.format("Disassembling switch table from 0x2778: case 0x%02X at 0x%04X", i, addr));
@@ -486,8 +496,14 @@ public class Syscon78k0Test {
 		}
 
 		SysconEmulator.disable();
+		MMIOHandlerSyscon.getInstance().init(mem.getSfr());
 		MMIOHandlerSysconFirmwareSfr.dummyTesting = true;
 		Nec78k0Processor.disassembleFunctions = true;
+
+		if (BatteryEmulator.isEnabled()) {
+			// Wait for the battery firmware to boot
+			Utilities.sleep(1000, 0);
+		}
 
 		if (firmwareBootloader) {
 			SerialInterfaceSimulatorThread serialInterfaceSimulatorThread = new SerialInterfaceSimulatorThread(processor);
@@ -498,9 +514,9 @@ public class Syscon78k0Test {
 		processor.reset();
 		interpreter.run();
 
-		long minimumDuration = 3000L; // Run for at least 3 seconds
+		long minimumDuration = 4000L; // Run for at least 4 seconds
 		long start = now();
-		while ((now() - start) < minimumDuration) {
+		while ((now() - start) < minimumDuration && !Emulator.pause) {
 			interpreter.run();
 		}
 	}

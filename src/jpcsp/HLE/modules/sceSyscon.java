@@ -97,6 +97,7 @@ public class sceSyscon extends HLEModule {
     public static final int PSP_SYSCON_CMD_CTRL_BT_POWER                 = 0x53;
     public static final int PSP_SYSCON_CMD_CTRL_USB_POWER                = 0x55;
     public static final int PSP_SYSCON_CMD_CTRL_CHARGE                   = 0x56;
+    public static final int PSP_SYSCON_CMD_BATTERY_BASE                  = 0x60;
     public static final int PSP_SYSCON_CMD_BATTERY_NOP                   = 0x60;
     public static final int PSP_SYSCON_CMD_BATTERY_GET_STATUS_CAP        = 0x61;
     public static final int PSP_SYSCON_CMD_BATTERY_GET_TEMP              = 0x62;
@@ -118,6 +119,9 @@ public class sceSyscon extends HLEModule {
     public static final int PSP_SYSCON_CMD_BATTERY_GET_CHARGE_TIME       = 0x72;
     public static final int PSP_SYSCON_CMD_BATTERY_WRITE_EEPROM          = 0x73;
     public static final int PSP_SYSCON_CMD_BATTERY_READ_EEPROM           = 0x74;
+    public static final int PSP_SYSCON_CMD_BATTERY_GET_MANUFACTURER      = 0x76;
+    public static final int PSP_SYSCON_CMD_BATTERY_CHALLENGE1            = 0xE0;
+    public static final int PSP_SYSCON_CMD_BATTERY_CHALLENGE2            = 0xE1;
     private static String cmdNames[];
     public static final int PSP_SYSCON_LED_MS    = 0; // Memory-Stick LED
     public static final int PSP_SYSCON_LED_WLAN  = 1; // W-LAN LED
@@ -250,6 +254,9 @@ public class sceSyscon extends HLEModule {
     		cmdNames[PSP_SYSCON_CMD_BATTERY_GET_CHARGE_TIME] = "BATTERY_GET_CHARGE_TIME";
     		cmdNames[PSP_SYSCON_CMD_BATTERY_WRITE_EEPROM] = "BATTERY_WRITE_EEPROM";
     		cmdNames[PSP_SYSCON_CMD_BATTERY_READ_EEPROM] = "BATTERY_READ_EEPROM";
+    		cmdNames[PSP_SYSCON_CMD_BATTERY_GET_MANUFACTURER] = "BATTERY_GET_MANUFACTURER";
+    		cmdNames[PSP_SYSCON_CMD_BATTERY_CHALLENGE1] = "BATTERY_CHALLENGE1";
+    		cmdNames[PSP_SYSCON_CMD_BATTERY_CHALLENGE2] = "BATTERY_CHALLENGE2";
 
     		for (int i = 0; i < cmdNames.length; i++) {
     			if (cmdNames[i] == null) {

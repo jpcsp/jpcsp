@@ -28,8 +28,8 @@ import java.io.InputStream;
 
 import org.apache.log4j.Logger;
 
+import jpcsp.Emulator;
 import jpcsp.Allegrex.compiler.RuntimeContext;
-import jpcsp.HLE.modules.sceSyscon;
 import jpcsp.hardware.Model;
 import jpcsp.nec78k0.Nec78k0Interpreter;
 import jpcsp.nec78k0.Nec78k0Memory;
@@ -41,7 +41,7 @@ import jpcsp.util.Utilities;
  *
  */
 public class SysconEmulator {
-    public static Logger log = sceSyscon.log;
+    public static Logger log = Logger.getLogger("syscon");
 	public static boolean firmwareBootloader = false;
 	private static final int firmwareBootloaderCodeLength = 0x2000;
 	private static final int firmwareBootloaderCodeOffset = 0x8000;
@@ -62,7 +62,7 @@ public class SysconEmulator {
 			load(mem);
 			processor.reset();
 
-			while (!exit) {
+			while (!Emulator.pause && !exit) {
 				interpreter.run();
 			}
 			thread = null;
@@ -106,7 +106,7 @@ public class SysconEmulator {
 	}
 
 	public SysconEmulator() {
-		mem = new Nec78k0Memory(Nec78k0Processor.log);
+		mem = new SysconMemory(log);
 		processor = new Nec78k0Processor(mem);
 		interpreter = new Nec78k0Interpreter(processor);
 	}
@@ -153,24 +153,29 @@ public class SysconEmulator {
 				mem.write32(baseAddress + i, readUnaligned32(buffer, i));
 			}
 
-			// If the bootloader code is not included into this
-			// firmware dump, load it from another dump
-			if (mem.internalRead32(firmwareBootloaderAddress) == 0xFFFFFFFF) {
-				// Loading the bootloader code from TA-086_Full.bin
-				// as the code is the same for all syscon firmware versions
-				log.info(String.format("Loading the bootloader code from %s at address 0x%04X", firmwareBootloaderFileName, firmwareBootloaderAddress));
-				try {
-					InputStream is = new FileInputStream(firmwareBootloaderFileName);
-					is.skip(firmwareBootloaderCodeOffset);
-					length = is.read(buffer, 0, firmwareBootloaderCodeLength);
-					is.close();
+			loadBootloader(mem);
+		}
+	}
 
-					for (int i = 0; i < length; i += 4) {
-						mem.write32(firmwareBootloaderAddress + i, readUnaligned32(buffer, i));
-					}
-				} catch (IOException e) {
-					log.error(e);
+	public static void loadBootloader(Nec78k0Memory mem) {
+		// If the bootloader code is not included into this
+		// firmware dump, load it from another dump
+		if (mem.internalRead32(firmwareBootloaderAddress) == 0xFFFFFFFF || mem.internalRead32(firmwareBootloaderAddress) == 0x00000000) {
+			// Loading the bootloader code from TA-086_Full.bin
+			// as the code is the same for all syscon firmware versions
+			log.info(String.format("Loading the bootloader code from %s at address 0x%04X", firmwareBootloaderFileName, firmwareBootloaderAddress));
+			try {
+				InputStream is = new FileInputStream(firmwareBootloaderFileName);
+				is.skip(firmwareBootloaderCodeOffset);
+				byte[] buffer = new byte[firmwareBootloaderCodeLength];
+				int length = is.read(buffer, 0, firmwareBootloaderCodeLength);
+				is.close();
+
+				for (int i = 0; i < length; i += 4) {
+					mem.write32(firmwareBootloaderAddress + i, readUnaligned32(buffer, i));
 				}
+			} catch (IOException e) {
+				log.error(e);
 			}
 		}
 	}
@@ -178,11 +183,11 @@ public class SysconEmulator {
 	public void boot() {
 		if (thread == null) {
 			thread = new SysconProcessorThread();
-			thread.setName("Syscon Nec 78k0 Processor Thread");
+			thread.setName("Syscon NEC 78k0 Processor Thread");
 			thread.setDaemon(true);
 			thread.start();
 		} else {
-			log.error(String.format("SysconFirmware.boot() SysconProcessorThread already running"));
+			log.error(String.format("SysconEmulator.boot() SysconProcessorThread already running"));
 		}
 	}
 
@@ -195,7 +200,11 @@ public class SysconEmulator {
 		}
 	}
 
+	public MMIOHandlerSysconFirmwareSfr getSysconSfr() {
+		return (MMIOHandlerSysconFirmwareSfr) mem.getSfr();
+	}
+
 	public void startSysconCmd(int[] data) {
-		mem.getSysconSfr().startSysconCmd(data);
+		getSysconSfr().startSysconCmd(data);
 	}
 }

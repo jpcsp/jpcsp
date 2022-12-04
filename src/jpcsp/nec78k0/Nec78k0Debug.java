@@ -47,11 +47,15 @@ public class Nec78k0Debug {
 	}
 
 	public void call(Nec78k0Processor processor, int addr) {
-		stackCallInfos[stackCallInfoIndex].pc = processor.getCurrentInstructionPc();
-		stackCallInfos[stackCallInfoIndex].callAddress = addr;
-		stackCallInfos[stackCallInfoIndex].sp = processor.getSp();
-		stackCallInfos[stackCallInfoIndex].isInterrupt = false;
-		stackCallInfoIndex++;
+		if (stackCallInfoIndex < stackCallInfos.length) {
+			stackCallInfos[stackCallInfoIndex].pc = processor.getCurrentInstructionPc();
+			stackCallInfos[stackCallInfoIndex].callAddress = addr;
+			stackCallInfos[stackCallInfoIndex].sp = processor.getSp();
+			stackCallInfos[stackCallInfoIndex].isInterrupt = false;
+			stackCallInfoIndex++;
+		} else {
+			log.error(String.format("Stack overflow"));
+		}
 	}
 
 	public void ret() {
@@ -63,12 +67,16 @@ public class Nec78k0Debug {
 	}
 
 	public void callInterrupt(Nec78k0Processor processor, int addr, int vectorTableAddr) {
-		stackCallInfos[stackCallInfoIndex].pc = processor.getCurrentInstructionPc();
-		stackCallInfos[stackCallInfoIndex].callAddress = addr;
-		stackCallInfos[stackCallInfoIndex].sp = processor.getSp();
-		stackCallInfos[stackCallInfoIndex].vectorTableAddress = vectorTableAddr;
-		stackCallInfos[stackCallInfoIndex].isInterrupt = true;
-		stackCallInfoIndex++;
+		if (stackCallInfoIndex < stackCallInfos.length) {
+			stackCallInfos[stackCallInfoIndex].pc = processor.getCurrentInstructionPc();
+			stackCallInfos[stackCallInfoIndex].callAddress = addr;
+			stackCallInfos[stackCallInfoIndex].sp = processor.getSp();
+			stackCallInfos[stackCallInfoIndex].vectorTableAddress = vectorTableAddr;
+			stackCallInfos[stackCallInfoIndex].isInterrupt = true;
+			stackCallInfoIndex++;
+		} else {
+			log.error(String.format("Stack overflow"));
+		}
 	}
 
 	public void dump() {

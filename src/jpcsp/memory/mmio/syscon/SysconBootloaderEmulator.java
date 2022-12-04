@@ -18,9 +18,9 @@ package jpcsp.memory.mmio.syscon;
 
 import java.io.IOException;
 
-import org.apache.log4j.Logger;
-
-import jpcsp.HLE.modules.sceSyscon;
+import jpcsp.nec78k0.sfr.Nec78k0SerialInterface;
+import jpcsp.nec78k0.sfr.Nec78k0SerialInterfaceUART6;
+import jpcsp.nec78k0.sfr.Nec78k0Sfr;
 import jpcsp.state.StateInputStream;
 import jpcsp.state.StateOutputStream;
 
@@ -105,8 +105,7 @@ import jpcsp.state.StateOutputStream;
  * @author gid15
  *
  */
-public class SysconBootloaderEmulator implements ISysconSerialInterface {
-    public static Logger log = sceSyscon.log;
+public class SysconBootloaderEmulator extends Nec78k0SerialInterface {
 	private static final int STATE_VERSION = 0;
 	// First command to be sent before other commands can be processed
     public static final int SYSCON_BOOTLOADER_COMMAND_INIT = 0x00;
@@ -140,7 +139,8 @@ public class SysconBootloaderEmulator implements ISysconSerialInterface {
 	private int index;
 	private int length;
 
-	public SysconBootloaderEmulator(MMIOHandlerSysconFirmwareSfr sfr) {
+    public SysconBootloaderEmulator(Nec78k0Sfr sfr, Nec78k0SerialInterfaceUART6 serialInterface) {
+		super(sfr, serialInterface);
 	}
 
 	@Override
@@ -149,6 +149,7 @@ public class SysconBootloaderEmulator implements ISysconSerialInterface {
 		index = stream.readInt();
 		length = stream.readInt();
 		stream.readInts(buffer);
+		super.read(stream);
 	}
 
 	@Override
@@ -157,12 +158,14 @@ public class SysconBootloaderEmulator implements ISysconSerialInterface {
 		stream.writeInt(index);
 		stream.writeInt(length);
 		stream.writeInts(buffer);
+		super.write(stream);
 	}
 
 	@Override
 	public void reset() {
 		index = 0;
 		length = 0;
+		super.reset();
 	}
 
 	@Override
@@ -183,6 +186,11 @@ public class SysconBootloaderEmulator implements ISysconSerialInterface {
 			return 0x00;
 		}
 		return buffer[index++];
+	}
+
+	@Override
+	public boolean hasReceived() {
+		return !isEmpty();
 	}
 
 	public boolean isEmpty() {

@@ -91,7 +91,10 @@ import jpcsp.hardware.Model;
 import jpcsp.hardware.UMDDrive;
 import jpcsp.memory.mmio.MMIOHandlerBase;
 import jpcsp.memory.mmio.MMIOHandlerGpio;
+import jpcsp.memory.mmio.battery.BatteryEmulator;
+import jpcsp.memory.mmio.battery.BatteryToSysconSerialInterface;
 import jpcsp.memory.mmio.wlan.MMIOHandlerWlan;
+import jpcsp.nec78k0.sfr.Nec78k0Sfr;
 import jpcsp.state.StateInputStream;
 import jpcsp.state.StateOutputStream;
 import jpcsp.util.Utilities;
@@ -122,6 +125,7 @@ public class MMIOHandlerSyscon extends MMIOHandlerBase {
 	private static final int NUMBER_INTERNAL_REGISTERS = 8;
 	private final byte[][] internalRegisters = new byte[8][8];
 	private SysconEmulator fw;
+	private BatteryEmulator battery;
 
 	private static class ResetAction implements IAction {
 		@Override
@@ -146,8 +150,13 @@ public class MMIOHandlerSyscon extends MMIOHandlerBase {
 	private MMIOHandlerSyscon(int baseAddress) {
 		super(baseAddress);
 
+		if (BatteryEmulator.isEnabled()) {
+			battery = new BatteryEmulator();
+			battery.boot();
+		}
 		if (SysconEmulator.isEnabled()) {
 			fw = new SysconEmulator();
+			init(fw.getSysconSfr());
 			fw.boot();
 		}
 	}
@@ -170,6 +179,17 @@ public class MMIOHandlerSyscon extends MMIOHandlerBase {
 		stream.writeBoolean(endDataIndex);
 		stream.writeInt(error);
 		super.write(stream);
+	}
+
+	public BatteryEmulator getBatteryEmulator() {
+		return battery;
+	}
+
+	public void init(Nec78k0Sfr sfr) {
+		if (battery != null) {
+			sfr.getSerialInterfaceUART6().setSerialInterface(new SysconToBatterySerialInterface(sfr, sfr.getSerialInterfaceUART6(), battery.getBatterySfr()));
+			battery.getBatterySfr().getSerialInterfaceUART6().setSerialInterface(new BatteryToSysconSerialInterface(battery.getBatterySfr(), battery.getBatterySfr().getSerialInterfaceUART6(), sfr));
+		}
 	}
 
 	@Override

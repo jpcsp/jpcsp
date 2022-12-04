@@ -17,18 +17,21 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.memory.mmio.syscon;
 
 import static jpcsp.HLE.Modules.sceSysconModule;
+import static jpcsp.HLE.modules.sceSyscon.PSP_SYSCON_CMD_BATTERY_BASE;
+import static jpcsp.HLE.modules.sceSyscon.PSP_SYSCON_CMD_BATTERY_CHALLENGE1;
+import static jpcsp.HLE.modules.sceSyscon.PSP_SYSCON_CMD_BATTERY_CHALLENGE2;
 import static jpcsp.HLE.modules.sceSyscon.PSP_SYSCON_CMD_BATTERY_GET_CYCLE;
 import static jpcsp.HLE.modules.sceSyscon.PSP_SYSCON_CMD_BATTERY_GET_ELEC;
 import static jpcsp.HLE.modules.sceSyscon.PSP_SYSCON_CMD_BATTERY_GET_FULL_CAP;
 import static jpcsp.HLE.modules.sceSyscon.PSP_SYSCON_CMD_BATTERY_GET_IFC;
 import static jpcsp.HLE.modules.sceSyscon.PSP_SYSCON_CMD_BATTERY_GET_INFO;
 import static jpcsp.HLE.modules.sceSyscon.PSP_SYSCON_CMD_BATTERY_GET_LIMIT_TIME;
+import static jpcsp.HLE.modules.sceSyscon.PSP_SYSCON_CMD_BATTERY_GET_MANUFACTURER;
 import static jpcsp.HLE.modules.sceSyscon.PSP_SYSCON_CMD_BATTERY_GET_SERIAL;
 import static jpcsp.HLE.modules.sceSyscon.PSP_SYSCON_CMD_BATTERY_GET_STATUS_CAP;
 import static jpcsp.HLE.modules.sceSyscon.PSP_SYSCON_CMD_BATTERY_GET_TEMP;
 import static jpcsp.HLE.modules.sceSyscon.PSP_SYSCON_CMD_BATTERY_GET_VOLT;
 import static jpcsp.HLE.modules.sceSyscon.getSysconCmdName;
-import static jpcsp.memory.mmio.syscon.MMIOHandlerSysconFirmwareSfr.SRIF6;
 import static jpcsp.util.Utilities.getByte0;
 import static jpcsp.util.Utilities.getByte1;
 import static jpcsp.util.Utilities.getByte2;
@@ -37,11 +40,10 @@ import static libkirk.AES.AES_cbc_encrypt;
 import static libkirk.AES.AES_set_key;
 
 import java.io.IOException;
-import java.util.Arrays;
-
-import org.apache.log4j.Logger;
 
 import jpcsp.hardware.Battery;
+import jpcsp.nec78k0.sfr.Nec78k0SerialInterface;
+import jpcsp.nec78k0.sfr.Nec78k0SerialInterfaceUART6;
 import jpcsp.state.StateInputStream;
 import jpcsp.state.StateOutputStream;
 import libkirk.AES.AES_ctx;
@@ -57,8 +59,7 @@ import libkirk.AES.AES_ctx;
  * @author gid15
  *
  */
-public class SysconBatteryEmulator implements ISysconSerialInterface {
-	private static Logger log = SysconSerialInterfaceUART6.log;
+public class SysconBatteryEmulator extends Nec78k0SerialInterface {
 	private static final int STATE_VERSION = 0;
 	private static final int key0[] = { 92, 82, 217, 28, 243, 130, 172, 164, 137, 216, 129, 120, 236, 22, 41, 123 };
 	private static final int key1[] = { 157, 79, 80, 252, 225, 182, 142, 18, 9, 48, 125, 219, 166, 165, 181, 170 };
@@ -84,9 +85,9 @@ public class SysconBatteryEmulator implements ISysconSerialInterface {
 	private static final int challenge1secret4[] = { 160, 78, 50, 187, 167, 19, 158, 70 };
 	private static final int challenge1secret5[] = { 73, 94, 3, 71, 148, 147, 29, 123 };
 	private static final int challenge1secret6[] = { 176, 184, 9, 131, 57, 137, 250, 226 };
-	private static final int challenge1secret8[] = { 173, 64, 67, 178, 86, 235, 69, 139 };
-	private static final int challenge1secret10[] = { 194, 55, 126, 138, 116, 9, 108, 95 };
-	private static final int challenge1secret13[] = { 88, 28, 127, 25, 68, 249, 98, 98 };
+	public  static final int challenge1secret8[] = { 173, 64, 67, 178, 86, 235, 69, 139 };
+	public  static final int challenge1secret10[] = { 194, 55, 126, 138, 116, 9, 108, 95 };
+	public  static final int challenge1secret13[] = { 88, 28, 127, 25, 68, 249, 98, 98 };
 	private static final int challenge1secret47[] = new int[8];
 	private static final int challenge1secret151[] = new int[8];
 	private static final int challenge1secret179[] = { 219, 211, 174, 164, 219, 4, 100, 16 };
@@ -99,52 +100,37 @@ public class SysconBatteryEmulator implements ISysconSerialInterface {
 	private static final int challenge2secret4[] = { 255, 114, 189, 43, 131, 184, 157, 47 };
 	private static final int challenge2secret5[] = { 132, 34, 223, 234, 226, 27, 99, 194 };
 	private static final int challenge2secret6[] = { 88, 185, 90, 174, 243, 153, 219, 208 };
-	private static final int challenge2secret8[] = { 103, 192, 114, 21, 217, 107, 57, 161 };
-	private static final int challenge2secret10[] = { 9, 62, 197, 25, 175, 15, 80, 45 };
-	private static final int challenge2secret13[] = { 49, 128, 83, 135, 92, 32, 62, 36 };
+	public  static final int challenge2secret8[] = { 103, 192, 114, 21, 217, 107, 57, 161 };
+	public  static final int challenge2secret10[] = { 9, 62, 197, 25, 175, 15, 80, 45 };
+	public  static final int challenge2secret13[] = { 49, 128, 83, 135, 92, 32, 62, 36 };
 	private static final int challenge2secret47[] = new int[8];
 	private static final int challenge2secret151[] = new int[8];
 	private static final int challenge2secret179[] = { 227, 43, 143, 86, 178, 100, 18, 152 };
 	private static final int challenge2secret217[] = { 195, 74, 106, 123, 32, 95, 232, 249 };
 	private static final int challenge2secret235[] = { 247, 145, 237, 11, 63, 73, 164, 72 };
-	private final MMIOHandlerSysconFirmwareSfr sfr;
-	private final SysconSerialInterfaceUART6 serialInterface;
-	private final int buffer[] = new int[21];
-	private int index;
-	private int receptionBufferSize;
 	private int keyId;
 	private final int[] challenge1 = new int[8];
 
-	public SysconBatteryEmulator(MMIOHandlerSysconFirmwareSfr sfr, SysconSerialInterfaceUART6 serialInterface) {
-		this.sfr = sfr;
-		this.serialInterface = serialInterface;
+	public SysconBatteryEmulator(MMIOHandlerSysconFirmwareSfr sfr, Nec78k0SerialInterfaceUART6 serialInterface) {
+		super(sfr, serialInterface);
 	}
 
 	@Override
 	public void read(StateInputStream stream) throws IOException {
 		stream.readVersion(STATE_VERSION);
-		receptionBufferSize = stream.readInt();
-		stream.readInts(buffer);
-		index = stream.readInt();
 		keyId = stream.readInt();
 		stream.readInts(challenge1);
+		super.read(stream);
 	}
 
 	@Override
 	public void write(StateOutputStream stream) throws IOException {
 		stream.writeVersion(STATE_VERSION);
-		stream.writeInt(receptionBufferSize);
-		stream.writeInts(buffer);
-		stream.writeInt(index);
 		stream.writeInt(keyId);
 		stream.writeInts(challenge1);
+		super.write(stream);
 	}
 
-	public void reset() {
-		receptionBufferSize = 0;
-		index = 0;
-		Arrays.fill(buffer, 0);
-	}
 
 	private static byte[] intsToBytes(int[] a, int offset, int length) {
 		byte[] b = new byte[length];
@@ -171,7 +157,7 @@ public class SysconBatteryEmulator implements ISysconSerialInterface {
 		return bytesToInts(a, new int[a.length], 0);
 	}
 
-	private static String intsToString(int[] a, int start, int length) {
+	public static String intsToString(int[] a, int start, int length) {
 		StringBuilder s = new StringBuilder();
 		for (int i = 0; i < length; i++) {
 			if (i > 0) {
@@ -181,6 +167,10 @@ public class SysconBatteryEmulator implements ISysconSerialInterface {
 		}
 
 		return s.toString();
+	}
+
+	public static String intsToString(int[] a) {
+		return intsToString(a, 0, a.length);
 	}
 
 	private void createDynamicKeys() {
@@ -202,7 +192,7 @@ public class SysconBatteryEmulator implements ISysconSerialInterface {
 	}
 
 	private void read32SecureFlash(int address, int[] array, int offset) {
-		int data32 = sfr.getSysconSecureFlash().read32(address);
+		int data32 = sfr.getSecureFlash().read32(address);
 		array[offset + 0] = getByte0(data32);
 		array[offset + 1] = getByte1(data32);
 		array[offset + 2] = getByte2(data32);
@@ -290,7 +280,7 @@ public class SysconBatteryEmulator implements ISysconSerialInterface {
 		}
 	}
 
-	private int[] getKey(int id) {
+	public int[] getKey(int id) {
 		switch (id) {
 			case 0: return key0;
 			case 1: return key1;
@@ -314,7 +304,7 @@ public class SysconBatteryEmulator implements ISysconSerialInterface {
 		return null;
 	}
 
-	private int[] getChallenge1Secret(int id) {
+	public int[] getChallenge1Secret(int id) {
 		switch (id) {
 			case 0: return challenge1secret0;
 			case 1: return challenge1secret1;
@@ -338,7 +328,7 @@ public class SysconBatteryEmulator implements ISysconSerialInterface {
 		return null;
 	}
 
-	private int[] getChallenge2Secret(int id) {
+	public int[] getChallenge2Secret(int id) {
 		switch (id) {
 			case 0: return challenge2secret0;
 			case 1: return challenge2secret1;
@@ -448,71 +438,6 @@ public class SysconBatteryEmulator implements ISysconSerialInterface {
 		return b;
 	}
 
-	public static String intsToString(int[] a) {
-		return intsToString(a, 0, a.length);
-	}
-
-	private int computeChecksum(int size) {
-		int checksum = 0;
-		for (int i = 0; i < size; i++) {
-			checksum += buffer[i];
-		}
-
-		return (checksum & 0xFF) ^ 0xFF;
-	}
-
-	private boolean isValidChecksum(int checksum, int size) {
-		return computeChecksum(size) == checksum;
-	}
-
-	public void startReceptionBuffer(int dataLength) {
-		receptionBufferSize = 0;
-		// Start with fixed byte 0xA5
-		buffer[receptionBufferSize++] = 0xA5;
-		// Followed by the data length
-		buffer[receptionBufferSize++] = dataLength + 2;
-		// Followed by fixed byte 0x06
-		buffer[receptionBufferSize++] = 0x06;
-	}
-
-	public void endReceptionBuffer() {
-		// Add checksum as the last received byte
-		int checksum = computeChecksum(receptionBufferSize);
-		buffer[receptionBufferSize++] = checksum;
-
-		if (log.isDebugEnabled()) {
-			log.debug(String.format("UART6 Battery prepared reception buffer: %s", intsToString(buffer, 0, receptionBufferSize)));
-		}
-
-		if (serialInterface.isReceptionEnabled()) {
-			sfr.setInterruptRequest(SRIF6);
-		}
-	}
-
-	public void addReceptionBufferData8(int data8) {
-		buffer[receptionBufferSize++] = data8 & 0xFF;
-	}
-
-	public void addReceptionBufferData16(int data16) {
-		addReceptionBufferData8(data16);
-		addReceptionBufferData8(data16 >> 8);
-	}
-
-	public void addReceptionBufferData32(int data32) {
-		addReceptionBufferData8(data32);
-		addReceptionBufferData8(data32 >> 8);
-		addReceptionBufferData8(data32 >> 16);
-		addReceptionBufferData8(data32 >> 24);
-	}
-
-	public void addReceptionBufferData8(int[] data, int offset, int length) {
-		if (data != null) {
-			for (int i = 0; i < length; i++) {
-				addReceptionBufferData8(data[offset + i]);
-			}
-		}
-	}
-
 	public void executeSysconCmdBattery(int batteryCommand, int sysconCmdBattery, int length, int transmissionLength) {
 		switch (sysconCmdBattery) {
 			case PSP_SYSCON_CMD_BATTERY_GET_STATUS_CAP:
@@ -599,7 +524,7 @@ public class SysconBatteryEmulator implements ISysconSerialInterface {
 				addReceptionBufferData16(sceSysconModule.getBatteryElec());
 				endReceptionBuffer();
 				break;
-			case 0x76:
+			case PSP_SYSCON_CMD_BATTERY_GET_MANUFACTURER:
 				if (log.isDebugEnabled()) {
 					log.debug(String.format("UART6 Battery received syscon command %s", getSysconCmdName(sysconCmdBattery)));
 				}
@@ -610,14 +535,14 @@ public class SysconBatteryEmulator implements ISysconSerialInterface {
 				}
 				endReceptionBuffer();
 				break;
-			case 0xE0:
+			case PSP_SYSCON_CMD_BATTERY_CHALLENGE1:
 				if (length == 11) {
-					keyId = buffer[3];
+					keyId = transmissionBuffer.peek(3);
 					int[] requestData = new int[8];
-					System.arraycopy(buffer, 4, requestData, 0, requestData.length);
-	
+					transmissionBuffer.peek(4, requestData, 0, requestData.length);
+
 					if (log.isDebugEnabled()) {
-						log.debug(String.format("UART6 Battery received syscon command %s, keyId=0x%02X, challenge=%s", getSysconCmdName(sysconCmdBattery), keyId, intsToString(buffer, 4, 8)));
+						log.debug(String.format("UART6 Battery received syscon command %s, keyId=0x%02X, challenge=%s", getSysconCmdName(sysconCmdBattery), keyId, intsToString(requestData)));
 					}
 					int[] key = getKey(keyId);
 					if (key != null) {
@@ -625,31 +550,34 @@ public class SysconBatteryEmulator implements ISysconSerialInterface {
 						int[] challenge1a = encryptAES(key, matrixSwap(data));
 						int[] challenge1b = matrixSwap(encryptAES(key, challenge1a));
 						System.arraycopy(challenge1b, 0, challenge1, 0, challenge1.length);
-	
+
 						startReceptionBuffer(16);
 						addReceptionBufferData8(challenge1a, 0, 8);
 						addReceptionBufferData8(challenge1b, 0, 8);
 						endReceptionBuffer();
 					} else {
-						startReceptionBuffer(16);
+						// Unknown key, return error code 0x15
+						startReceptionBuffer(16, 0x15);
 						addReceptionBufferData8(new int[16], 0, 16);
 						endReceptionBuffer();
 					}
 				} else {
-					log.error(String.format("UART6 Battery invalid length=%d for received syscon command %s", length, getSysconCmdName(sysconCmdBattery), intsToString(buffer, 0, transmissionLength)));
+					log.error(String.format("UART6 Battery invalid length=%d for received syscon command %s", length, getSysconCmdName(sysconCmdBattery), transmissionBuffer.toString(8)));
 				}
 				break;
-			case 0xE1:
+			case PSP_SYSCON_CMD_BATTERY_CHALLENGE2:
 				if (length == 10) {
 					if (log.isDebugEnabled()) {
-						log.debug(String.format("UART6 Battery received syscon command %s, unused data=%s", getSysconCmdName(sysconCmdBattery), intsToString(buffer, 3, 8)));
+						int[] unusedData = new int[8];
+						transmissionBuffer.peek(3, unusedData, 0, unusedData.length);
+						log.debug(String.format("UART6 Battery received syscon command %s, unused data=%s", getSysconCmdName(sysconCmdBattery), intsToString(unusedData)));
 					}
 					int[] key = getKey(keyId);
 					if (key != null) {
 						int[] data2 = mixChallenge2(keyId, challenge1);
 						int[] challenge2 = encryptAES(key, matrixSwap(data2));
 						int[] response2 = encryptAES(key, challenge2);
-	
+
 						startReceptionBuffer(8);
 						addReceptionBufferData8(response2, 0, 8);
 						endReceptionBuffer();
@@ -659,70 +587,43 @@ public class SysconBatteryEmulator implements ISysconSerialInterface {
 						endReceptionBuffer();
 					}
 				} else {
-					log.error(String.format("UART6 Battery invalid length=%d for received syscon command %s", length, getSysconCmdName(sysconCmdBattery), intsToString(buffer, 0, transmissionLength)));
+					log.error(String.format("UART6 Battery invalid length=%d for received syscon command %s", length, getSysconCmdName(sysconCmdBattery), transmissionBuffer.toString(8)));
 				}
 				break;
 			default:
-				log.error(String.format("UART6 Battery setOperationMode starting reception for unknown battery command 0x%02X(%s): %s", batteryCommand, getSysconCmdName(sysconCmdBattery), intsToString(buffer, 0, transmissionLength)));
+				log.error(String.format("UART6 Battery setOperationMode starting reception for unknown battery command 0x%02X(%s): %s", batteryCommand, getSysconCmdName(sysconCmdBattery), transmissionBuffer.toString(8)));
 				break;
 		}
 	}
 
 	@Override
 	public void startReception() {
-		if (index == 0 && receptionBufferSize > 0) {
-			sfr.setInterruptRequest(SRIF6);
-		} else {
-			// Starting reception
-			int transmissionLength = index;
-			index = 0;
-			receptionBufferSize = 0;
+		// Starting reception
+		int transmissionLength = transmissionBuffer.size();
 
-			if (transmissionLength >= 2) {
-				int command = buffer[0];
-				int length = buffer[1];
-				if (command == 0x5A) {
-					if (length + 2 == transmissionLength) {
-						int checksum = buffer[length + 1];
-						if (isValidChecksum(checksum, length + 1)) {
-							int batteryCommand = buffer[2];
-							int sysconCmdBattery = batteryCommand + 0x60;
-							executeSysconCmdBattery(batteryCommand, sysconCmdBattery, length, transmissionLength);
-						} else {
-							log.error(String.format("UART6 Battery setOperationMode invalid checksum 0x%02X: %s", checksum, intsToString(buffer, 0, transmissionLength)));
-						}
+		if (transmissionLength >= 2) {
+			int command = transmissionBuffer.peek(0);
+			int length = transmissionBuffer.peek(1);
+			if (command == 0x5A) {
+				if (length + 2 == transmissionLength) {
+					int checksum = transmissionBuffer.peek(length + 1);
+					if (isValidChecksum(transmissionBuffer, checksum, length + 1)) {
+						int batteryCommand = transmissionBuffer.peek(2);
+						int sysconCmdBattery = batteryCommand + PSP_SYSCON_CMD_BATTERY_BASE;
+						executeSysconCmdBattery(batteryCommand, sysconCmdBattery, length, transmissionLength);
 					} else {
-						log.error(String.format("UART6 Battery setOperationMode starting reception for unknown command length 0x%02X: %s", length, intsToString(buffer, 0, transmissionLength)));
+						log.error(String.format("UART6 Battery setOperationMode invalid checksum 0x%02X: %s", checksum, transmissionBuffer.toString(8)));
 					}
 				} else {
-					log.error(String.format("UART6 Battery setOperationMode starting reception for unknown command 0x%02X: %s", command, intsToString(buffer, 0, transmissionLength)));
+					log.error(String.format("UART6 Battery setOperationMode starting reception for unknown command length 0x%02X: %s", length, transmissionBuffer.toString(8)));
 				}
 			} else {
-				log.error(String.format("UART6 Battery setOperationMode starting reception for unknown command buffer: %s", intsToString(buffer, 0, transmissionLength)));
+				log.error(String.format("UART6 Battery setOperationMode starting reception for unknown command 0x%02X: %s", command, transmissionBuffer.toString(8)));
 			}
-		}
-	}
-
-	@Override
-	public void startTransmission() {
-		index = 0;
-	}
-
-	@Override
-	public void transmit(int value) {
-		buffer[index++] = value;
-	}
-
-	@Override
-	public int receive() {
-		int value = 0x00;
-
-		if (index < receptionBufferSize) {
-			value = buffer[index++];
 		} else {
-			log.error(String.format("UART6 Battery receive reception buffer exhausted %d", receptionBufferSize));
+			log.error(String.format("UART6 Battery setOperationMode starting reception for unknown command buffer: %s", transmissionBuffer.toString(8)));
 		}
 
-		return value;
+		transmissionBuffer.clear();
 	}
 }

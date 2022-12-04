@@ -33,14 +33,13 @@ import org.apache.log4j.Logger;
 
 import jpcsp.Emulator;
 import jpcsp.memory.mmio.syscon.MMIOHandlerSysconFirmwareSfr;
-import jpcsp.memory.mmio.syscon.SysconInterruptRequestInfo;
+import jpcsp.nec78k0.sfr.Nec78k0InterruptRequestInfo;
 
 /**
  * @author gid15
  *
  */
 public class Nec78k0Processor {
-	public static Logger log = Logger.getLogger("78k0");
 	public static boolean disassembleFunctions = false;
 	// Interrupt Vector Table addresses
 	public static final int RESET = 0x00;
@@ -76,7 +75,8 @@ public class Nec78k0Processor {
 	public static final int REG_PAIR_BC = 1;
 	public static final int REG_PAIR_DE = 2;
 	public static final int REG_PAIR_HL = 3;
-	public Nec78k0Memory mem;
+	public final Nec78k0Memory mem;
+	public Logger log;
 	public Nec78k0Interpreter interpreter;
 	private Nec78k0Disassembler disassembler;
 	// Program counter
@@ -91,17 +91,22 @@ public class Nec78k0Processor {
 	// Program status word
 	private int psw;
 	// Pending interrupt request
-	private final SysconInterruptRequestInfo interruptRequestInfo = new SysconInterruptRequestInfo();
+	private final Nec78k0InterruptRequestInfo interruptRequestInfo = new Nec78k0InterruptRequestInfo();
 	// Debug
 	private Nec78k0Debug debug;
 
 	public Nec78k0Processor(Nec78k0Memory mem) {
 		this.mem = mem;
+		log = mem.getSfr().log;
 		mem.setProcessor(this);
 
 		if (debugCodeBlockCalls) {
 			debug = new Nec78k0Debug(log);
 		}
+	}
+
+	public void setLogger(Logger log) {
+		this.log = log;
 	}
 
 	public void setInterpreter(Nec78k0Interpreter interpreter) {
@@ -233,7 +238,7 @@ public class Nec78k0Processor {
 	public void reset() {
 		pc = 0;
 		pc = mem.read16(RESET);
-		psw = 0x02;
+		psw = setBit(0x00, PSW_BIT_ISP);
 
 		if (disassembleFunctions) {
 			disassemble(pc);
@@ -389,10 +394,14 @@ public class Nec78k0Processor {
 	}
 
 	public void disassemble(int addr) {
+		getDisassembler().disasm(addr);
+	}
+
+	public Nec78k0Disassembler getDisassembler() {
 		if (disassembler == null) {
-			disassembler = new Nec78k0Disassembler(log, Level.INFO, this);
+			disassembler = new Nec78k0Disassembler(log, Level.DEBUG, this);
 		}
-		disassembler.disasm(addr);
+		return disassembler;
 	}
 
 	public void call(int addr) {
@@ -439,9 +448,9 @@ public class Nec78k0Processor {
 		if (isInterruptEnabled()) {
 			interruptRequestInfo.vectorTableAddress = -1;
 			interruptRequestInfo.highPriority = false;
-			mem.getSysconSfr().checkInterrupts(interruptRequestInfo);
+			mem.getSfr().checkInterrupts(interruptRequestInfo);
 			if (interruptRequestInfo.vectorTableAddress >= 0) {
-				mem.getSysconSfr().clearInterruptRequest(interruptRequestInfo.interruptRequestBit);
+				mem.getSfr().clearInterruptRequest(interruptRequestInfo.interruptRequestBit);
 				interrupt(interruptRequestInfo.vectorTableAddress, interruptRequestInfo.highPriority);
 				interruptTriggered = true;
 			}

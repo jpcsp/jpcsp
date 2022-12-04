@@ -14,7 +14,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
-package jpcsp.memory.mmio.syscon;
+package jpcsp.nec78k0.sfr;
 
 import static jpcsp.util.Utilities.clearBit;
 import static jpcsp.util.Utilities.getByte0;
@@ -34,7 +34,6 @@ import java.io.IOException;
 
 import org.apache.log4j.Logger;
 
-import jpcsp.nec78k0.Nec78k0Processor;
 import jpcsp.state.IState;
 import jpcsp.state.StateInputStream;
 import jpcsp.state.StateOutputStream;
@@ -43,8 +42,7 @@ import jpcsp.state.StateOutputStream;
  * @author gid15
  *
  */
-public class SysconSecureFlash implements IState {
-	private Logger log = Nec78k0Processor.log;
+public class Nec78k0SecureFlash implements IState {
 	private static final int STATE_VERSION = 0;
 	private static final int READ_DATA_ADDRESS = 0xF8F2;
 	// Dummy key values
@@ -52,7 +50,8 @@ public class SysconSecureFlash implements IState {
 	private static final int[] secureFlashKey7C0 = { 0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27, 0x28, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38 };
 	private static final int SECURE_FLASH_SIZE = 0x4000;
 	private final int[] secureFlashMemory = new int[SECURE_FLASH_SIZE >> 2];
-	private final MMIOHandlerSysconFirmwareSfr sfr;
+	private final Nec78k0Sfr sfr;
+	private Logger log;
 	private int programmingModeControl;
 	private int address;
 	private int unknown1;
@@ -63,8 +62,9 @@ public class SysconSecureFlash implements IState {
 	private int unknownB;
 	private int writeData32;
 
-	public SysconSecureFlash(MMIOHandlerSysconFirmwareSfr sfr) {
+	public Nec78k0SecureFlash(Nec78k0Sfr sfr) {
 		this.sfr = sfr;
+		log = sfr.log;
 
 		write8(0x0009, 0x02 | 0x04 | 0x08 | 0x10); // Security flags
 		write8(0x0081, 0x01 | 0x02 | 0x04 | 0x08); // Unknown flags
@@ -106,6 +106,10 @@ public class SysconSecureFlash implements IState {
 		stream.writeInt(unknownB);
 	}
 
+	public void setLogger(Logger log) {
+		this.log = log;
+	}
+
 	public void reset() {
 		programmingModeControl = 0x00;
 		address = 0x0000;
@@ -119,7 +123,7 @@ public class SysconSecureFlash implements IState {
 
 	public void setAddress(int address) {
 		if (log.isDebugEnabled()) {
-			log.debug(String.format("SysconSecureFlash.setAddress 0x%04X", address));
+			log.debug(String.format("SecureFlash.setAddress 0x%04X", address));
 		}
 		this.address = address;
 	}
@@ -130,7 +134,7 @@ public class SysconSecureFlash implements IState {
 
 	public void setFlashProtectCommandRegister(int value) {
 		if (value != 0xA5) {
-			log.error(String.format("SysconSecureFlash.setFlashProtectCommandRegister unknown value 0x%02X", value));
+			log.error(String.format("SecureFlash.setFlashProtectCommandRegister unknown value 0x%02X", value));
 		}
 	}
 
@@ -159,7 +163,7 @@ public class SysconSecureFlash implements IState {
 
 	public void setUnknown5(int value) {
 		if (value != 0x00 && value != 0x02 && value != 0x08 && value != 0x09 && value != 0x0A && value != 0x0C) {
-			log.error(String.format("SysconSecureFlash.setUnknown5 unknown value 0x%02X", value));
+			log.error(String.format("SecureFlash.setUnknown5 unknown value 0x%02X", value));
 		}
 
 		int oldValue = unknown5;
@@ -187,7 +191,7 @@ public class SysconSecureFlash implements IState {
 				// Verify operation
 				int verifyData32 = read32(address);
 				if (writeData32 != verifyData32) {
-					log.error(String.format("SysconSecureFlash verify operation failed at address 0x%04X: 0x%08X != 0x%08X", address, writeData32, verifyData32));
+					log.error(String.format("SecureFlash verify operation failed at address 0x%04X: 0x%08X != 0x%08X", address, writeData32, verifyData32));
 					success = false;
 				}
 			} else if (operation == 0x4) {
@@ -197,16 +201,16 @@ public class SysconSecureFlash implements IState {
 				// Extended verify operation
 				int verifyData32 = read32(address);
 				if (writeData32 != verifyData32) {
-					log.error(String.format("SysconSecureFlash verify extended operation failed at address 0x%04X: 0x%08X != 0x%08X", address, writeData32, verifyData32));
+					log.error(String.format("SecureFlash verify extended operation failed at address 0x%04X: 0x%08X != 0x%08X", address, writeData32, verifyData32));
 					success = false;
 				} else if (unknownB != 0x3F) {
-					log.error(String.format("SysconSecureFlash verify extended operation failed at address 0x%04X: 0x%02X", address, unknownB));
+					log.error(String.format("SecureFlash verify extended operation failed at address 0x%04X: 0x%02X", address, unknownB));
 					success = false;
 				}
 			} else if (operation == 0x8) {
 				// Write operation, ignored here
 			} else {
-				log.error(String.format("SysconSecureFlash.setUnknown5 unknown operation 0x%X for address 0x%04X", operation, address));
+				log.error(String.format("SecureFlash.setUnknown5 unknown operation 0x%X for address 0x%04X", operation, address));
 			}
 
 			if (success) {
@@ -223,7 +227,7 @@ public class SysconSecureFlash implements IState {
 
 	public void setUnknown6(int value) {
 		if (value != 0x00 && value != 0x02) {
-			log.error(String.format("SysconSecureFlash.setUnknown6 unknown value 0x%02X", value));
+			log.error(String.format("SecureFlash.setUnknown6 unknown value 0x%02X", value));
 		}
 
 		int oldValue = unknown6;
@@ -235,7 +239,7 @@ public class SysconSecureFlash implements IState {
 				// Write operation
 				write32(address, writeData32);
 			} else {
-				log.error(String.format("SysconSecureFlash.setUnknown6 unknown operation 0x%X for address 0x%04X", operation, address));
+				log.error(String.format("SecureFlash.setUnknown6 unknown operation 0x%X for address 0x%04X", operation, address));
 			}
 		}
 	}
@@ -246,7 +250,7 @@ public class SysconSecureFlash implements IState {
 
 	public void setUnknown7(int value) {
 		if ((value & 0x72) != 0x00) {
-			log.error(String.format("SysconSecureFlash.setUnknown7 unknown value 0x%02X", value));
+			log.error(String.format("SecureFlash.setUnknown7 unknown value 0x%02X", value));
 		}
 
 		unknown7 = value;
@@ -258,7 +262,7 @@ public class SysconSecureFlash implements IState {
 
 	public void setFlashProgrammingModeControlRegister(int value) {
 		if (value != 0x00 && value != 0x01 && value != 0x80 && value != 0x81 && value != 0x7E && value != 0x7F && value != 0xFE && value != 0xFF) {
-			log.error(String.format("SysconSecureFlash.setFlashProgrammingModeControlRegister unknown value 0x%02X", value));
+			log.error(String.format("SecureFlash.setFlashProgrammingModeControlRegister unknown value 0x%02X", value));
 		}
 		programmingModeControl = value;
 	}
@@ -269,7 +273,7 @@ public class SysconSecureFlash implements IState {
 
 	public void setUnknownB(int value) {
 		if (value != 0x3F) {
-			log.error(String.format("SysconSecureFlash.setUnknownB unknown value 0x%02X", value));
+			log.error(String.format("SecureFlash.setUnknownB unknown value 0x%02X", value));
 		}
 
 		unknownB = value;
@@ -291,7 +295,7 @@ public class SysconSecureFlash implements IState {
 		writeData32 = setByte3(writeData32, value);
 
 		if (log.isDebugEnabled()) {
-			log.debug(String.format("SysconSecureFlash.setWriteData 0x%08X", writeData32));
+			log.debug(String.format("SecureFlash.setWriteData 0x%08X", writeData32));
 		}
 	}
 
@@ -313,10 +317,10 @@ public class SysconSecureFlash implements IState {
 		if (isAddressValid(addr, 3)) {
 			value = internalRead32(addr);
 			if (log.isDebugEnabled()) {
-				log.debug(String.format("SysconSecureFlash.read32(0x%04X) returning 0x%08X", addr, value));
+				log.debug(String.format("SecureFlash.read32(0x%04X) returning 0x%08X", addr, value));
 			}
 		} else {
-			log.error(String.format("SysconSecureFlash.read32 unknown address 0x%04X", addr));
+			log.error(String.format("SecureFlash.read32 unknown address 0x%04X", addr));
 			value = 0;
 		}
 
@@ -335,10 +339,10 @@ public class SysconSecureFlash implements IState {
 			}
 
 			if (log.isDebugEnabled()) {
-				log.debug(String.format("SysconSecureFlash.read8(0x%04X) returning 0x%02X", addr, value8));
+				log.debug(String.format("SecureFlash.read8(0x%04X) returning 0x%02X", addr, value8));
 			}
 		} else {
-			log.error(String.format("SysconSecureFlash.read8 unknown address 0x%04X", addr));
+			log.error(String.format("SecureFlash.read8 unknown address 0x%04X", addr));
 		}
 
 		return value8;
@@ -348,10 +352,10 @@ public class SysconSecureFlash implements IState {
 		if (isAddressValid(addr, 3)) {
 			internalWrite32(addr, value);
 			if (log.isDebugEnabled()) {
-				log.debug(String.format("SysconSecureFlash.write32(0x%04X, 0x%08X)", addr, value));
+				log.debug(String.format("SecureFlash.write32(0x%04X, 0x%08X)", addr, value));
 			}
 		} else {
-			log.error(String.format("SysconSecureFlash.write32 unknown address 0x%04X", addr));
+			log.error(String.format("SecureFlash.write32 unknown address 0x%04X", addr));
 		}
 	}
 
@@ -367,10 +371,10 @@ public class SysconSecureFlash implements IState {
 			internalWrite32(addr, value32);
 
 			if (log.isDebugEnabled()) {
-				log.debug(String.format("SysconSecureFlash.write8(0x%04X, 0x%02X)", addr, value8));
+				log.debug(String.format("SecureFlash.write8(0x%04X, 0x%02X)", addr, value8));
 			}
 		} else {
-			log.error(String.format("SysconSecureFlash.write8 unknown address 0x%04X", addr));
+			log.error(String.format("SecureFlash.write8 unknown address 0x%04X", addr));
 		}
 	}
 
@@ -384,10 +388,10 @@ public class SysconSecureFlash implements IState {
 			internalWrite32(addr, value32);
 
 			if (log.isDebugEnabled()) {
-				log.debug(String.format("SysconSecureFlash.write16(0x%04X, 0x%04X)", addr, value16));
+				log.debug(String.format("SecureFlash.write16(0x%04X, 0x%04X)", addr, value16));
 			}
 		} else {
-			log.error(String.format("SysconSecureFlash.write16 unknown address 0x%04X", addr));
+			log.error(String.format("SecureFlash.write16 unknown address 0x%04X", addr));
 		}
 	}
 }

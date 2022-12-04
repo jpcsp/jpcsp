@@ -14,7 +14,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
-package jpcsp.memory.mmio.syscon;
+package jpcsp.nec78k0.sfr;
 
 import static jpcsp.memory.mmio.syscon.MMIOHandlerSysconFirmwareSfr.now;
 
@@ -27,20 +27,19 @@ import org.apache.log4j.Logger;
 
 import jpcsp.Allegrex.compiler.RuntimeContext;
 import jpcsp.HLE.kernel.types.IAction;
-import jpcsp.nec78k0.Nec78k0Processor;
 import jpcsp.scheduler.SchedulerAction;
 
 /**
  * @author gid15
  *
  */
-public class SysconScheduler extends Thread {
-	private Logger log = Nec78k0Processor.log;
+public class Nec78k0Scheduler extends Thread {
+	private Logger log;
 	private final Object update = new Object();
 	private final List<SchedulerAction> actions;
 	private SchedulerAction nextAction;
 
-	public SysconScheduler() {
+	public Nec78k0Scheduler() {
 		actions = new LinkedList<SchedulerAction>();
 	}
 
@@ -70,7 +69,7 @@ public class SysconScheduler extends Thread {
 		long delayMicros = getNextActionDelay(10000L);
 		if (delayMicros > 0) {
 			if (log.isTraceEnabled()) {
-				log.trace(String.format("SysconScheduler.waitForNextAction delay=0x%X, now=0x%X", delayMicros, now()));
+				log.trace(String.format("Scheduler.waitForNextAction delay=0x%X, now=0x%X", delayMicros, now()));
 			}
 
 			try {
@@ -121,7 +120,7 @@ public class SysconScheduler extends Thread {
 		updateNextAction();
 
 		if (log.isTraceEnabled()) {
-			log.trace(String.format("SysconScheduler.getAction %s, now=0x%X", action, now));
+			log.trace(String.format("Scheduler.getAction %s, now=0x%X", action, now));
 		}
 
 		return action;
@@ -129,7 +128,7 @@ public class SysconScheduler extends Thread {
 
 	private void addSchedulerAction(SchedulerAction schedulerAction) {
 		if (log.isTraceEnabled()) {
-			log.trace(String.format("SysconScheduler.addSchedulerAction %s", schedulerAction));
+			log.trace(String.format("Scheduler.addSchedulerAction %s", schedulerAction));
 		}
 
 		actions.add(schedulerAction);
@@ -168,7 +167,7 @@ public class SysconScheduler extends Thread {
 			SchedulerAction schedulerAction = lit.next();
 			if (schedulerAction.getAction() == action) {
 				if (log.isTraceEnabled()) {
-					log.trace(String.format("SysconScheduler.removeAction %s", schedulerAction));
+					log.trace(String.format("Scheduler.removeAction %s", schedulerAction));
 				}
 
 				lit.remove();

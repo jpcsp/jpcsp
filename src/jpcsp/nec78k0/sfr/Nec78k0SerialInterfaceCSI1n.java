@@ -14,14 +14,14 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
-package jpcsp.memory.mmio.syscon;
+package jpcsp.nec78k0.sfr;
 
 import java.io.IOException;
 import java.util.Arrays;
 
 import org.apache.log4j.Logger;
 
-import jpcsp.nec78k0.Nec78k0Processor;
+import jpcsp.memory.mmio.syscon.MMIOHandlerSyscon;
 import jpcsp.state.IState;
 import jpcsp.state.StateInputStream;
 import jpcsp.state.StateOutputStream;
@@ -30,12 +30,12 @@ import jpcsp.state.StateOutputStream;
  * @author gid15
  *
  */
-public class SysconSerialInterfaceCSI1n implements IState {
-	protected Logger log = Nec78k0Processor.log;
+public class Nec78k0SerialInterfaceCSI1n implements IState {
 	private static final int STATE_VERSION = 0;
-	protected final MMIOHandlerSysconFirmwareSfr sfr;
+	protected final Nec78k0Sfr sfr;
 	private final String name;
 	private final int interruptFlag;
+	private Logger log;
 	private int operationMode;
 	private int clockSelection;
 	private int transmitBuffer;
@@ -45,10 +45,11 @@ public class SysconSerialInterfaceCSI1n implements IState {
 	private int sendIndex;
 	private final int[] sendBuffer = new int[MMIOHandlerSyscon.MAX_DATA_LENGTH];
 
-	public SysconSerialInterfaceCSI1n(MMIOHandlerSysconFirmwareSfr sfr, String name, int interruptFlag) {
+	public Nec78k0SerialInterfaceCSI1n(Nec78k0Sfr sfr, String name, int interruptFlag) {
 		this.sfr = sfr;
 		this.name = name;
 		this.interruptFlag = interruptFlag;
+		log = sfr.log;
 	}
 
 	@Override
@@ -75,6 +76,10 @@ public class SysconSerialInterfaceCSI1n implements IState {
 		stream.writeInts(receiveBuffer);
 		stream.writeInt(sendIndex);
 		stream.writeInts(sendBuffer);
+	}
+
+	public void setLogger(Logger log) {
+		this.log = log;
 	}
 
 	public void reset() {

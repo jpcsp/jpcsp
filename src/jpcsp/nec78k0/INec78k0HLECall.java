@@ -14,20 +14,12 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
-package jpcsp.memory.mmio.syscon;
-
-import jpcsp.state.IState;
+package jpcsp.nec78k0;
 
 /**
- * Interface for the sub-system connected to the syscon serial interface.
- * 
  * @author gid15
  *
  */
-public interface ISysconSerialInterface extends IState {
-	public void reset();
-	public void startTransmission();
-	public void transmit(int value);
-	public void startReception();
-	public int receive();
+public interface INec78k0HLECall {
+	public void call(Nec78k0Processor processor, int insn);
 }

@@ -16,6 +16,8 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.nec78k0;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
@@ -28,8 +30,9 @@ import jpcsp.Emulator;
  *
  */
 public class Nec78k0Interpreter {
-	public static Logger log = Nec78k0Processor.log;
-	private Nec78k0Processor processor;
+	private final Nec78k0Processor processor;
+	private final Logger log;
+	private final Map<Integer, INec78k0HLECall> hleCalls = new HashMap<Integer, INec78k0HLECall>();
 	public static final int PC_END_RUN = 0xFFFF;
 	private boolean exitInterpreter;
 	private boolean inInterpreter;
@@ -38,6 +41,7 @@ public class Nec78k0Interpreter {
 
 	public Nec78k0Interpreter(Nec78k0Processor processor) {
 		this.processor = processor;
+		log = processor.log;
 		processor.setInterpreter(this);
 	}
 
@@ -85,5 +89,14 @@ public class Nec78k0Interpreter {
 		this.halted = halted;
 
 		update.release();
+	}
+
+	public INec78k0HLECall getHLECall(int addr) {
+		return hleCalls.get(addr);
+	}
+
+	public void registerHLECall(int addr, INec78k0HLECall hleCall) {
+		hleCalls.put(addr, hleCall);
+		Nec78k0Instructions.registerFunctionName(addr, hleCall.getClass().getSimpleName());
 	}
 }
