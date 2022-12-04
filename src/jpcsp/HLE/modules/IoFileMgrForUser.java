@@ -1893,13 +1893,6 @@ public class IoFileMgrForUser extends HLEModule {
                         }
                         result = ERROR_ERRNO_FILE_ALREADY_EXISTS;
                     } else {
-                    	// When PSP_O_CREAT is specified, create the parent directories
-                    	// if they do not yet exist.
-                        if (!file.exists() && ((flags & PSP_O_CREAT) == PSP_O_CREAT)) {
-                        	String parentDir = new File(pcfilename).getParent();
-                        	new File(parentDir).mkdirs();
-                        }
-
                         SeekableRandomFile raf = new SeekableRandomFile(pcfilename, mode);
                         info = new IoInfo(filename, raf, mode, flags, permissions);
                         if (hasFlag(flags, PSP_O_WRONLY) && hasFlag(flags, PSP_O_TRUNC)) {
