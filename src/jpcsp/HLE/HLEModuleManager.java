@@ -134,6 +134,7 @@ public class HLEModuleManager {
 			  "flash0:/kd/lowio.prx"
 			, "flash0:/kd/audio.prx"
 			, "flash0:/kd/wlan.prx"
+			, "flash0:/kd/memlmd_01g.prx"
 	};
 
 	/**
@@ -788,10 +789,12 @@ public class HLEModuleManager {
 
 	public void loadAvailableFlash0Modules(boolean fromSyscall) {
 		boolean runningFromVsh = Emulator.getMainGUI().isRunningFromVsh() && !fromSyscall;
+    	boolean requiresLLE = false;
 
 		List<String> availableModuleFileNames = new LinkedList<>();
-		for (String moduleFileName : moduleFileNamesToBeLoaded) {
+		for (String moduleFileNameTemplate : moduleFileNamesToBeLoaded) {
 			// Replace "01g" with "0Ng" where N is the PSP model generation
+			String moduleFileName = moduleFileNameTemplate;
 			if (moduleFileName.contains("01g")) {
 				moduleFileName = moduleFileName.replace("01g", String.format("%02dg", Model.getGeneration()));
 			}
@@ -802,6 +805,15 @@ public class HLEModuleManager {
 				if (vfs != null && vfs.ioGetstat(localFileName.toString(), new SceIoStat()) == 0) {
 					// The module is available, load it
 					availableModuleFileNames.add(moduleFileName);
+
+		        	// Is the module requiring LLE?
+		        	for (String moduleFileNameLLE : moduleFileNamesLLE) {
+		        		if (moduleFileNameTemplate.equals(moduleFileNameLLE)) {
+		        			requiresLLE = true;
+		        			break;
+		        		}
+		        	}
+
 				}
 			}
 		}
@@ -815,29 +827,19 @@ public class HLEModuleManager {
 		// to be able to load and start the available modules.
 		Modules.ModuleMgrForUserModule.start();
 
+		// Enable the LLE if not yet done
+    	if (requiresLLE && !RuntimeContextLLE.isLLEActive()) {
+			RuntimeContextLLE.enableLLE();
+			RuntimeContextLLE.start();
+    	}
+
     	int startPriority = 0x10;
     	for (String moduleFileName : availableModuleFileNames) {
         	if (log.isInfoEnabled()) {
         		log.info(String.format("Loading and starting the module '%s', it will replace the equivalent HLE functions", moduleFileName));
         	}
 
-        	// Is the module requiring LLE?
-        	boolean requiresLLE = false;
-        	for (String moduleFileNameLLE : moduleFileNamesLLE) {
-        		if (moduleFileName.equals(moduleFileNameLLE)) {
-        			requiresLLE = true;
-        			break;
-        		}
-        	}
-
-			// Enable the LLE if not yet done
-        	if (requiresLLE && !RuntimeContextLLE.isLLEActive()) {
-				RuntimeContextLLE.enableLLE();
-				RuntimeContextLLE.start();
-        	}
-
         	IAction onModuleStartAction = null;
-
         	if ("flash0:/kd/loadcore.prx".equals(moduleFileName)) {
             	// loadcore.prx requires start parameters
         		onModuleStartAction = Modules.LoadCoreForKernelModule.getModuleStartAction();
