@@ -68,6 +68,8 @@ public class BatteryEmulator {
 	public static final int BATTERY_MODEL_3000 = 2;
 	public static final int BATTERY_MODEL_STREET = 3;
 	public static final int BATTERY_MODEL_GO = 4;
+	private static final int HLE_ADDR1 = 0xFEB8;
+	private static final int HLE_ADDR2 = 0xFEBC;
 	private static int batteryModel = -1;
 	private static boolean isEnabled;
 	private static int initializedModel = -1;
@@ -80,21 +82,25 @@ public class BatteryEmulator {
 	private static class HLE_s32_to_s16 implements INec78k0HLECall {
 		@Override
 		public void call(Nec78k0Processor processor, int insn) {
-			int value1 = processor.mem.read32(0xFEB8);
+			int value1 = processor.mem.read32(HLE_ADDR1);
 			int result = (short) value1;
-			log.error(String.format("HLE_s32_to_s16 0x%08X = 0x%04X", value1, result));
+			if (log.isDebugEnabled()) {
+				log.debug(String.format("HLE_s32_to_s16 0x%08X = 0x%04X", value1, result));
+			}
 
-			processor.mem.write16(0xFEB8, (short) result);
+			processor.mem.write16(HLE_ADDR1, (short) result);
 		}
 	}
 
 	private static class HLE_mul16 implements INec78k0HLECall {
 		@Override
 		public void call(Nec78k0Processor processor, int insn) {
-			int value1 = processor.mem.read16(0xFEB8);
+			int value1 = processor.mem.read16(HLE_ADDR1);
 			int value2 = processor.getRegisterPair(REG_PAIR_AX);
 			int result = (value1 * value2) & 0xFFFF;
-			log.error(String.format("HLE_mul16 0x%04X * 0x%04X = 0x%04X", value1, value2, result));
+			if (log.isDebugEnabled()) {
+				log.debug(String.format("HLE_mul16 0x%04X * 0x%04X = 0x%04X", value1, value2, result));
+			}
 
 			processor.setRegisterPair(REG_PAIR_AX, result);;
 		}
@@ -103,22 +109,26 @@ public class BatteryEmulator {
 	private static class HLE_mul32 implements INec78k0HLECall {
 		@Override
 		public void call(Nec78k0Processor processor, int insn) {
-			int value1 = processor.mem.read32(0xFEB8);
-			int value2 = processor.mem.read32(0xFEBC) | (processor.getRegisterPair(REG_PAIR_AX) << 16);
+			int value1 = processor.mem.read32(HLE_ADDR1);
+			int value2 = processor.mem.read32(HLE_ADDR2) | (processor.getRegisterPair(REG_PAIR_AX) << 16);
 			int result = value1 * value2;
-			log.error(String.format("HLE_mul32 0x%08X * 0x%08X = 0x%08X", value1, value2, result));
+			if (log.isDebugEnabled()) {
+				log.debug(String.format("HLE_mul32 0x%08X * 0x%08X = 0x%08X", value1, value2, result));
+			}
 
-			processor.mem.write32(0xFEB8, result);
+			processor.mem.write32(HLE_ADDR1, result);
 		}
 	}
 
 	private static class HLE_divs16 implements INec78k0HLECall {
 		@Override
 		public void call(Nec78k0Processor processor, int insn) {
-			int value1 = (short) processor.mem.read16(0xFEB8);
+			int value1 = (short) processor.mem.read16(HLE_ADDR1);
 			int value2 = (short) processor.getRegisterPair(REG_PAIR_AX);
 			int result = value2 == 0 ? value1 : value1 / value2;
-			log.error(String.format("HLE_divs16 0x%04X / 0x%04X = 0x%04X", value1, value2, result));
+			if (log.isDebugEnabled()) {
+				log.debug(String.format("HLE_divs16 0x%04X / 0x%04X = 0x%04X", value1, value2, result));
+			}
 
 			processor.setRegisterPair(REG_PAIR_AX, result);;
 		}
@@ -127,26 +137,30 @@ public class BatteryEmulator {
 	private static class HLE_div32 implements INec78k0HLECall {
 		@Override
 		public void call(Nec78k0Processor processor, int insn) {
-			int value1 = processor.mem.read32(0xFEB8);
-			int value2 = processor.mem.read16(0xFEBC) | (processor.getRegisterPair(REG_PAIR_AX) << 16);
+			int value1 = processor.mem.read32(HLE_ADDR1);
+			int value2 = processor.mem.read16(HLE_ADDR2) | (processor.getRegisterPair(REG_PAIR_AX) << 16);
 			int result = value2 == 0 ? value1 : value1 / value2;
-			log.error(String.format("HLE_div32 0x%08X / 0x%08X = 0x%08X", value1, value2, result));
+			if (log.isDebugEnabled()) {
+				log.debug(String.format("HLE_div32 0x%08X / 0x%08X = 0x%08X", value1, value2, result));
+			}
 
-			processor.mem.write32(0xFEB8, result);
+			processor.mem.write32(HLE_ADDR1, result);
 		}
 	}
 
 	private static class HLE_div_rem implements INec78k0HLECall {
 		@Override
 		public void call(Nec78k0Processor processor, int insn) {
-			int value1 = processor.mem.read32(0xFEB8);
-			int value2 = processor.mem.read16(0xFEBC) | (processor.getRegisterPair(REG_PAIR_AX) << 16);
+			int value1 = processor.mem.read32(HLE_ADDR1);
+			int value2 = processor.mem.read16(HLE_ADDR2) | (processor.getRegisterPair(REG_PAIR_AX) << 16);
 			int quotient16 = (short) (value2 == 0 ? value1 : value1 / value2);
 			int remainder16 = (short) (value2 == 0 ? value1 : value1 % value2);
-			log.error(String.format("Unknown03BD div_rem 0x%08X / 0x%08X = 0x%04X, remainder 0x%04X", value1, value2, quotient16, remainder16));
+			if (log.isDebugEnabled()) {
+				log.debug(String.format("Unknown03BD div_rem 0x%08X / 0x%08X = 0x%04X, remainder 0x%04X", value1, value2, quotient16, remainder16));
+			}
 
-			processor.mem.write16(0xFEB8, (short) quotient16);
-			processor.mem.write16(0xFEBA, (short) remainder16);
+			processor.mem.write16(HLE_ADDR1, (short) quotient16);
+			processor.mem.write16(HLE_ADDR1 + 2, (short) remainder16);
 		}
 	}
 
@@ -201,8 +215,6 @@ public class BatteryEmulator {
 			case BATTERY_MODEL_2000: return "Battery-2000.bin";
 			case BATTERY_MODEL_3000: return "Battery-3000.bin";
 		}
-
-		log.error(String.format("Unsupported Battery model %d for PSP model %s", getBatteryModel(), Model.getModelName()));
 
 		return null;
 	}
