@@ -108,7 +108,7 @@ public class HLEModuleManager {
 			, "flash0:/vsh/module/common_util.prx"
 			, "flash0:/kd/wlan.prx"
 			, "flash0:/kd/wlanfirm_01g.prx"
-//			, "flash0:/kd/memlmd_01g.prx"
+			, "flash0:/kd/memlmd_01g.prx"
 //			, "flash0:/kd/loadcore.prx"
 //			, "flash0:/kd/loadexec_01g.prx"
 //			, "flash0:/kd/modulemgr.prx"
@@ -841,9 +841,6 @@ public class HLEModuleManager {
         	if ("flash0:/kd/loadcore.prx".equals(moduleFileName)) {
             	// loadcore.prx requires start parameters
         		onModuleStartAction = Modules.LoadCoreForKernelModule.getModuleStartAction();
-        	} else if ("flash0:/kd/wlan.prx".equals(moduleFileName)) {
-            	// wlan.prx requires interrupts to be enabled
-        		onModuleStartAction = Modules.sceWlanModule.getModuleStartAction();
         	}
 
         	Modules.ModuleMgrForUserModule.hleKernelLoadAndStartModule(moduleFileName, startPriority++, onModuleStartAction);

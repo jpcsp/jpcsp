@@ -16,6 +16,10 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.kernel.managers;
 
+import static jpcsp.Allegrex.Cp0State.STATUS_EXL;
+import static jpcsp.Emulator.getProcessor;
+import static jpcsp.util.Utilities.notHasFlag;
+
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -205,13 +209,13 @@ public class IntrManager {
 
 	public void addDeferredInterrupt(AbstractInterruptHandler interruptHandler) {
 		if (log.isDebugEnabled()) {
-			log.debug(String.format("addDeferredInterrupt insideInterrupt=%b, interruptsEnabled=%b", isInsideInterrupt(), Emulator.getProcessor().isInterruptsEnabled()));
+			log.debug(String.format("addDeferredInterrupt insideInterrupt=%b, interruptsEnabled=%b", isInsideInterrupt(), getProcessor().isInterruptsEnabled()));
 		}
 		deferredInterrupts.add(interruptHandler);
 	}
 
 	public boolean canExecuteInterruptNow() {
-		return !isInsideInterrupt() && Emulator.getProcessor().isInterruptsEnabled();
+		return !isInsideInterrupt() && getProcessor().isInterruptsEnabled() && notHasFlag(getProcessor().cp0.getStatus(), STATUS_EXL);
 	}
 
 	public void onInterruptsEnabled() {
@@ -287,7 +291,7 @@ public class IntrManager {
 					if (log.isDebugEnabled()) {
 						log.debug("Calling InterruptHandler " + allegrexInterruptHandler.toString());
 					}
-					allegrexInterruptHandler.copyArgumentsToCpu(Emulator.getProcessor().cpu);
+					allegrexInterruptHandler.copyArgumentsToCpu(getProcessor().cpu);
 					Modules.ThreadManForUserModule.callAddress(allegrexInterruptHandler.getAddress(), continueAction, true, allegrexInterruptHandler.getGp());
 					somethingExecuted = true;
 				}
@@ -298,7 +302,7 @@ public class IntrManager {
 
 		if (!somethingExecuted) {
 			// No more handlers, end of interrupt
-			setInsideInterrupt(interruptState.restore(Emulator.getProcessor().cpu));
+			setInsideInterrupt(interruptState.restore(getProcessor().cpu));
 			IAction afterInterruptAction = interruptState.getAfterInterruptAction();
 			if (afterInterruptAction != null) {
 				afterInterruptAction.execute();
@@ -324,7 +328,7 @@ public class IntrManager {
 			onEndOfInterrupt();
 		} else {
 			InterruptState interruptState = new InterruptState();
-			interruptState.save(insideInterrupt, Emulator.getProcessor().cpu, afterInterruptAction, afterHandlerAction);
+			interruptState.save(insideInterrupt, getProcessor().cpu, afterInterruptAction, afterHandlerAction);
 			setInsideInterrupt(true);
 
 			Iterator<AbstractAllegrexInterruptHandler> allegrexInterruptHandlersIterator = allegrexInterruptHandlers.iterator();

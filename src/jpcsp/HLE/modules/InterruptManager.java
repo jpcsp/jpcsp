@@ -16,7 +16,6 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules;
 
-import jpcsp.Emulator;
 import jpcsp.NIDMapper;
 import jpcsp.Processor;
 import jpcsp.Allegrex.Cp0State;
@@ -122,16 +121,8 @@ public class InterruptManager extends HLEModule {
 		super.stop();
 	}
 
-	public void hleEnableInterrupt(int interruptNumber) {
-    	Processor processor = Emulator.getProcessor();
-		MMIOHandlerInterruptMan interruptMan = MMIOHandlerInterruptMan.getInstance(processor);
-		interruptMan.enableInterrupt(interruptNumber);
-		processor.cp0.setStatus(processor.cp0.getStatus() | (IP2 << 8));
-		processor.cp0.setEbase(hleExceptionHandlerAddr);
-	}
-
 	@HLEFunction(nid = HLESyscallNid, version = 150)
-    public void hleExceptionHandler(Processor processor) throws Exception {
+    public void hleExceptionHandler(Processor processor) {
 		Scheduler.getInstance().addAction(new HLEExceptionHandler(processor));
 	}
 
@@ -187,15 +178,21 @@ public class InterruptManager extends HLEModule {
 		return 0;
 	}
 
-	@HLEUnimplemented
 	@HLEFunction(nid = 0xD774BA45, version = 150)
-	public int sceKernelDisableIntr(int intrNumber) {
+	public int sceKernelDisableIntr(Processor processor, int intrNumber) {
+		MMIOHandlerInterruptMan interruptMan = MMIOHandlerInterruptMan.getInstance(processor);
+		interruptMan.disableInterrupt(intrNumber);
+
 		return 0;
 	}
 
-	@HLEUnimplemented
 	@HLEFunction(nid = 0x4D6E7305, version = 150)
-	public int sceKernelEnableIntr(int intrNumber) {
+	public int sceKernelEnableIntr(Processor processor, int intrNumber) {
+		MMIOHandlerInterruptMan interruptMan = MMIOHandlerInterruptMan.getInstance(processor);
+		interruptMan.enableInterrupt(intrNumber);
+		processor.cp0.setStatus(processor.cp0.getStatus() | (IP2 << 8));
+		processor.cp0.setEbase(hleExceptionHandlerAddr);
+
 		return 0;
 	}
 

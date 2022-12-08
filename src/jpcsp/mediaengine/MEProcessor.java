@@ -420,4 +420,9 @@ public class MEProcessor extends Processor {
 			log.debug(String.format("MEProcessor exiting run: halt=%b, pendingInterruptIPbitsME=0x%X, isInterruptExecutionAllowed=%b, status=0x%X, pc=0x%08X", halt, pendingInterruptIPbitsME, isInterruptExecutionAllowed(), cp0.getStatus(), cpu.pc));
 		}
 	}
+
+	@Override
+	public String toString() {
+		return "ME Processor";
+	}
 }

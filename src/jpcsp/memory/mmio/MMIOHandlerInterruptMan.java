@@ -116,6 +116,13 @@ public class MMIOHandlerInterruptMan extends MMIOHandlerBase {
 		}
 	}
 
+	public void disableInterrupt(int interruptNumber) {
+		if (hasInterruptEnabled(interruptNumber)) {
+			interruptEnabled[interruptNumber] = false;
+			checkException();
+		}
+	}
+
 	public boolean hasInterruptEnabled(int interruptNumber) {
 		return interruptEnabled[interruptNumber];
 	}

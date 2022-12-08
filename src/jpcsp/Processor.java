@@ -260,4 +260,9 @@ public class Processor implements IState {
 
 		cpu.pc = 0xBFC00000;
 	}
+
+	@Override
+	public String toString() {
+		return "Main Processor";
+	}
 }
