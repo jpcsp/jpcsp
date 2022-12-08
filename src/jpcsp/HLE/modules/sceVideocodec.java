@@ -17,6 +17,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE.modules;
 
 import static jpcsp.Allegrex.compiler.RuntimeContext.setLog4jMDC;
+import static jpcsp.Allegrex.compiler.RuntimeContextLLE.isMainMemory;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_AVC_INVALID_VALUE;
 import static jpcsp.HLE.modules.sceMpegbase.getIntBuffer;
 import static jpcsp.HLE.modules.sceMpegbase.releaseIntBuffer;
@@ -59,11 +60,6 @@ public class sceVideocodec extends HLEModule {
     // Based on JpcspTrace tests, sceVideocodecDelete delays for 40ms
     public static final int videocodecDeleteDelay = 40000;
     public static final int EDRAM_MEMORY_MASK = 0x03FFFFFF;
-    public static final int VIDEOCODEC_OPEN_TYPE0_UNKNOWN24 = 0x3C2C;
-    public static final int VIDEOCODEC_OPEN_TYPE0_UNKNOWN0 = 0x1F6400;
-    public static final int VIDEOCODEC_OPEN_TYPE0_UNKNOWN4 = 0x15C00;
-    public static final int VIDEOCODEC_OPEN_TYPE1_UNKNOWN24 = 0x264C;
-    public static final int VIDEOCODEC_OPEN_TYPE1_UNKNOWN32 = 0xB69E3;
     protected SysMemInfo memoryInfo;
     protected SysMemInfo edramInfo;
     protected int frameCount;
@@ -258,7 +254,7 @@ public class sceVideocodec extends HLEModule {
         		int size = 256 + (sizeY1 + sizeY2 + sizeCr1 + sizeCr2) * 2 * buffers.length;
 
         		TPointer base;
-        		if (mp4Memory == Memory.getInstance()) {
+        		if (isMainMemory(mp4Memory)) {
         			memoryInfo = Modules.SysMemUserForUserModule.malloc(SysMemUserForUser.KERNEL_PARTITION_ID, "sceVideocodecDecode", SysMemUserForUser.PSP_SMEM_Low, size, 0);
         			base = new TPointer(mp4Memory, memoryInfo.addr);
         		} else {
@@ -717,39 +713,20 @@ public class sceVideocodec extends HLEModule {
         }
     }
 
-    @HLEFunction(nid = 0xC01EC829, version = 150)
-    public int sceVideocodecOpen(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=videocodecBufferSize, usage=Usage.inout) TPointer buffer, int type) {
-    	TPointer buffer2 = buffer.getPointer(16);
-
-    	buffer.setValue32(0, 0x05100601);
-
-    	switch (type) {
-    		case 0:
-	        	buffer.setValue32(8, 1);
-	        	buffer.setValue32(24, VIDEOCODEC_OPEN_TYPE0_UNKNOWN24);
-	        	buffer.setValue32(32, VIDEOCODEC_OPEN_TYPE0_UNKNOWN4);
-
-	        	buffer2.setValue32(0, VIDEOCODEC_OPEN_TYPE0_UNKNOWN0);
-	        	buffer2.setValue32(4, VIDEOCODEC_OPEN_TYPE0_UNKNOWN4);
-	        	break;
-    		case 1:
-    			buffer.setValue32(8, 0);
-            	buffer.setValue32(24, VIDEOCODEC_OPEN_TYPE1_UNKNOWN24);
-            	buffer.setValue32(32, VIDEOCODEC_OPEN_TYPE1_UNKNOWN32);
-    			break;
-			default:
-	    		log.warn(String.format("sceVideocodecOpen unknown type %d", type));
-	    		return -1;
-    	}
-
+    public void hleVideocodecStartDecoderThread() {
     	if (videocodecDecoderThread == null) {
 	    	videocodecDecoderThread = new VideocodecDecoderThread();
 	    	videocodecDecoderThread.setDaemon(true);
 	    	videocodecDecoderThread.setName("Videocodec Decoder Thread");
 	    	videocodecDecoderThread.start();
     	}
+    }
 
-    	return 0;
+    @HLEFunction(nid = 0xC01EC829, version = 150)
+    public int sceVideocodecOpen(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=videocodecBufferSize, usage=Usage.inout) TPointer buffer, int type) {
+    	buffer.setValue32(0, 0x05100601);
+
+    	return Modules.sceMeVideoModule.sceMeVideo_driver_C441994C(type, buffer);
     }
 
     public int hleVideocodecDecode(TPointer buffer, int type, IAction afterDecodeAction) {

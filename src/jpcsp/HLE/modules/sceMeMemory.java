@@ -22,10 +22,12 @@ import java.util.Map;
 import org.apache.log4j.Logger;
 
 import jpcsp.Memory;
+import jpcsp.MemoryMap;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLEModule;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.modules.SysMemUserForUser.SysMemInfo;
+import jpcsp.mediaengine.MEMemory;
 
 public class sceMeMemory extends HLEModule {
     public static Logger log = Modules.getLogger("sceMeMemory");
@@ -38,7 +40,19 @@ public class sceMeMemory extends HLEModule {
 		super.start();
 	}
 
-    @HLEFunction(nid = 0xC4EDA9F4, version = 150)
+	private static int getMeMemory(int addr) {
+		return addr & MEMemory.END_ME_RAM;
+	}
+
+	private static int getMainMemory(int meAddr) {
+		return meAddr | MemoryMap.START_RAM;
+	}
+
+	public boolean isAllocated(int meAddr) {
+		return allocated.containsKey(getMainMemory(meAddr));
+	}
+
+	@HLEFunction(nid = 0xC4EDA9F4, version = 150)
     public int sceMeCalloc(int num, int size) {
     	SysMemInfo info = Modules.SysMemUserForUserModule.malloc(SysMemUserForUser.KERNEL_PARTITION_ID, "sceMeCalloc", SysMemUserForUser.PSP_SMEM_Low, num * size, 0);
     	if (info.addr == 0) {
@@ -49,7 +63,7 @@ public class sceMeMemory extends HLEModule {
 
     	allocated.put(info.addr, info);
 
-    	return info.addr;
+    	return getMeMemory(info.addr);
     }
 
     @HLEFunction(nid = 0x92D3BAA1, version = 150)
@@ -61,12 +75,12 @@ public class sceMeMemory extends HLEModule {
 
     	allocated.put(info.addr, info);
 
-    	return info.addr;
+    	return getMeMemory(info.addr);
     }
 
     @HLEFunction(nid = 0x6ED69327, version = 150)
     public void sceMeFree(int addr) {
-    	SysMemInfo info = allocated.remove(addr);
+    	SysMemInfo info = allocated.remove(getMainMemory(addr));
     	if (info != null) {
     		Modules.SysMemUserForUserModule.free(info);
     	}

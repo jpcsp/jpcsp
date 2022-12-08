@@ -144,6 +144,10 @@ public class Cp0State implements IState {
 		setDataRegister(COP0_STATE_SCCODE, syscallCode);
 	}
 
+	public int getSyscallCode() {
+		return getDataRegister(COP0_STATE_SCCODE);
+	}
+
 	public void setConfig(int config) {
 		setDataRegister(COP0_STATE_CONFIG, config);
 	}

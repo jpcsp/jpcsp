@@ -41,17 +41,14 @@ import jpcsp.state.StateOutputStream;
 public class MEMemory extends MMIO {
 	private static final int STATE_VERSION = 0;
 	public static final int START_ME_RAM = 0x00000000;
-	public static int END_ME_RAM;
-	public static int SIZE_ME_RAM;
+	// The PSP Fat has 2MB ME memory, while the PSP Slim has 4MB.
+	public static final int SIZE_ME_RAM = Model.getGeneration() == 1 ? 0x200000 : 0x400000;
+	public static final int END_ME_RAM = START_ME_RAM + SIZE_ME_RAM - 1;
 	private final IMMIOHandler meRamHandlers[] = new IMMIOHandler[8];
 	private final int[] meRam;
 
 	public MEMemory(Memory mem, Logger log) {
 		super(mem);
-
-		// The PSP Fat has 2MB ME memory, while the PSP Slim has 4MB.
-		SIZE_ME_RAM = Model.getGeneration() == 1 ? 0x200000 : 0x400000;
-		END_ME_RAM = START_ME_RAM + SIZE_ME_RAM - 1;
 
 		// This array will store the contents of the ME RAM and
 		// will be shared between several handlers at different addresses.

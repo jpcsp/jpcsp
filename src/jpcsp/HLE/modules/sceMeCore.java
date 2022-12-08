@@ -16,28 +16,32 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules;
 
+import static jpcsp.Allegrex.Common._a0;
 import static jpcsp.Allegrex.Common._a1;
+import static jpcsp.Allegrex.Common.gprNames;
+import static jpcsp.HLE.Modules.sceSasCoreModule;
 
 import org.apache.log4j.Logger;
 
-import jpcsp.Allegrex.Common;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLEModule;
 import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.Modules;
+import jpcsp.memory.mmio.MMIOHandlerMeCore;
+import jpcsp.memory.mmio.MMIOHandlerMeCore.MECommand;
 
 public class sceMeCore extends HLEModule {
 	public static Logger log = Modules.getLogger("sceMeCore");
 
-	private String logParameters(CpuState cpu, int firstParameter, int numberParameters) {
+	private static String logParameters(CpuState cpu, int firstParameter, int numberParameters) {
 		StringBuilder s = new StringBuilder();
 		for (int i = 0; i < numberParameters; i++) {
 			int reg = firstParameter + i;
 			if (s.length() > 0) {
 				s.append(", ");
 			}
-			s.append(String.format("%s=0x%08X", Common.gprNames[reg], cpu.getRegister(reg)));
+			s.append(String.format("%s=0x%08X", gprNames[reg], cpu.getRegister(reg)));
 		}
 
 		return s.toString();
@@ -46,27 +50,47 @@ public class sceMeCore extends HLEModule {
 	@HLEUnimplemented
 	@HLEFunction(nid = 0x635397BB, version = 150)
 	public int sceMeCore_driver_635397BB(CpuState cpu, int cmd) {
-		return 0;
+		return sceMeCore_driver_FA398D71(cpu, cmd);
 	}
 
+	// Sending a command to the Media Engine (ME) processor
 	@HLEUnimplemented
 	@HLEFunction(nid = 0xFA398D71, version = 150)
 	public int sceMeCore_driver_FA398D71(CpuState cpu, int cmd) {
-		switch (cmd) {
-			case 0x100:	// Called by __sceSasCore
-				if (log.isDebugEnabled()) {
-					log.debug(String.format("sceMeCore_driver_FA398D71 cmd=0x%X(__sceSasCore), %s", cmd, logParameters(cpu, _a1, 3)));
-				}
-				break;
-			case 0x101: // Called by __sceSasCoreWithMix
-				if (log.isDebugEnabled()) {
-					log.debug(String.format("sceMeCore_driver_FA398D71 cmd=0x%X(__sceSasCoreWithMix), %s", cmd, logParameters(cpu, _a1, 5)));
-				}
-				break;
-			default:
-				log.warn(String.format("sceMeCore_driver_FA398D71 unknown cmd=0x%X, %s", cmd, logParameters(cpu, _a1, 7)));
+		MMIOHandlerMeCore.MECommand meCommand = MECommand.getMECommand(cmd);
+		int numberOfParameters = MECommand.getNumberOfParameters(cmd);
+		int result = 0;
+
+		if (meCommand == null) {
+			log.error(String.format("sceMeCore_driver_FA398D71 unknown cmd=0x%X, %s", cmd, logParameters(cpu, _a0, numberOfParameters)));
+		} else {
+			int sasCore;
+			switch (meCommand) {
+				case ME_CMD_SASCORE:
+					if (log.isDebugEnabled()) {
+						log.debug(String.format("sceMeCore_driver_FA398D71 cmd=%s, %s", meCommand, logParameters(cpu, _a1, numberOfParameters - 1)));
+					}
+					sasCore = cpu._a1;
+					sceSasCoreModule.copySasCoreToME(sasCore);
+					result = sceSasCoreModule.__sceSasCore(sasCore, cpu._a2);
+					sceSasCoreModule.copyMEToSasCore(sasCore);
+					break;
+				case ME_CMD_SASCORE_WITH_MIX:
+					if (log.isDebugEnabled()) {
+						log.debug(String.format("sceMeCore_driver_FA398D71 cmd=%s, %s", meCommand, logParameters(cpu, _a1, numberOfParameters - 1)));
+					}
+					sasCore = cpu._a1;
+					sceSasCoreModule.copySasCoreToME(sasCore);
+					result = sceSasCoreModule.__sceSasCoreWithMix(sasCore, cpu._a2, cpu._t0, cpu._t1);
+					sceSasCoreModule.copyMEToSasCore(sasCore);
+					break;
+				default:
+					log.warn(String.format("sceMeCore_driver_FA398D71 unknown cmd=%s, %s", meCommand, logParameters(cpu, _a1, numberOfParameters - 1)));
+					break;
+			}
 		}
-		return 0;
+
+		return result;
 	}
 
 	@HLEUnimplemented

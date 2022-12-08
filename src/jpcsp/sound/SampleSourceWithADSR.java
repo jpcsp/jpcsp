@@ -16,6 +16,10 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.sound;
 
+import static jpcsp.HLE.modules.sceSasCore.CURVE_STATE_ATTACK;
+import static jpcsp.HLE.modules.sceSasCore.CURVE_STATE_DECAY;
+import static jpcsp.HLE.modules.sceSasCore.CURVE_STATE_RELEASE;
+import static jpcsp.HLE.modules.sceSasCore.CURVE_STATE_SUSTAIN;
 import static jpcsp.HLE.modules.sceSasCore.PSP_SAS_ADSR_CURVE_MODE_DIRECT;
 import static jpcsp.HLE.modules.sceSasCore.PSP_SAS_ADSR_CURVE_MODE_EXPONENT_DECREASE;
 import static jpcsp.HLE.modules.sceSasCore.PSP_SAS_ADSR_CURVE_MODE_EXPONENT_INCREASE;
@@ -42,10 +46,6 @@ public class SampleSourceWithADSR implements ISampleSource {
 	private SoundVoice voice;
 	private EnvelopeState envelopeState;
 	private final boolean tracing;
-	private static final int ATTACK_CURVE_STATE  = 0;
-	private static final int DECAY_CURVE_STATE   = 1;
-	private static final int SUSTAIN_CURVE_STATE = 2;
-	private static final int RELEASE_CURVE_STATE = 3;
 
 	/**
 	 * Keep track of an envelope state:
@@ -70,7 +70,7 @@ public class SampleSourceWithADSR implements ISampleSource {
 		public void resetToStart() {
 			indexExp = 0;
 			envelopeHeight = 0;
-			curveState = ATTACK_CURVE_STATE;
+			curveState = CURVE_STATE_ATTACK;
 		}
 
 		private static final short[] expCurve = new short[] {
@@ -151,9 +151,9 @@ public class SampleSourceWithADSR implements ISampleSource {
 			return ((long) expFactor) * PSP_SAS_ENVELOPE_HEIGHT_MAX / expCurveReference;
 		}
 
-		private void setCurve(int curve) {
-			if (this.curveState != curve) {
-				this.curveState = curve;
+		private void setCurveState(int curveState) {
+			if (this.curveState != curveState) {
+				this.curveState = curveState;
 				indexExp = 0;
 			}
 		}
@@ -225,7 +225,7 @@ public class SampleSourceWithADSR implements ISampleSource {
 			long currentEnvelopeHeight = envelopeHeight;
 
 			switch (curveState) {
-				case ATTACK_CURVE_STATE:
+				case CURVE_STATE_ATTACK:
 					stepCurve(envelope.AttackCurveType, envelope.AttackRate);
 					// Switch Attack to Decay: when the envelope height gets over the upper limit
 					//                         or under the lower limit
@@ -233,21 +233,21 @@ public class SampleSourceWithADSR implements ISampleSource {
 						if (envelopeHeight >= PSP_SAS_ENVELOPE_HEIGHT_MAX) {
 							envelopeHeight = PSP_SAS_ENVELOPE_HEIGHT_MAX;
 						}
-						setCurve(DECAY_CURVE_STATE);
+						setCurveState(CURVE_STATE_DECAY);
 					}
 					break;
-				case DECAY_CURVE_STATE:
+				case CURVE_STATE_DECAY:
 					stepCurve(envelope.DecayCurveType, envelope.DecayRate);
 					// Switch Decay to Sustain: when the envelope height gets under the sustain level
 					if (envelopeHeight < envelope.SustainLevel) {
-						setCurve(SUSTAIN_CURVE_STATE);
+						setCurveState(CURVE_STATE_SUSTAIN);
 					}
 					break;
-				case SUSTAIN_CURVE_STATE:
+				case CURVE_STATE_SUSTAIN:
 					stepCurve(envelope.SustainCurveType, envelope.SustainRate);
 					// Switch Sustain to Release: this switch only happens when setting the key off.
 					break;
-				case RELEASE_CURVE_STATE:
+				case CURVE_STATE_RELEASE:
 					stepCurve(envelope.ReleaseCurveType, envelope.ReleaseRate);
 					break;
 			}
@@ -265,7 +265,7 @@ public class SampleSourceWithADSR implements ISampleSource {
 		 */
 		public void setKeyOff() {
 			// Switch to the release curve
-			setCurve(RELEASE_CURVE_STATE);
+			setCurveState(CURVE_STATE_RELEASE);
 		}
 
 		/**
@@ -277,7 +277,11 @@ public class SampleSourceWithADSR implements ISampleSource {
 		 *            false   if the voice is not ended
 		 */
 		public boolean isEnded() {
-			return curveState >= SUSTAIN_CURVE_STATE && envelopeHeight <= 0;
+			return curveState >= CURVE_STATE_SUSTAIN && envelopeHeight <= 0;
+		}
+
+		public int getCurveState() {
+			return curveState;
 		}
 	}
 
@@ -298,16 +302,22 @@ public class SampleSourceWithADSR implements ISampleSource {
 	@Override
 	public int getNextSample() {
 		if (log.isTraceEnabled()) {
-			log.trace(String.format("SampleSourceWithADSR.getNextSample height=0x%X, state=%d", envelopeState.envelopeHeight, envelopeState.curveState));
+			log.trace(String.format("SampleSourceWithADSR.getNextSample height=0x%X, curveState=%d", envelopeState.envelopeHeight, envelopeState.getCurveState()));
 		}
 
 		if (!voice.isOn()) {
 			// The voice has been keyed Off, process the Release part of the wave
+			if (log.isTraceEnabled()) {
+				log.trace(String.format("SampleSourceWithADSR.getNextSample voice no longer on"));
+			}
 			envelopeState.setKeyOff();
 		}
 
 		if (envelopeState.isEnded()) {
 			// The Release/Sustain has ended, stop playing the voice
+			if (log.isTraceEnabled()) {
+				log.trace(String.format("SampleSourceWithADSR.getNextSample envelopeState reached end"));
+			}
 			voice.setPlaying(false);
 			return 0;
 		}
@@ -334,6 +344,8 @@ public class SampleSourceWithADSR implements ISampleSource {
 		// Store the current envelope height
 		// (can be retrieved by the application using __sceSasGetEnvelopeHeight)
 		voice.getEnvelope().height = envelopeHeight;
+		// Store the current curve state
+		voice.getEnvelope().curveState = envelopeState.getCurveState();
 
 		return modulatedSample;
 	}

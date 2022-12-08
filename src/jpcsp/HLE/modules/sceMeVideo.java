@@ -16,6 +16,8 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules;
 
+import static jpcsp.HLE.modules.sceVideocodec.videocodecBufferSize;
+
 import org.apache.log4j.Logger;
 
 import jpcsp.HLE.BufferInfo;
@@ -29,12 +31,39 @@ import jpcsp.HLE.BufferInfo.Usage;
 
 public class sceMeVideo extends HLEModule {
     public static Logger log = Modules.getLogger("sceMeVideo");
+    public static final int VIDEOCODEC_OPEN_TYPE0_UNKNOWN24 = 0x3C2C;
+    public static final int VIDEOCODEC_OPEN_TYPE0_UNKNOWN0 = 0x1F6400;
+    public static final int VIDEOCODEC_OPEN_TYPE0_UNKNOWN4 = 0x15C00;
+    public static final int VIDEOCODEC_OPEN_TYPE1_UNKNOWN24 = 0x264C;
+    public static final int VIDEOCODEC_OPEN_TYPE1_UNKNOWN32 = 0xB69E3;
 
     // Called by sceVideocodecOpen
 	@HLEUnimplemented
 	@HLEFunction(nid = 0xC441994C, version = 150)
 	public int sceMeVideo_driver_C441994C(int type, TPointer buffer) {
-		return 0;
+    	switch (type) {
+			case 0:
+	        	buffer.setValue32(8, 1);
+	        	buffer.setValue32(24, VIDEOCODEC_OPEN_TYPE0_UNKNOWN24);
+	        	buffer.setValue32(32, VIDEOCODEC_OPEN_TYPE0_UNKNOWN4);
+
+	        	TPointer buffer2 = buffer.getPointer(16);
+	        	buffer2.setValue32(0, VIDEOCODEC_OPEN_TYPE0_UNKNOWN0);
+	        	buffer2.setValue32(4, VIDEOCODEC_OPEN_TYPE0_UNKNOWN4);
+	        	break;
+			case 1:
+				buffer.setValue32(8, 0);
+	        	buffer.setValue32(24, VIDEOCODEC_OPEN_TYPE1_UNKNOWN24);
+	        	buffer.setValue32(32, VIDEOCODEC_OPEN_TYPE1_UNKNOWN32);
+				break;
+			default:
+	    		log.warn(String.format("sceVideocodecOpen unknown type %d", type));
+	    		return -1;
+		}
+
+    	Modules.sceVideocodecModule.hleVideocodecStartDecoderThread();
+
+    	return 0;
 	}
 
 	// Called by sceVideocodecInit
@@ -64,16 +93,17 @@ public class sceMeVideo extends HLEModule {
 		return 0;
 	}
 
+	// Called by sceVideocodecDecode
 	@HLEUnimplemented
 	@HLEFunction(nid = 0x8768915D, version = 150)
-	public int sceMeVideo_driver_8768915D(int type, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=96, usage=Usage.inout) TPointer buffer) {
-		return 0;
+	public int sceMeVideo_driver_8768915D(int type, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=videocodecBufferSize, usage=Usage.inout) TPointer buffer) {
+		return Modules.sceVideocodecModule.hleVideocodecDecode(buffer, type, null);
 	}
 
 	// Called by sceVideocodecDelete()
 	@HLEUnimplemented
 	@HLEFunction(nid = 0x8DD56014, version = 150)
-	public int sceMeVideo_driver_8DD56014(int type, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=96, usage=Usage.inout) TPointer buffer) {
+	public int sceMeVideo_driver_8DD56014(int type, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=videocodecBufferSize, usage=Usage.inout) TPointer buffer) {
 		return 0;
 	}
 }

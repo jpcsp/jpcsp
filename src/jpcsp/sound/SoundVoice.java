@@ -16,6 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.sound;
 
+import static jpcsp.HLE.modules.sceSasCore.CURVE_STATE_OFF;
 import static jpcsp.HLE.modules.sceSasCore.PSP_SAS_ADSR_CURVE_MODE_LINEAR_DECREASE;
 import static jpcsp.HLE.modules.sceSasCore.PSP_SAS_ADSR_CURVE_MODE_LINEAR_INCREASE;
 import static jpcsp.HLE.modules.sceSasCore.PSP_SAS_PITCH_BASE;
@@ -27,6 +28,8 @@ public class SoundVoice {
 	private boolean changed;
 	private int leftVolume;
 	private int rightVolume;
+	private int effectLeftVolume;
+	private int effectRightVolume;
 	private int sampleRate;
 	private int vagAddress;
 	private int vagSize;
@@ -54,6 +57,7 @@ public class SoundVoice {
         public int ReleaseCurveType;
         public int SustainLevel;
         public int height;
+        public int curveState;
 
         public VoiceADSREnvelope() {
         	// Default values (like on PSP)
@@ -67,6 +71,7 @@ public class SoundVoice {
             ReleaseCurveType = PSP_SAS_ADSR_CURVE_MODE_LINEAR_DECREASE;
             SustainLevel = 0;
             height = 0;
+            curveState = CURVE_STATE_OFF;
         }
 
 		@Override
@@ -86,6 +91,7 @@ public class SoundVoice {
 		pcmSize = 0;
         loopMode = 0;
         pitch = PSP_SAS_PITCH_BASE;
+        sampleRate = 44100;
         noise = 0;
         playing = false;
         paused = false;
@@ -120,13 +126,33 @@ public class SoundVoice {
 		this.rightVolume = rightVolume;
 	}
 
-    public void on() {
-        on = true;
-        setPlaying(true);
+	public int getEffectLeftVolume() {
+		return effectLeftVolume;
+	}
+
+	public void setEffectLeftVolume(int effectLeftVolume) {
+		this.effectLeftVolume = effectLeftVolume;
+	}
+
+	public int getEffectRightVolume() {
+		return effectRightVolume;
+	}
+
+	public void setEffectRightVolume(int effectRightVolume) {
+		this.effectRightVolume = effectRightVolume;
+	}
+
+	public void on() {
+		if (!isOn()) {
+	        on = true;
+	        setPlaying(true);
+		}
 	}
 
     public void off() {
-        on = false;
+    	if (isOn()) {
+    		on = false;
+    	}
     }
 
     public VoiceADSREnvelope getEnvelope() {
@@ -145,6 +171,7 @@ public class SoundVoice {
 		playSample = 0;
 		if (!playing) {
 			envelope.height = 0;
+			envelope.curveState = CURVE_STATE_OFF;
 			off();
 		}
 		this.playing = playing;
@@ -163,6 +190,7 @@ public class SoundVoice {
 		vagSize = size;
 		atracId = null;
 		pcmAddress = 0;
+		pcmSize = 0;
 		onVoiceChanged();
 	}
 
@@ -198,10 +226,13 @@ public class SoundVoice {
 	}
 
 	public void setNoise(int noise) {
-		if (this.noise != noise) {
-			this.noise = noise;
-			onVoiceChanged();
-		}
+		this.noise = noise;
+		vagAddress = 0;
+		vagSize = 0;
+		atracId = null;
+		pcmAddress = 0;
+		pcmSize = 0;
+		onVoiceChanged();
 	}
 
 	public int getPlaySample() {
@@ -236,11 +267,6 @@ public class SoundVoice {
 		return index;
 	}
 
-	@Override
-	public String toString() {
-		return String.format("SoundVoice #%d", index);
-	}
-
 	public AtracID getAtracId() {
 		return atracId;
 	}
@@ -248,7 +274,9 @@ public class SoundVoice {
 	public void setAtracId(AtracID atracId) {
 		this.atracId = atracId;
 		pcmAddress = 0;
+		pcmSize = 0;
 		vagAddress = 0;
+		vagSize = 0;
 		onVoiceChanged();
 	}
 
@@ -257,6 +285,7 @@ public class SoundVoice {
 		pcmSize = size;
 		atracId = null;
 		vagAddress = 0;
+		vagSize = 0;
 		onVoiceChanged();
 	}
 
@@ -266,5 +295,10 @@ public class SoundVoice {
 
 	public int getPcmSize() {
 		return pcmSize;
+	}
+
+	@Override
+	public String toString() {
+		return String.format("SoundVoice #%d", index);
 	}
 }

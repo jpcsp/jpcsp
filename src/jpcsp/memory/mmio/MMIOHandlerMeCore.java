@@ -34,7 +34,7 @@ public class MMIOHandlerMeCore {
 	public static Logger log = sceMeCore.log;
 	public static final int BASE_ADDRESS = 0xBFC00600;
 	private static MMIOHandlerMeCore instance;
-	private enum MECommand {
+	public static enum MECommand {
 		ME_CMD_VIDEOCODEC_OPEN_TYPE0(0x0, 1),
 		ME_CMD_VIDEOCODEC_INIT_TYPE0(0x1, 3),
 		ME_CMD_VIDEOCODEC_DECODE_TYPE0(0x2, 8),
@@ -116,24 +116,29 @@ public class MMIOHandlerMeCore {
 			return numberOfParameters;
 		}
 
-		public static String getCommandName(int cmd) {
+		public static MECommand getMECommand(int cmd) {
 			for (MECommand meCommand : MECommand.values()) {
 				if (meCommand.getCmd() == cmd) {
-					return meCommand.name();
+					return meCommand;
 				}
 			}
+			return null;
+		}
 
-			return String.format("ME_CMD_UNKNOWN_%X", cmd);
+		public static String getCommandName(int cmd) {
+			MECommand meCommand = getMECommand(cmd);
+			if (meCommand == null) {
+				return String.format("ME_CMD_UNKNOWN_%X", cmd);
+			}
+			return meCommand.name();
 		}
 
 		public static int getNumberOfParameters(int cmd) {
-			for (MECommand meCommand : MECommand.values()) {
-				if (meCommand.getCmd() == cmd) {
-					return meCommand.getNumberOfParameters();
-				}
+			MECommand meCommand = getMECommand(cmd);
+			if (meCommand == null) {
+				return 8;
 			}
-
-			return 8;
+			return meCommand.getNumberOfParameters();
 		}
 	}
 

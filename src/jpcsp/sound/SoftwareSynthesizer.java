@@ -52,6 +52,7 @@ public class SoftwareSynthesizer {
 					sampleSource = new SampleSourceMono(sampleSource);
 				}
 			} else {
+				// TODO Implement Noise voice (see __sceSasSetNoise())
 				sampleSource = new SampleSourceEmpty();
 			}
 

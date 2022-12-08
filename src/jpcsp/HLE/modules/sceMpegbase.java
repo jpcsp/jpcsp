@@ -16,6 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules;
 
+import static jpcsp.Allegrex.compiler.RuntimeContextLLE.isMainMemory;
 import static jpcsp.graphics.GeCommands.TPSM_PIXEL_STORAGE_MODE_16BIT_ABGR4444;
 import static jpcsp.graphics.GeCommands.TPSM_PIXEL_STORAGE_MODE_16BIT_ABGR5551;
 import static jpcsp.graphics.GeCommands.TPSM_PIXEL_STORAGE_MODE_16BIT_BGR5650;
@@ -27,7 +28,6 @@ import java.util.Set;
 
 import org.apache.log4j.Logger;
 
-import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.MemoryMap;
 import jpcsp.Allegrex.compiler.RuntimeContext;
@@ -151,7 +151,7 @@ public class sceMpegbase extends HLEModule {
     }
 
     public static void read(Memory mem, int addr, int length, int[] buffer, int offset) {
-    	if (mem == Emulator.getMemory()) {
+    	if (isMainMemory(mem)) {
     		addr |= MemoryMap.START_RAM;
     	}
 

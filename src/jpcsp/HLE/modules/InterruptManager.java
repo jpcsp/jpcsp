@@ -40,6 +40,7 @@ import jpcsp.util.HLEUtilities;
 
 import static jpcsp.HLE.HLEModuleManager.HLESyscallNid;
 import static jpcsp.HLE.kernel.managers.IntrManager.EXCEP_INT;
+import static jpcsp.HLE.kernel.managers.IntrManager.EXCEP_SYS;
 import static jpcsp.HLE.kernel.managers.IntrManager.IP2;
 import static jpcsp.memory.mmio.MMIOHandlerInterruptMan.NUMBER_INTERRUPTS;
 import static jpcsp.util.Utilities.clearFlag;
@@ -95,6 +96,9 @@ public class InterruptManager extends HLEModule {
 				} else {
 					log.error(String.format("hleExceptionHandler unimplemented IP 0x%02X", ipBits));
 				}
+			} else if (exceptionNumber == EXCEP_SYS) {
+				int syscallCode = processor.cp0.getSyscallCode() >> 2;
+				log.error(String.format("hleExceptionHandler unimplemented syscall 0x%05X at 0x%08X", syscallCode, processor.cp0.getEpc()));
 			} else {
 				log.error(String.format("hleExceptionHandler unimplemented exceptionNumber=%d", exceptionNumber));
 			}

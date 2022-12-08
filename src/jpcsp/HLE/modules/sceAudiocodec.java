@@ -55,10 +55,6 @@ public class sceAudiocodec extends HLEModule {
 	public static final int PSP_CODEC_AAC     = 0x00001003;
 	public static final int PSP_CODEC_WMA     = 0x00001005;
 
-	public static final int AUDIOCODEC_AT3P_UNKNOWN_52 = 44100;
-	public static final int AUDIOCODEC_AT3P_UNKNOWN_60 = 2;
-	public static final int AUDIOCODEC_AT3P_UNKNOWN_64 = 0x2E8;
-
 	public static class AudiocodecInfo {
 		protected ICodec codec;
 		protected boolean codecInitialized;
@@ -106,165 +102,7 @@ public class sceAudiocodec extends HLEModule {
 		super.start();
 	}
 
-	private int hleAudiocodecInit(TPointer workArea, int codecType, int outputChannels) {
-		AudiocodecInfo info = infos.remove(workArea.getAddress());
-		if (info != null) {
-			info.release();
-			info = null;
-		}
-
-		switch (codecType) {
-			case PSP_CODEC_AT3:
-			case PSP_CODEC_AT3PLUS:
-			case PSP_CODEC_AAC:
-			case PSP_CODEC_MP3:
-				break;
-			default:
-				log.warn(String.format("sceAudiocodecInit unimplemented codecType=0x%X", codecType));
-				return -1;
-		}
-		info = new AudiocodecInfo(workArea.getAddress());
-		info.outputChannels = outputChannels;
-		info.initCodec(codecType);
-
-		infos.put(workArea.getAddress(), info);
-
-		workArea.setValue32(8, 0); // error field
-
-		return 0;
-	}
-
-	public void initCodec(int id, int codecType, int inputBufferSize, int channels, int outputChannels, int codingMode) {
-		AudiocodecInfo info = infos.remove(id);
-		if (info != null) {
-			info.release();
-		}
-
-		info = new AudiocodecInfo(id);
-		info.outputChannels = outputChannels;
-		info.initCodec(codecType);
-		infos.put(id, info);
-
-		ICodec codec = info.getCodec();
-		codec.init(inputBufferSize, channels, info.outputChannels, codingMode);
-		info.setCodecInitialized();
-	}
-
-	public ICodec getCodec(int id) {
-		AudiocodecInfo info = infos.get(id);
-		if (info == null) {
-			return null;
-		}
-
-		return info.getCodec();
-	}
-
-	@HLEUnimplemented
-	@HLEFunction(nid = 0x9D3F790C, version = 150)
-	public int sceAudiocodecCheckNeedMem(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=audiocodecBufferSize, usage=Usage.inout) TPointer workArea, int codecType) {
-		workArea.setValue32(0, 0x05100601);
-
-		switch (codecType) {
-			case PSP_CODEC_AT3:
-				workArea.setValue32(16, 0x3DE0);
-				break;
-			case PSP_CODEC_AT3PLUS:
-				workArea.setValue32(16, 0x7BC0);
-				workArea.setValue32(52, AUDIOCODEC_AT3P_UNKNOWN_52);
-				workArea.setValue32(60, AUDIOCODEC_AT3P_UNKNOWN_60);
-				workArea.setValue32(64, AUDIOCODEC_AT3P_UNKNOWN_64);
-				break;
-			case PSP_CODEC_MP3:
-				break;
-			case PSP_CODEC_AAC:
-				workArea.setValue32(16, 0x658C);
-				break;
-		}
-
-		return 0;
-	}
-
-	@HLEFunction(nid = 0x5B37EB1D, version = 150)
-	public int sceAudiocodecInit(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=audiocodecBufferSize, usage=Usage.inout) TPointer workArea, int codecType) {
-		// Same as sceAudiocodec_3DD7EE1A, but for stereo audio
-		return hleAudiocodecInit(workArea, codecType, 2);
-	}
-
-	public static int getOutputBufferSize(TPointer workArea, int codecType) {
-		int outputBufferSize;
-		switch (codecType) {
-			case PSP_CODEC_AT3PLUS:
-				if (workArea.getValue32(56) == 1 && workArea.getValue32(72) != workArea.getValue32(56)) {
-					outputBufferSize = 0x2000;
-				} else {
-					outputBufferSize = workArea.getValue32(72) << 12;
-				}
-				break;
-			case PSP_CODEC_AT3:
-				outputBufferSize = 0x1000;
-				break;
-			case PSP_CODEC_MP3:
-				if (workArea.getValue32(56) == 1) {
-					outputBufferSize = 0x1200;
-				} else {
-					outputBufferSize = 0x900;
-				}
-				break;
-			case PSP_CODEC_AAC:
-				if (workArea.getValue8(45) == 0) {
-					outputBufferSize = 0x1000;
-				} else {
-					outputBufferSize = 0x2000;
-				}
-				break;
-			case 0x1004:
-				outputBufferSize = 0x1200;
-				break;
-			default:
-				outputBufferSize = 0x1000;
-		}
-
-		return outputBufferSize;
-	}
-
-	private void setMp3Header(TPointer workArea, Mp3Header mp3Header) {
-		// See https://github.com/uofw/uofw/blob/master/src/avcodec/audiocodec.c
-		workArea.setValue32(68, mp3Header.bitrateIndex); // MP3 bitrateIndex [0..14]
-		workArea.setValue32(72, mp3Header.rawSampleRateIndex); // MP3 freqType [0..3]
-
-		int type;
-		if (mp3Header.mpeg25 != 0) {
-			type = 2;
-		} else if (mp3Header.lsf != 0) {
-			type = 0;
-		} else {
-			type = 1;
-		}
-		workArea.setValue32(56, type); // type [0..2]
-
-		if (log.isDebugEnabled()) {
-			log.debug(String.format("Mp3 header bitrateIndex=%d, rawSampleRateIndex=%d, type=%d", mp3Header.bitrateIndex, mp3Header.rawSampleRateIndex, type));
-		}
-	}
-
-	private int findMp3Header(TPointer workArea, int inputBuffer) {
-        Memory mem = Memory.getInstance();
-        // Skip the ID3 tags
-    	if ((readUnaligned32(mem, inputBuffer) & 0x00FFFFFF) == ID3) {
-    		int size = endianSwap32(readUnaligned32(mem, inputBuffer + 6));
-    		// Highest bit of each byte has to be ignored (format: 0x7F7F7F7F)
-    		size = (size & 0x7F) | ((size & 0x7F00) >> 1) | ((size & 0x7F0000) >> 2) | ((size & 0x7F000000) >> 3);
-    		if (log.isDebugEnabled()) {
-    			log.debug(String.format("Skipping ID3 of size 0x%X", size));
-    		}
-    		inputBuffer += 10 + size;
-    	}
-
-    	return inputBuffer;
-	}
-
-	@HLEFunction(nid = 0x70A703F8, version = 150)
-	public int sceAudiocodecDecode(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=audiocodecBufferSize, usage=Usage.inout) TPointer workArea, int codecType) {
+	public int hleAudiocodecDecode(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=audiocodecBufferSize, usage=Usage.inout) TPointer workArea, int codecType) {
 		workArea.setValue32(8, 0); // err field
 
 		AudiocodecInfo info = infos.get(workArea.getAddress());
@@ -374,6 +212,164 @@ public class sceAudiocodec extends HLEModule {
 		return 0;
 	}
 
+	public int hleAudiocodecGetEDRAM(TPointer workArea) {
+		int neededMem = workArea.getValue32(16);
+		if (neededMem != 0 && workArea.getValue32(12) == 0) {
+			edramInfo = Modules.SysMemUserForUserModule.malloc(SysMemUserForUser.KERNEL_PARTITION_ID, "sceAudiocodec-EDRAM", SysMemUserForUser.PSP_SMEM_LowAligned, neededMem, 0x40);
+			if (edramInfo == null) {
+				return -1;
+			}
+			workArea.setValue32(12, edramInfo.addr);
+		}
+
+		return workArea.getValue32(12);
+	}
+
+	public int hleAudiocodecInit(TPointer workArea, int codecType, int outputChannels) {
+		AudiocodecInfo info = infos.remove(workArea.getAddress());
+		if (info != null) {
+			info.release();
+			info = null;
+		}
+
+		switch (codecType) {
+			case PSP_CODEC_AT3:
+			case PSP_CODEC_AT3PLUS:
+			case PSP_CODEC_AAC:
+			case PSP_CODEC_MP3:
+				break;
+			default:
+				log.warn(String.format("sceAudiocodecInit unimplemented codecType=0x%X", codecType));
+				return -1;
+		}
+		info = new AudiocodecInfo(workArea.getAddress());
+		info.outputChannels = outputChannels;
+		info.initCodec(codecType);
+
+		infos.put(workArea.getAddress(), info);
+
+		workArea.setValue32(8, 0); // error field
+
+		return 0;
+	}
+
+	public void initCodec(int id, int codecType, int inputBufferSize, int channels, int outputChannels, int codingMode) {
+		AudiocodecInfo info = infos.remove(id);
+		if (info != null) {
+			info.release();
+		}
+
+		info = new AudiocodecInfo(id);
+		info.outputChannels = outputChannels;
+		info.initCodec(codecType);
+		infos.put(id, info);
+
+		ICodec codec = info.getCodec();
+		codec.init(inputBufferSize, channels, info.outputChannels, codingMode);
+		info.setCodecInitialized();
+	}
+
+	public ICodec getCodec(int id) {
+		AudiocodecInfo info = infos.get(id);
+		if (info == null) {
+			return null;
+		}
+
+		return info.getCodec();
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x9D3F790C, version = 150)
+	public int sceAudiocodecCheckNeedMem(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=audiocodecBufferSize, usage=Usage.inout) TPointer workArea, int codecType) {
+		workArea.setValue32(0, 0x05100601);
+
+		return Modules.sceMeAudioModule.sceMeAudio_driver_81956A0B(codecType, workArea);
+	}
+
+	@HLEFunction(nid = 0x5B37EB1D, version = 150)
+	public int sceAudiocodecInit(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=audiocodecBufferSize, usage=Usage.inout) TPointer workArea, int codecType) {
+		// Same as sceAudiocodec_3DD7EE1A, but for stereo audio
+		return hleAudiocodecInit(workArea, codecType, 2);
+	}
+
+	public static int getOutputBufferSize(TPointer workArea, int codecType) {
+		int outputBufferSize;
+		switch (codecType) {
+			case PSP_CODEC_AT3PLUS:
+				if (workArea.getValue32(56) == 1 && workArea.getValue32(72) != workArea.getValue32(56)) {
+					outputBufferSize = 0x2000;
+				} else {
+					outputBufferSize = workArea.getValue32(72) << 12;
+				}
+				break;
+			case PSP_CODEC_AT3:
+				outputBufferSize = 0x1000;
+				break;
+			case PSP_CODEC_MP3:
+				if (workArea.getValue32(56) == 1) {
+					outputBufferSize = 0x1200;
+				} else {
+					outputBufferSize = 0x900;
+				}
+				break;
+			case PSP_CODEC_AAC:
+				if (workArea.getValue8(45) == 0) {
+					outputBufferSize = 0x1000;
+				} else {
+					outputBufferSize = 0x2000;
+				}
+				break;
+			case 0x1004:
+				outputBufferSize = 0x1200;
+				break;
+			default:
+				outputBufferSize = 0x1000;
+		}
+
+		return outputBufferSize;
+	}
+
+	private void setMp3Header(TPointer workArea, Mp3Header mp3Header) {
+		// See https://github.com/uofw/uofw/blob/master/src/avcodec/audiocodec.c
+		workArea.setValue32(68, mp3Header.bitrateIndex); // MP3 bitrateIndex [0..14]
+		workArea.setValue32(72, mp3Header.rawSampleRateIndex); // MP3 freqType [0..3]
+
+		int type;
+		if (mp3Header.mpeg25 != 0) {
+			type = 2;
+		} else if (mp3Header.lsf != 0) {
+			type = 0;
+		} else {
+			type = 1;
+		}
+		workArea.setValue32(56, type); // type [0..2]
+
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("Mp3 header bitrateIndex=%d, rawSampleRateIndex=%d, type=%d", mp3Header.bitrateIndex, mp3Header.rawSampleRateIndex, type));
+		}
+	}
+
+	private int findMp3Header(TPointer workArea, int inputBuffer) {
+        Memory mem = Memory.getInstance();
+        // Skip the ID3 tags
+    	if ((readUnaligned32(mem, inputBuffer) & 0x00FFFFFF) == ID3) {
+    		int size = endianSwap32(readUnaligned32(mem, inputBuffer + 6));
+    		// Highest bit of each byte has to be ignored (format: 0x7F7F7F7F)
+    		size = (size & 0x7F) | ((size & 0x7F00) >> 1) | ((size & 0x7F0000) >> 2) | ((size & 0x7F000000) >> 3);
+    		if (log.isDebugEnabled()) {
+    			log.debug(String.format("Skipping ID3 of size 0x%X", size));
+    		}
+    		inputBuffer += 10 + size;
+    	}
+
+    	return inputBuffer;
+	}
+
+	@HLEFunction(nid = 0x70A703F8, version = 150)
+	public int sceAudiocodecDecode(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=audiocodecBufferSize, usage=Usage.inout) TPointer workArea, int codecType) {
+		return hleAudiocodecDecode(workArea, codecType);
+	}
+
 	@HLEUnimplemented
 	@HLEFunction(nid = 0x8ACA11D5, version = 150)
 	public int sceAudiocodecGetInfo(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=audiocodecBufferSize, usage=Usage.inout) TPointer workArea, int codecType) {
@@ -415,12 +411,7 @@ public class sceAudiocodec extends HLEModule {
 	@HLEUnimplemented
 	@HLEFunction(nid = 0x3A20A200, version = 150)
 	public int sceAudiocodecGetEDRAM(TPointer workArea, int codecType) {
-		int neededMem = workArea.getValue32(16);
-		edramInfo = Modules.SysMemUserForUserModule.malloc(SysMemUserForUser.KERNEL_PARTITION_ID, "sceAudiocodec-EDRAM", SysMemUserForUser.PSP_SMEM_LowAligned, neededMem, 0x40);
-		if (edramInfo == null) {
-			return -1;
-		}
-		workArea.setValue32(12, edramInfo.addr);
+		hleAudiocodecGetEDRAM(workArea);
 
 		return 0;
 	}

@@ -16,8 +16,10 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules;
 
+import static jpcsp.HLE.Modules.sceMeMemoryModule;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_SAS_INVALID_ADDRESS;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_SAS_INVALID_ADSR_CURVE_MODE;
+import static jpcsp.util.Utilities.hasBit;
 
 import jpcsp.HLE.BufferInfo;
 import jpcsp.HLE.BufferInfo.LengthInfo;
@@ -33,7 +35,6 @@ import jpcsp.HLE.TPointer;
 import jpcsp.HLE.TPointer32;
 import jpcsp.Emulator;
 import jpcsp.Memory;
-import jpcsp.Processor;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.managers.SceUidManager;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
@@ -43,6 +44,7 @@ import jpcsp.memory.MemoryWriter;
 import jpcsp.sound.SoundVoice;
 import jpcsp.sound.SoundMixer;
 import jpcsp.sound.SoundVoice.VoiceADSREnvelope;
+import jpcsp.util.Utilities;
 
 import org.apache.log4j.Logger;
 
@@ -52,7 +54,7 @@ public class sceSasCore extends HLEModule {
     @Override
     public void start() {
         sasCoreUid = -1;
-        voices = new SoundVoice[32];
+        voices = new SoundVoice[PSP_SAS_VOICES_MAX];
         for (int i = 0; i < voices.length; i++) {
             voices[i] = new SoundVoice(i);
         }
@@ -104,8 +106,22 @@ public class sceSasCore extends HLEModule {
     	"EXPONENT",
     	"DIRECT"
     };
+    public static final int CURVE_STATE_OFF = -1;
+    public static final int CURVE_STATE_START = -2;
+	public static final int CURVE_STATE_ATTACK  = 0;
+	public static final int CURVE_STATE_DECAY   = 1;
+	public static final int CURVE_STATE_SUSTAIN = 2;
+	public static final int CURVE_STATE_RELEASE = 3;
+	public static final int CURVE_STATE_ENDED = 4;
     private static final int SASCORE_ATRAC3_CONTEXT_OFFSET = 20;
 	private static final int SASCORE_VOICE_SIZE = 56;
+	private static final int SASCORE_ME_OFFSET = 1812;
+	private static final int SASCORE_ME_PARAMS_OFFSET = 0x700;
+	private static final int SASCORE_ME_VOICE_TYPE_NONE = 0;
+	private static final int SASCORE_ME_VOICE_TYPE_VAG = 1;
+	private static final int SASCORE_ME_VOICE_TYPE_NOISE = 2;
+	private static final int SASCORE_ME_VOICE_TYPE_PCM = 5;
+	private static final int SASCORE_ME_VOICE_TYPE_ATRAC3 = 6;
 
     protected int sasCoreUid;
     protected SoundVoice[] voices;
@@ -130,13 +146,13 @@ public class sceSasCore extends HLEModule {
 
     	return sasADSRCurveTypeNames[curveType];
     }
-    
+
     protected void checkSasAddressGood(int sasCore) {
     	if (!Memory.isAddressGood(sasCore)) {
             log.warn(String.format("%s bad sasCore Address 0x%08X", getCallingFunctionName(3), sasCore));
     		throw(new SceKernelErrorException(ERROR_SAS_INVALID_ADDRESS));
     	}
-    	
+
     	if (!Memory.isAddressAlignedTo(sasCore, 64)) {
             log.warn(String.format("%s bad sasCore Address 0x%08X (not aligned to 64)", getCallingFunctionName(3), sasCore));
     		throw(new SceKernelErrorException(ERROR_SAS_INVALID_ADDRESS));
@@ -145,9 +161,11 @@ public class sceSasCore extends HLEModule {
 
     protected void checkSasHandleGood(int sasCore) {
     	checkSasAddressGood(sasCore);
-    	
-        if (Processor.memory.read32(sasCore) != sasCoreUid) {
-            log.warn(String.format("%s bad sasCoreUid 0x%X (should be 0x%X)", getCallingFunctionName(3), Processor.memory.read32(sasCore), sasCoreUid));
+
+    	// Accept a header value set by this HLE module or set by the flash0:/kd/sc_sascore.prx module
+    	int checkValue = getMemory().read32(sasCore);
+        if (checkValue != sasCoreUid && !sceMeMemoryModule.isAllocated(checkValue - PSP_SAS_VOICES_MAX * 76)) {
+            log.error(String.format("%s bad sasCoreUid 0x%08X (should be 0x%08X)", getCallingFunctionName(3), checkValue, sasCoreUid));
             throw(new SceKernelErrorException(SceKernelErrors.ERROR_SAS_NOT_INIT));
         }
     }
@@ -229,7 +247,129 @@ public class sceSasCore extends HLEModule {
 		return mem.read32(sasCore + SASCORE_VOICE_SIZE * voice + SASCORE_ATRAC3_CONTEXT_OFFSET);
 	}
 
-    /**
+	/**
+	 * On the PSP, the sascore voice processing is performed by the Media Engine (ME) processor.
+	 * The ME is accepting commands sent using sceMeCore_driver_FA398D71().
+	 * There are 2 commands related to sascore:
+	 * - ME_CMD_SASCORE: called when executing __sceSasCore()
+	 * - ME_CMD_SASCORE_WITH_MIX: called when executing __sceSasCoreWithMix()
+	 * Both commands are receiving a copy of the sascore voice settings in memory and are
+	 * copying back any response from the ME to the internal sascore structures.
+	 * 
+	 * This function is copying the voice values sent to ME to our HLE sascore implementation.
+	 * 
+	 * @param sasCore
+	 */
+	public void copySasCoreToME(int sasCore) {
+        grainSamples = getMemory().read8(sasCore + 8) << 5;
+
+		TPointer base = new TPointer(getMemory(), sasCore + SASCORE_ME_OFFSET);
+		int revVON = base.getUnsignedValue8(SASCORE_ME_PARAMS_OFFSET + 4);
+        waveformEffectIsDryOn = hasBit(revVON, 0);
+        waveformEffectIsWetOn = hasBit(revVON, 1);
+        waveformEffectLeftVol = base.getUnsignedValue16(SASCORE_ME_PARAMS_OFFSET + 6);
+        waveformEffectRightVol = base.getUnsignedValue16(SASCORE_ME_PARAMS_OFFSET + 8);
+
+		for (int i = 0; i < voices.length; i++) {
+			int voiceType = base.getUnsignedValue8(8) & 0x0F;
+			if (voiceType != SASCORE_ME_VOICE_TYPE_NONE) {
+				SoundVoice voice = voices[i];
+				int voicePaused = (base.getUnsignedValue8(8) >> 4) & 0x3;
+		        voice.setPaused(voicePaused != 0);
+		        int curveState = base.getValue8(51);
+		        voice.getEnvelope().curveState = curveState;
+		        if (curveState != CURVE_STATE_OFF) {
+		        	if (curveState == CURVE_STATE_START) {
+						switch (voiceType) {
+							case SASCORE_ME_VOICE_TYPE_VAG:
+								voice.setVAG(base.getValue32(0), base.getValue32(4) - base.getValue32(0));
+								voice.setLoopMode(base.getUnsignedValue8(9));
+								break;
+							case SASCORE_ME_VOICE_TYPE_NOISE:
+								voice.setNoise(base.getValue32(4));
+								break;
+							case SASCORE_ME_VOICE_TYPE_PCM:
+								voice.setPCM(base.getValue32(0), base.getUnsignedValue16(4) + 1);
+								voice.setLoopMode(base.getUnsignedValue16(6));
+								break;
+							case SASCORE_ME_VOICE_TYPE_ATRAC3:
+								setSasCoreAtrac3Context(sasCore, i, base.getValue32(0));
+								break;
+							default:
+								log.error(String.format("copySasCoreToME voice#%d: unknown voice type %d", i, voiceType));
+								break;
+						}
+			        	voice.on();
+		        	}
+
+					voice.setPitch(base.getUnsignedValue16(10));
+			        voice.setLeftVolume(base.getUnsignedValue16(12) << 3);
+			        voice.setEffectLeftVolume(base.getUnsignedValue16(14) << 3);
+			        voice.setRightVolume(base.getUnsignedValue16(16) << 3);
+			        voice.setEffectRightVolume(base.getUnsignedValue16(18) << 3);
+			        VoiceADSREnvelope envelope = voices[i].getEnvelope();
+			        envelope.AttackRate = base.getValue32(24);
+			        envelope.DecayRate = base.getValue32(28);
+			        envelope.SustainRate = base.getValue32(32);
+			        envelope.ReleaseRate = base.getValue32(36);
+			        envelope.SustainLevel = base.getValue32(40);
+			        envelope.AttackCurveType = base.getUnsignedValue8(44);
+			        envelope.DecayCurveType = base.getUnsignedValue8(45);
+			        envelope.SustainCurveType = base.getUnsignedValue8(46);
+			        envelope.ReleaseCurveType = base.getUnsignedValue8(47);
+					if (log.isTraceEnabled()) {
+						log.trace(String.format("copySasCoreToME voice#%d: type=%d, paused=%d, curveState=%d: %s", i, voiceType, voicePaused, curveState, Utilities.getMemoryDump(base, SASCORE_VOICE_SIZE)));
+					}
+		        }
+			}
+
+	        base.add(SASCORE_VOICE_SIZE);
+		}
+	}
+
+	/**
+	 * On the PSP, the sascore voice processing is performed by the Media Engine (ME) processor.
+	 * The ME is accepting commands sent using sceMeCore_driver_FA398D71().
+	 * There are 2 commands related to sascore:
+	 * - ME_CMD_SASCORE: called when executing __sceSasCore()
+	 * - ME_CMD_SASCORE_WITH_MIX: called when executing __sceSasCoreWithMix()
+	 * Both commands are receiving a copy of the sascore voice settings in memory and are
+	 * copying back any response from the ME to the internal sascore structures.
+	 * 
+	 * This function is setting the values which would be returned by the ME.
+	 * 
+	 * @param sasCore
+	 */
+	public void copyMEToSasCore(int sasCore) {
+		TPointer base = new TPointer(getMemory(), sasCore + SASCORE_ME_OFFSET);
+
+		// The ME is returning the "EndFlag" 32-bit value
+		int endFlag = __sceSasGetEndFlag(sasCore);
+		base.setValue32(SASCORE_ME_PARAMS_OFFSET + 0, endFlag);
+		if (log.isTraceEnabled()) {
+			log.trace(String.format("copyMEToSasCore endFlag=0x%08X", endFlag));
+		}
+
+		// For each voice, the ME is updating the curveState and height fields
+		for (int i = 0; i < voices.length; i++) {
+			int voiceType = base.getUnsignedValue8(8) & 0x0F;
+			if (voiceType != SASCORE_ME_VOICE_TYPE_NONE) {
+				SoundVoice voice = voices[i];
+				int height = voice.getEnvelope().height;
+				int curveState = voice.isOn() ? voice.getEnvelope().curveState : CURVE_STATE_OFF;
+				base.setValue32(52, height);
+				base.setUnsignedValue8(51, curveState);
+
+				if (log.isTraceEnabled()) {
+					log.trace(String.format("copyMEToSasCore voice#%d: height=0x%08X, curveState=%d", i, height, curveState));
+				}
+			}
+
+	        base.add(SASCORE_VOICE_SIZE);
+		}
+	}
+
+	/**
      * Set the ADSR rates for a specific voice.
      *
      * @param sasCore     sasCore handle
@@ -395,7 +535,9 @@ public class sceSasCore extends HLEModule {
 
         voices[voice].setLeftVolume(leftVolume << 3);	// 0 - 0x8000
         voices[voice].setRightVolume(rightVolume << 3);	// 0 - 0x8000
-        
+        voices[voice].setEffectLeftVolume(effectLeftVolumne << 3);
+        voices[voice].setEffectRightVolume(effectRightVolume << 3);
+
         return 0;
     }
 
@@ -555,7 +697,7 @@ public class sceSasCore extends HLEModule {
 
     	voices[voice].setVAG(vagAddr, size);
         voices[voice].setLoopMode(loopmode);
-        
+
         return 0;
     }
 
@@ -882,9 +1024,9 @@ public class sceSasCore extends HLEModule {
     @HLEFunction(nid = 0xD1E0A01E, version = 150, checkInsideInterrupt = true)
     public int __sceSasSetGrain(int sasCore, int grain) {
         checkSasHandleGood(sasCore);
-        
+
         grainSamples = grain;
-        
+
         return 0;
     }
 
