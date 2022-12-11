@@ -27,11 +27,14 @@ import java.util.Vector;
 
 import jpcsp.Emulator;
 import jpcsp.Allegrex.compiler.RuntimeContextLLE;
+import jpcsp.HLE.AfterCallbackAction;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.TPointer32;
+import jpcsp.HLE.TPointerFunction;
 import jpcsp.HLE.kernel.Managers;
 import jpcsp.HLE.kernel.types.IAction;
+import jpcsp.HLE.kernel.types.SceIntrCb;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.kernel.types.interrupts.AbstractAllegrexInterruptHandler;
 import jpcsp.HLE.kernel.types.interrupts.AbstractInterruptHandler;
@@ -114,6 +117,7 @@ public class IntrManager {
 	protected static IntrManager instance = null;
 	private Vector<LinkedList<AbstractInterruptHandler>> interrupts;
 	protected IntrHandler[] intrHandlers;
+	private SceIntrCb[] intrCbs;
 	protected boolean insideInterrupt;
 	protected List<AbstractAllegrexInterruptHandler> allegrexInterruptHandlers;
 	// Deferred interrupts are interrupts that were triggered by the scheduler
@@ -143,8 +147,9 @@ public class IntrManager {
 	public void stop() {
 		interrupts = new Vector<LinkedList<AbstractInterruptHandler>>(PSP_NUMBER_INTERRUPTS);
 		interrupts.setSize(PSP_NUMBER_INTERRUPTS);
-		intrHandlers = new IntrHandler[IntrManager.PSP_NUMBER_INTERRUPTS];
+		intrHandlers = new IntrHandler[PSP_NUMBER_INTERRUPTS];
 		allegrexInterruptHandlers = new LinkedList<AbstractAllegrexInterruptHandler>();
+		intrCbs = new SceIntrCb[PSP_NUMBER_INTERRUPTS];
 
 		deferredInterrupts = new LinkedList<AbstractInterruptHandler>();
 	}
@@ -387,6 +392,78 @@ public class IntrManager {
 		return vblankInterruptHandler.removeVBlankActionOnce(action);
 	}
 
+	private int executeCb(TPointerFunction cbFunction, int intrNum, int subIntrNum) {
+		if (cbFunction.isNull()) {
+			return 0;
+		}
+
+		AfterCallbackAction afterCallbackAction = new AfterCallbackAction(cbFunction);
+		Modules.ThreadManForUserModule.executeCallback(null, cbFunction.getAddress(), afterCallbackAction, false, intrNum, subIntrNum);
+
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("executeCb: %s", afterCallbackAction));
+		}
+
+		return afterCallbackAction.getReturnValue();
+	}
+
+	private int executeCb(TPointerFunction cbFunction, int intrNum, int subIntrNum, TPointer handler, int handlerArgument) {
+		if (cbFunction.isNull()) {
+			return 0;
+		}
+
+		AfterCallbackAction afterCallbackAction = new AfterCallbackAction(cbFunction);
+		Modules.ThreadManForUserModule.executeCallback(null, cbFunction.getAddress(), afterCallbackAction, false, intrNum, subIntrNum, handler.getAddress(), handlerArgument);
+
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("executeCb: %s", afterCallbackAction));
+		}
+
+		return afterCallbackAction.getReturnValue();
+	}
+
+	private int executeCbRegBefore(int intrNum, int subIntrNum, TPointer handler, int handlerArgument) {
+		if (intrCbs[intrNum] == null) {
+			return 0;
+		}
+		return executeCb(intrCbs[intrNum].cbRegBefore, intrNum, subIntrNum, handler, handlerArgument);
+	}
+
+	public int executeCbRegAfter(int intrNum, int subIntrNum, TPointer handler, int handlerArgument) {
+		if (intrCbs[intrNum] == null) {
+			return 0;
+		}
+		return executeCb(intrCbs[intrNum].cbRegAfter, intrNum, subIntrNum, handler, handlerArgument);
+	}
+
+	private int executeCbRelBefore(int intrNum, int subIntrNum) {
+		if (intrCbs[intrNum] == null) {
+			return 0;
+		}
+		return executeCb(intrCbs[intrNum].cbRelBefore, intrNum, subIntrNum);
+	}
+
+	public int executeCbRelAfter(int intrNum, int subIntrNum) {
+		if (intrCbs[intrNum] == null) {
+			return 0;
+		}
+		return executeCb(intrCbs[intrNum].cbRelAfter, intrNum, subIntrNum);
+	}
+
+	private int executeCbEnable(int intrNum, int subIntrNum) {
+		if (intrCbs[intrNum] == null) {
+			return 0;
+		}
+		return executeCb(intrCbs[intrNum].cbEnable, intrNum, subIntrNum);
+	}
+
+	private int executeCbDisable(int intrNum, int subIntrNum) {
+		if (intrCbs[intrNum] == null) {
+			return 0;
+		}
+		return executeCb(intrCbs[intrNum].cbDisable, intrNum, subIntrNum);
+	}
+
 	public int sceKernelRegisterSubIntrHandler(int intrNumber, int subIntrNumber, TPointer handlerAddress, int handlerArgument) {
 		if (intrNumber < 0 || intrNumber >= IntrManager.PSP_NUMBER_INTERRUPTS || subIntrNumber < 0) {
 			return SceKernelErrors.ERROR_KERNEL_INVALID_INTR_NUMBER;
@@ -400,10 +477,21 @@ public class IntrManager {
 			return SceKernelErrors.ERROR_KERNEL_SUBINTR_ALREADY_REGISTERED;
 		}
 
+		int result = executeCbRegBefore(intrNumber, subIntrNumber, handlerAddress, handlerArgument);
+		if (result != 0) {
+			return result;
+		}
+
 		int gp = Managers.modules.getModuleGpByAddress(handlerAddress.getAddress());
 		SubIntrHandler subIntrHandler = new SubIntrHandler(handlerAddress.getAddress(), gp, subIntrNumber, handlerArgument);
 		subIntrHandler.setEnabled(false);
 		intrHandlers[intrNumber].addSubIntrHandler(subIntrNumber, subIntrHandler);
+
+		result = executeCbRegAfter(intrNumber, subIntrNumber, handlerAddress, handlerArgument);
+		if (result != 0) {
+			intrHandlers[intrNumber].removeSubIntrHandler(subIntrNumber);
+			return result;
+		}
 
 		return 0;
 	}
@@ -421,8 +509,20 @@ public class IntrManager {
 			return SceKernelErrors.ERROR_KERNEL_SUBINTR_NOT_REGISTERED;
 		}
 
-		if (!intrHandlers[intrNumber].removeSubIntrHandler(subIntrNumber)) {
+		int result = executeCbRelBefore(intrNumber, subIntrNumber);
+		if (result != 0) {
+			return result;
+		}
+
+		SubIntrHandler oldSubIntrHandler = intrHandlers[intrNumber].removeSubIntrHandler(subIntrNumber);
+		if (oldSubIntrHandler == null) {
 			return SceKernelErrors.ERROR_KERNEL_SUBINTR_NOT_REGISTERED;
+		}
+
+		result = executeCbRelAfter(intrNumber, subIntrNumber);
+		if (result != 0) {
+			intrHandlers[intrNumber].addSubIntrHandler(subIntrNumber, oldSubIntrHandler);
+			return result;
 		}
 
 		return 0;
@@ -448,7 +548,14 @@ public class IntrManager {
 
 		subIntrHandler.setEnabled(enabled);
 
-		return 0;
+		int result;
+		if (enabled) {
+			result = executeCbEnable(intrNumber, subIntrNumber);
+		} else {
+			result = executeCbDisable(intrNumber, subIntrNumber);
+		}
+
+		return result;
 	}
 
 	public int sceKernelEnableSubIntr(int intrNumber, int subIntrNumber) {
@@ -481,6 +588,13 @@ public class IntrManager {
 		if (intrHandlers[intrNumber] == null) {
 			IntrHandler intrHandler = new IntrHandler();
 			intrHandlers[intrNumber] = intrHandler;
+		}
+
+		if (cb != 0) {
+			intrCbs[intrNumber] = new SceIntrCb();
+			intrCbs[intrNumber].read(handler.getMemory(), cb);
+		} else {
+			intrCbs[intrNumber] = null;
 		}
 
 		AbstractInterruptHandler interruptHandler = new InterruptHandler(func, gp, intrNumber, funcArg, cb);

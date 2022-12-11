@@ -28,8 +28,6 @@ import static jpcsp.util.Utilities.hasFlag;
 
 import org.apache.log4j.Logger;
 
-import jpcsp.Memory;
-import jpcsp.MemoryMap;
 import jpcsp.HLE.BufferInfo;
 import jpcsp.HLE.BufferInfo.LengthInfo;
 import jpcsp.HLE.BufferInfo.Usage;
@@ -83,11 +81,15 @@ public class sceDmacplus extends HLEModule {
 	}
 
     @HLEUnimplemented
+	@HLEFunction(nid = 0x2D5940FF, version = 150)
+	@HLEFunction(nid = 0x6945F1D3, version = 660)
+	public int sceDmacplusMe2ScLLI(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=16, usage=Usage.in) TPointer32 dmacParameters) {
+		return 0;
+	}
+
 	@HLEFunction(nid = 0x3438DA0B, version = 150)
 	@HLEFunction(nid = 0x282CA0D7, version = 660)
 	public int sceDmacplusSc2MeLLI(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=16, usage=Usage.in) TPointer32 dmacParameters) {
-		Memory mem = getMemory();
-
 		do {
 	    	int src = dmacParameters.getValue(0);
 	    	int dst = dmacParameters.getValue(4);
@@ -122,14 +124,14 @@ public class sceDmacplus extends HLEModule {
 			int srcLength = length << srcLengthShift;
 			int dstLength = length << dstLengthShift;
 
-			int memcpyDst = mem.normalize(dst | MemoryMap.START_RAM);
-			int memcpySrc = mem.normalize(src);
+			TPointer memcpyDst = new TPointer(getMEMemory(), dst);
+			TPointer memcpySrc = new TPointer(getMemory(), src);
 			int memcpyLength = Math.min(srcLength, dstLength);
 
 			if (log.isDebugEnabled()) {
-				log.debug(String.format("sceDmacplusSc2MeLLI memcpy dst=0x%08X, src=0x%08X, length=0x%X", memcpyDst, memcpySrc, memcpyLength));
+				log.debug(String.format("sceDmacplusSc2MeLLI memcpy dst=%s, src=%s, length=0x%X", memcpyDst, memcpySrc, memcpyLength));
 			}
-			mem.memcpy(memcpyDst, memcpySrc, memcpyLength);
+			memcpyDst.memcpy(memcpySrc, memcpyLength);
 
 			dmacParameters = new TPointer32(dmacParameters.getMemory(), next);
 		} while (dmacParameters.isNotNull());
@@ -164,6 +166,21 @@ public class sceDmacplus extends HLEModule {
 	@HLEFunction(nid = 0x58DE4914, version = 150)
 	@HLEFunction(nid = 0x47D400CB, version = 660)
 	public int sceDmacplusSc2MeSync(boolean poll, @CanBeNull @BufferInfo(lengthInfo = LengthInfo.fixedLength, length = 16, usage = Usage.out) TPointer32 result) {
+    	if (result.isNotNull()) {
+    		// 4 unknown values
+	    	result.setValue(0, 0);
+	    	result.setValue(4, 0);
+	    	result.setValue(8, 0);
+	    	result.setValue(12, 0);
+    	}
+
+    	return 0;
+    }
+
+    @HLEUnimplemented
+	@HLEFunction(nid = 0xAB49D2CB, version = 150)
+	@HLEFunction(nid = 0x5FCF43BD, version = 660)
+	public int sceDmacplusMe2ScSync(boolean poll, @CanBeNull @BufferInfo(lengthInfo = LengthInfo.fixedLength, length = 16, usage = Usage.out) TPointer32 result) {
     	if (result.isNotNull()) {
     		// 4 unknown values
 	    	result.setValue(0, 0);

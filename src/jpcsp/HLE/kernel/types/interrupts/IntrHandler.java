@@ -49,12 +49,12 @@ public class IntrHandler extends AbstractInterruptHandler {
 		subInterrupts.set(id, subIntrHandler);
 	}
 
-	public boolean removeSubIntrHandler(int id) {
+	public SubIntrHandler removeSubIntrHandler(int id) {
 		if (id < 0 || id >= subInterrupts.size()) {
-			return false;
+			return null;
 		}
 
-		boolean removed = (subInterrupts.get(id) != null);
+		SubIntrHandler oldSubIntrHandler = subInterrupts.get(id);
 		subInterrupts.set(id, null);
 
 		// Find the first non-null sub-interrupt
@@ -75,7 +75,7 @@ public class IntrHandler extends AbstractInterruptHandler {
 			}
 		}
 
-		return removed;
+		return oldSubIntrHandler;
 	}
 
 	public SubIntrHandler getSubIntrHandler(int id) {

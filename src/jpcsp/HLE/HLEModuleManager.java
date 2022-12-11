@@ -109,6 +109,7 @@ public class HLEModuleManager {
 			, "flash0:/kd/wlan.prx"
 			, "flash0:/kd/wlanfirm_01g.prx"
 			, "flash0:/kd/memlmd_01g.prx"
+			, "flash0:/kd/lowio.prx"
 //			, "flash0:/kd/loadcore.prx"
 //			, "flash0:/kd/loadexec_01g.prx"
 //			, "flash0:/kd/modulemgr.prx"
