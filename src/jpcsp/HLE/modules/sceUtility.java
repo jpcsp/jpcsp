@@ -2028,12 +2028,14 @@ public class sceUtility extends HLEModule {
         protected boolean executeUpdateVisible() {
             Memory mem = Processor.memory;
 
-            if (!isDialogOpen() && isReadyForVisible()) {
-            	oskDataIndex = 0;
-            	outText = new String[oskParams.oskDataCount];
-            	result = new int[oskParams.oskDataCount];
-                oskDialog = new OskDialog(oskParams, this);
-                openDialog(oskDialog);
+            if (!isDialogOpen()) {
+            	if (isReadyForVisible()) {
+	            	oskDataIndex = 0;
+	            	outText = new String[oskParams.oskDataCount];
+	            	result = new int[oskParams.oskDataCount];
+	                oskDialog = new OskDialog(oskParams, this);
+	                openDialog(oskDialog);
+            	}
             } else if (!isDialogActive()) {
                 if (oskDialog.buttonPressed == SceUtilityMsgDialogParams.PSP_UTILITY_BUTTON_PRESSED_OK) {
                     result[oskDataIndex] = SceUtilityOskData.PSP_UTILITY_OSK_DATA_CHANGED;
