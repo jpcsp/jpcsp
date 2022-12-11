@@ -16,8 +16,6 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.kernel.types;
 
-import jpcsp.Memory;
-
 public class SceMpegYCrCbBuffer extends pspAbstractMemoryMappedStructure {
 	public int frameBufferHeight16;
 	public int frameBufferWidth16;
@@ -33,10 +31,8 @@ public class SceMpegYCrCbBuffer extends pspAbstractMemoryMappedStructure {
 	public int frameWidth;
 	public int frameBufferWidth;
 	public int unknown3[] = new int[11];
-	public Memory bufferMemory;
 
 	public SceMpegYCrCbBuffer() {
-		bufferMemory = Memory.getInstance();
 	}
 
 	@Override
@@ -55,7 +51,6 @@ public class SceMpegYCrCbBuffer extends pspAbstractMemoryMappedStructure {
 		frameWidth = read32();
 		frameBufferWidth = read32();
 		read32Array(unknown3);
-		bufferMemory = mem;
 	}
 
 	@Override

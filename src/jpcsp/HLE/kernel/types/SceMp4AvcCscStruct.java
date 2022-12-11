@@ -16,8 +16,6 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.kernel.types;
 
-import jpcsp.Memory;
-
 public class SceMp4AvcCscStruct extends pspAbstractMemoryMappedStructure {
 	public static final int SIZE_OF = 48;
 	public int height;
@@ -32,10 +30,8 @@ public class SceMp4AvcCscStruct extends pspAbstractMemoryMappedStructure {
 	public int buffer5;
 	public int buffer6;
 	public int buffer7;
-	public Memory bufferMemory;
 
 	public SceMp4AvcCscStruct() {
-		bufferMemory = Memory.getInstance();
 	}
 
 	@Override
@@ -52,7 +48,6 @@ public class SceMp4AvcCscStruct extends pspAbstractMemoryMappedStructure {
 		buffer5 = read32();
 		buffer6 = read32();
 		buffer7 = read32();
-		bufferMemory = mem;
 	}
 
 	@Override

@@ -262,25 +262,6 @@ public class RuntimeContextLLE {
 		return getMainProcessor();
 	}
 
-	private static Memory reduceMemory(Memory mem) {
-		if (mem instanceof DebuggerMemory) {
-			mem = ((DebuggerMemory) mem).getDebuggedMemory();
-		}
-		if (mem instanceof MMIO) {
-			mem = ((MMIO) mem).getBackendMemory();
-		}
-
-		return mem;
-	}
-
-	public static boolean isMainMemory(Memory mem) {
-		return reduceMemory(mem) == reduceMemory(Memory.getInstance());
-	}
-
-	public static boolean isMediaEngineMemory(Memory mem) {
-		return !isMainMemory(mem);
-	}
-
 	public static int triggerException(Processor processor, int exceptionNumber, boolean inDelaySlot) {
 		return prepareExceptionHandlerCall(processor, exceptionNumber, inDelaySlot);
 	}

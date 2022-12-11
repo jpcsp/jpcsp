@@ -315,6 +315,14 @@ public class TPointer implements ITPointerBase {
 		return new TPointer(getNewPointerMemory(), getValue32(offset));
 	}
 
+	public TPointer getPointer(Memory mem, int offset) {
+		if (isNull()) {
+			return TPointer.NULL;
+		}
+
+		return new TPointer(mem, getValue32(offset));
+	}
+
 	public void setPointer(TPointer value) {
 		setPointer(0, value);
 	}

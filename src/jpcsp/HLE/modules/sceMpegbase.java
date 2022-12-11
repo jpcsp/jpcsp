@@ -16,7 +16,6 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules;
 
-import static jpcsp.Allegrex.compiler.RuntimeContextLLE.isMainMemory;
 import static jpcsp.graphics.GeCommands.TPSM_PIXEL_STORAGE_MODE_16BIT_ABGR4444;
 import static jpcsp.graphics.GeCommands.TPSM_PIXEL_STORAGE_MODE_16BIT_ABGR5551;
 import static jpcsp.graphics.GeCommands.TPSM_PIXEL_STORAGE_MODE_16BIT_BGR5650;
@@ -29,7 +28,6 @@ import java.util.Set;
 import org.apache.log4j.Logger;
 
 import jpcsp.Memory;
-import jpcsp.MemoryMap;
 import jpcsp.Allegrex.compiler.RuntimeContext;
 import jpcsp.HLE.BufferInfo;
 import jpcsp.HLE.BufferInfo.LengthInfo;
@@ -151,10 +149,6 @@ public class sceMpegbase extends HLEModule {
     }
 
     public static void read(Memory mem, int addr, int length, int[] buffer, int offset) {
-    	if (isMainMemory(mem)) {
-    		addr |= MemoryMap.START_RAM;
-    	}
-
     	if (log.isTraceEnabled()) {
 			log.trace(String.format("read addr=0x%08X, length=0x%X", addr, length));
 		}
@@ -209,15 +203,15 @@ public class sceMpegbase extends HLEModule {
     	write(addr.getMemory(), addr.getAddress(), length, buffer, offset);
     }
 
-    private static void copy(Memory mem, int dst, int src, int length) {
+    private static void copy(Memory memDst, int dst, Memory memSrc, int src, int length) {
 		if (log.isTraceEnabled()) {
 			log.trace(String.format("copy dst=0x%08X, src=0x%08X, length=0x%X", dst, src, length));
 		}
-		mem.memcpy(dst | MemoryMap.START_RAM, src | MemoryMap.START_RAM, length);
+		new TPointer(memDst, dst).memcpy(new TPointer(memSrc, src), length);
 	}
 
-	private static void copyBlocks(Memory mem, int dst, int src, int blocks) {
-		copy(mem, dst, src, blocks << 4);
+	private static void copyBlocks(Memory memDst, int dst, Memory memSrc, int src, int blocks) {
+		copy(memDst, dst, memSrc, src, blocks << 4);
 	}
 
 	public static void read(YCbCrImageState imageState, int width, int height, Memory mem, int buffer0, int buffer1, int buffer2, int buffer3, int buffer4, int buffer5, int buffer6, int buffer7) {
@@ -340,7 +334,7 @@ public class sceMpegbase extends HLEModule {
         }
 
         YCbCrImageState imageState = new YCbCrImageState();
-        read(imageState, width, height, mp4AvcCscStruct.bufferMemory, mp4AvcCscStruct.buffer0, mp4AvcCscStruct.buffer1, mp4AvcCscStruct.buffer2, mp4AvcCscStruct.buffer3, mp4AvcCscStruct.buffer4, mp4AvcCscStruct.buffer5, mp4AvcCscStruct.buffer6, mp4AvcCscStruct.buffer7);
+        read(imageState, width, height, getMEMemory(), mp4AvcCscStruct.buffer0, mp4AvcCscStruct.buffer1, mp4AvcCscStruct.buffer2, mp4AvcCscStruct.buffer3, mp4AvcCscStruct.buffer4, mp4AvcCscStruct.buffer5, mp4AvcCscStruct.buffer6, mp4AvcCscStruct.buffer7);
 
         // Convert YCbCr to ABGR
         int[] abgr = getIntBuffer(imageState.lengthLuma);
@@ -389,15 +383,14 @@ public class sceMpegbase extends HLEModule {
 
     @HLEFunction(nid = 0xBEA18F91, version = 150)
     public int sceMpegBasePESpacketCopy(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=16, usage=Usage.in) TPointer packetInfo) {
-    	Memory mem = packetInfo.getMemory();
     	while (packetInfo.isNotNull()) {
-    		int bufferAddr = packetInfo.getValue32(0);
-    		int destinationAddr = packetInfo.getValue32(4) | MemoryMap.START_RAM;
+    		TPointer bufferAddr = packetInfo.getPointer(0);
+    		TPointer destinationAddr = packetInfo.getPointer(getMEMemory(), 4);
     		TPointer nextPacketInfo = packetInfo.getPointer(8);
     		int bufferLength = packetInfo.getValue32(12) & 0x00000FFF;
 
     		if (log.isDebugEnabled()) {
-    			log.debug(String.format("sceMpegBasePESpacketCopy packet at %s: bufferAddr=0x%08X, destinationAddr=0x%08X, nextInfoAddr=%s, bufferLength=0x%X", packetInfo, bufferAddr, destinationAddr, nextPacketInfo, bufferLength));
+    			log.debug(String.format("sceMpegBasePESpacketCopy packet at %s: bufferAddr=%s, destinationAddr=%s, nextInfoAddr=%s, bufferLength=0x%X", packetInfo, bufferAddr, destinationAddr, nextPacketInfo, bufferLength));
     			if (log.isTraceEnabled()) {
         			log.debug(String.format("sceMpegBasePESpacketCopy %s", Utilities.getMemoryDump(bufferAddr, bufferLength)));
     			}
@@ -405,7 +398,7 @@ public class sceMpegbase extends HLEModule {
     		if (bufferLength == 0) {
     			return SceKernelErrors.ERROR_INVALID_SIZE;
     		}
-    		mem.memcpy(destinationAddr, bufferAddr, bufferLength);
+    		destinationAddr.memcpy(bufferAddr, bufferLength);
     		packetInfo = nextPacketInfo;
     	}
 
@@ -425,15 +418,16 @@ public class sceMpegbase extends HLEModule {
     		log.debug(String.format("sceMpegBaseYCrCbCopyVme srcMpegYCrCbBuffer: %s", srcMpegYCrCbBuffer));
     	}
 
-    	Memory mem = destBufferYCrCb.getMemory();
+    	Memory memDst = destBufferYCrCb.getMemory();
+    	Memory memSrc = getMEMemory();
     	int sizeY = srcMpegYCrCbBuffer.frameWidth * srcMpegYCrCbBuffer.frameHeight;
     	int sizeCrCb = sizeY >> 2;
-    	copy(mem, destMpegYCrCbBuffer.bufferY, srcMpegYCrCbBuffer.bufferY, sizeY);
-    	copy(mem, destMpegYCrCbBuffer.bufferY2, srcMpegYCrCbBuffer.bufferY2, sizeY);
-    	copy(mem, destMpegYCrCbBuffer.bufferCr, srcMpegYCrCbBuffer.bufferCr, sizeCrCb);
-    	copy(mem, destMpegYCrCbBuffer.bufferCb, srcMpegYCrCbBuffer.bufferCb, sizeCrCb);
-    	copy(mem, destMpegYCrCbBuffer.bufferCr2, srcMpegYCrCbBuffer.bufferCr2, sizeCrCb);
-    	copy(mem, destMpegYCrCbBuffer.bufferCb2, srcMpegYCrCbBuffer.bufferCb2, sizeCrCb);
+    	copy(memDst, destMpegYCrCbBuffer.bufferY, memSrc, srcMpegYCrCbBuffer.bufferY, sizeY);
+    	copy(memDst, destMpegYCrCbBuffer.bufferY2, memSrc, srcMpegYCrCbBuffer.bufferY2, sizeY);
+    	copy(memDst, destMpegYCrCbBuffer.bufferCr, memSrc, srcMpegYCrCbBuffer.bufferCr, sizeCrCb);
+    	copy(memDst, destMpegYCrCbBuffer.bufferCb, memSrc, srcMpegYCrCbBuffer.bufferCb, sizeCrCb);
+    	copy(memDst, destMpegYCrCbBuffer.bufferCr2, memSrc, srcMpegYCrCbBuffer.bufferCr2, sizeCrCb);
+    	copy(memDst, destMpegYCrCbBuffer.bufferCb2, memSrc, srcMpegYCrCbBuffer.bufferCb2, sizeCrCb);
 
     	return 0;
     }
@@ -454,18 +448,19 @@ public class sceMpegbase extends HLEModule {
     		log.debug(String.format("sceMpegBaseYCrCbCopy size1=0x%X, size2=0x%X", size1, size2));
     	}
 
-    	Memory mem = Memory.getInstance();
+    	Memory memDst = dst.getMemory();
+    	Memory memSrc = getMEMemory();
     	if ((flags & 1) != 0) {
-    		copyBlocks(mem, dstStruct.buffer0, srcStruct.buffer0, size1);
-    		copyBlocks(mem, dstStruct.buffer1, srcStruct.buffer1, size2);
-    		copyBlocks(mem, dstStruct.buffer4, srcStruct.buffer4, size1 >> 1);
-    		copyBlocks(mem, dstStruct.buffer5, srcStruct.buffer5, size2 >> 1);
+    		copyBlocks(memDst, dstStruct.buffer0, memSrc, srcStruct.buffer0, size1);
+    		copyBlocks(memDst, dstStruct.buffer1, memSrc, srcStruct.buffer1, size2);
+    		copyBlocks(memDst, dstStruct.buffer4, memSrc, srcStruct.buffer4, size1 >> 1);
+    		copyBlocks(memDst, dstStruct.buffer5, memSrc, srcStruct.buffer5, size2 >> 1);
     	}
     	if ((flags & 2) != 0) {
-    		copyBlocks(mem, dstStruct.buffer2, srcStruct.buffer2, size1);
-    		copyBlocks(mem, dstStruct.buffer3, srcStruct.buffer3, size2);
-    		copyBlocks(mem, dstStruct.buffer6, srcStruct.buffer6, size1 >> 1);
-    		copyBlocks(mem, dstStruct.buffer7, srcStruct.buffer7, size2 >> 1);
+    		copyBlocks(memDst, dstStruct.buffer2, memSrc, srcStruct.buffer2, size1);
+    		copyBlocks(memDst, dstStruct.buffer3, memSrc, srcStruct.buffer3, size2);
+    		copyBlocks(memDst, dstStruct.buffer6, memSrc, srcStruct.buffer6, size1 >> 1);
+    		copyBlocks(memDst, dstStruct.buffer7, memSrc, srcStruct.buffer7, size2 >> 1);
     	}
 
     	return 0;
@@ -500,9 +495,9 @@ public class sceMpegbase extends HLEModule {
         int[] luma = getIntBuffer(length);
         int[] cb = getIntBuffer(length2);
         int[] cr = getIntBuffer(length2);
-        read(sceMpegYCrCbBuffer.bufferMemory, sceMpegYCrCbBuffer.bufferY, length, luma, 0);
-        read(sceMpegYCrCbBuffer.bufferMemory, sceMpegYCrCbBuffer.bufferCb, length2, cb, 0);
-        read(sceMpegYCrCbBuffer.bufferMemory, sceMpegYCrCbBuffer.bufferCr, length2, cr, 0);
+        read(getMEMemory(), sceMpegYCrCbBuffer.bufferY, length, luma, 0);
+        read(getMEMemory(), sceMpegYCrCbBuffer.bufferCb, length2, cb, 0);
+        read(getMEMemory(), sceMpegYCrCbBuffer.bufferCr, length2, cr, 0);
 
         // Convert YCbCr to ABGR
         int[] abgr = getIntBuffer(length);

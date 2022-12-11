@@ -24,6 +24,7 @@ import jpcsp.Memory;
 import jpcsp.Processor;
 import jpcsp.HLE.modules.SysMemUserForUser;
 import jpcsp.HLE.modules.SysMemUserForUser.SysMemInfo;
+import jpcsp.mediaengine.MEEmulator;
 import jpcsp.settings.ISettingsListener;
 import jpcsp.settings.Settings;
 import jpcsp.state.StateInputStream;
@@ -146,6 +147,10 @@ abstract public class HLEModule {
 
 	protected Processor getProcessor() {
 		return Emulator.getProcessor();
+	}
+
+	protected Memory getMEMemory() {
+		return MEEmulator.getInstance().getMEMemory();
 	}
 
 	public void read(StateInputStream stream) throws IOException {

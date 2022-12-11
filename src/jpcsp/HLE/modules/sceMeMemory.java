@@ -16,73 +16,40 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules;
 
-import java.util.HashMap;
-import java.util.Map;
-
 import org.apache.log4j.Logger;
 
-import jpcsp.Memory;
-import jpcsp.MemoryMap;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLEModule;
 import jpcsp.HLE.Modules;
-import jpcsp.HLE.modules.SysMemUserForUser.SysMemInfo;
-import jpcsp.mediaengine.MEMemory;
+import jpcsp.mediaengine.MEEmulator;
 
 public class sceMeMemory extends HLEModule {
     public static Logger log = Modules.getLogger("sceMeMemory");
-    private Map<Integer, SysMemInfo> allocated;
 
-	@Override
-	public void start() {
-		allocated = new HashMap<Integer, SysMemUserForUser.SysMemInfo>();
-
-		super.start();
-	}
-
-	private static int getMeMemory(int addr) {
-		return addr & MEMemory.END_ME_RAM;
-	}
-
-	private static int getMainMemory(int meAddr) {
-		return meAddr | MemoryMap.START_RAM;
-	}
-
-	public boolean isAllocated(int meAddr) {
-		return allocated.containsKey(getMainMemory(meAddr));
-	}
-
-	@HLEFunction(nid = 0xC4EDA9F4, version = 150)
-    public int sceMeCalloc(int num, int size) {
-    	SysMemInfo info = Modules.SysMemUserForUserModule.malloc(SysMemUserForUser.KERNEL_PARTITION_ID, "sceMeCalloc", SysMemUserForUser.PSP_SMEM_Low, num * size, 0);
-    	if (info.addr == 0) {
-    		return 0;
-    	}
-    	Memory mem = Memory.getInstance();
-    	mem.memset(info.addr, (byte) 0, info.size);
-
-    	allocated.put(info.addr, info);
-
-    	return getMeMemory(info.addr);
+    public boolean isAllocated(int addr) {
+    	return MEEmulator.getInstance().isAllocated(addr);
     }
+
+    @HLEFunction(nid = 0xC4EDA9F4, version = 150)
+    public int sceMeCalloc(int num, int size) {
+		int totalSize = num * size;
+		int addr = MEEmulator.getInstance().malloc(totalSize);
+		if (addr == 0) {
+			return 0;
+		}
+
+		getMEMemory().memset(addr, (byte) 0, totalSize);
+
+		return addr;
+	}
 
     @HLEFunction(nid = 0x92D3BAA1, version = 150)
     public int sceMeMalloc(int size) {
-    	SysMemInfo info = Modules.SysMemUserForUserModule.malloc(SysMemUserForUser.KERNEL_PARTITION_ID, "sceMeCalloc", SysMemUserForUser.PSP_SMEM_Low, size, 0);
-    	if (info.addr == 0) {
-    		return 0;
-    	}
-
-    	allocated.put(info.addr, info);
-
-    	return getMeMemory(info.addr);
+    	return MEEmulator.getInstance().malloc(size);
     }
 
     @HLEFunction(nid = 0x6ED69327, version = 150)
     public void sceMeFree(int addr) {
-    	SysMemInfo info = allocated.remove(getMainMemory(addr));
-    	if (info != null) {
-    		Modules.SysMemUserForUserModule.free(info);
-    	}
+    	MEEmulator.getInstance().free(addr);
     }
 }

@@ -312,7 +312,6 @@ public class MMIOHandlerDmacplus extends MMIOHandlerBase {
 				mp4AvcCscStruct.buffer5 = mpegAvcYuvBuffers[5];
 				mp4AvcCscStruct.buffer6 = mpegAvcYuvBuffers[6];
 				mp4AvcCscStruct.buffer7 = mpegAvcYuvBuffers[7];
-				mp4AvcCscStruct.bufferMemory = MEProcessor.getInstance().getMEMemory();
 				Modules.sceMpegbaseModule.hleMpegBaseCscAvc(bufferRGB, bufferUnknown, mpegAvcBufferWidth, pixelMode, mp4AvcCscStruct);
 
 				Scheduler.getInstance().addAction(Scheduler.getNow() + sceMpeg.avcCscDelay, mpegAvcCompletedAction);

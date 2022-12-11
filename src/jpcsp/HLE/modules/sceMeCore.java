@@ -47,14 +47,12 @@ public class sceMeCore extends HLEModule {
 		return s.toString();
 	}
 
-	@HLEUnimplemented
 	@HLEFunction(nid = 0x635397BB, version = 150)
 	public int sceMeCore_driver_635397BB(CpuState cpu, int cmd) {
 		return sceMeCore_driver_FA398D71(cpu, cmd);
 	}
 
 	// Sending a command to the Media Engine (ME) processor
-	@HLEUnimplemented
 	@HLEFunction(nid = 0xFA398D71, version = 150)
 	public int sceMeCore_driver_FA398D71(CpuState cpu, int cmd) {
 		MMIOHandlerMeCore.MECommand meCommand = MECommand.getMECommand(cmd);

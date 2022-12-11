@@ -22,8 +22,6 @@ import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_MPEG_INVALID_VALUE;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_MPEG_NO_DATA;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_MPEG_NO_NEXT_DATA;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_MPEG_UNKNOWN_STREAM_ID;
-import static jpcsp.HLE.modules.SysMemUserForUser.KERNEL_PARTITION_ID;
-import static jpcsp.HLE.modules.SysMemUserForUser.PSP_SMEM_Addr;
 import static jpcsp.HLE.modules.SysMemUserForUser.USER_PARTITION_ID;
 import static jpcsp.HLE.modules.sceAudiocodec.PSP_CODEC_AT3PLUS;
 import static jpcsp.graphics.GeCommands.TPSM_PIXEL_STORAGE_MODE_16BIT_ABGR4444;
@@ -37,7 +35,6 @@ import org.apache.log4j.Logger;
 
 import jpcsp.Emulator;
 import jpcsp.Memory;
-import jpcsp.MemoryMap;
 import jpcsp.Allegrex.compiler.RuntimeContext;
 import jpcsp.HLE.BufferInfo;
 import jpcsp.HLE.CanBeNull;
@@ -59,10 +56,10 @@ import jpcsp.HLE.kernel.types.SceMp4AvcCscStruct;
 import jpcsp.HLE.kernel.types.SceMpegAu;
 import jpcsp.HLE.kernel.types.SceMpegRingbuffer;
 import jpcsp.HLE.kernel.types.pspAbstractMemoryMappedStructure;
-import jpcsp.HLE.modules.SysMemUserForUser.SysMemInfo;
 import jpcsp.hardware.Screen;
 import jpcsp.media.codec.util.BitReader;
 import jpcsp.media.codec.util.IBitReader;
+import jpcsp.mediaengine.MEEmulator;
 import jpcsp.util.Utilities;
 
 /**
@@ -117,8 +114,6 @@ public class sceMpeg extends HLEModule {
     private static final int MPEG_DATA_ES_SIZE = 0xA0000;
     private static final int MPEG_DATA_ES_OUTPUT_SIZE = 0xA0000;
     // ES Buffers in ME memory
-    private static final int esBuffer1 = 0x0004A000;
-    private static final int esBuffer2 = 0x00062400;
     private static final int esBufferSize = 0x18400;
     //
     private boolean hleInitialized = false;
@@ -464,16 +459,6 @@ public class sceMpeg extends HLEModule {
 
     public static boolean isMpeg260() {
     	return Emulator.getInstance().getFirmwareVersion() <= 260;
-    }
-
-    public static void allocateEsBuffers() {
-    	// The esBuffers are normally located into the ME memory.
-    	// For this HLE module, allocate the esBuffers in the kernel partition as a simulation of the ME memory.
-        SysMemInfo sysMemInfo1 = Modules.SysMemUserForUserModule.malloc(KERNEL_PARTITION_ID, "sceMpeg.esBuffer1", PSP_SMEM_Addr, esBufferSize, esBuffer1 | MemoryMap.START_RAM);
-        SysMemInfo sysMemInfo2 = Modules.SysMemUserForUserModule.malloc(KERNEL_PARTITION_ID, "sceMpeg.esBuffer2", PSP_SMEM_Addr, esBufferSize, esBuffer2 | MemoryMap.START_RAM);
-        if (sysMemInfo1 == null || sysMemInfo2 == null) {
-        	log.error(String.format("allocateEsBuffers failed to allocate both esBuffers in kernel memory"));
-        }
     }
 
     private void initHLE() {
@@ -920,7 +905,6 @@ public class sceMpeg extends HLEModule {
 	    		mp4AvcCscStruct.buffer5 = mpegAvcYuvStruct.getValue32(20) + sceMpegAvcCscOffsets[3];
 	    		mp4AvcCscStruct.buffer6 = mpegAvcYuvStruct.getValue32(24) + sceMpegAvcCscOffsets[2];
 	    		mp4AvcCscStruct.buffer7 = mpegAvcYuvStruct.getValue32(28) + sceMpegAvcCscOffsets[3];
-	    		mp4AvcCscStruct.bufferMemory = sceMpegAvcDecodeYCbCrBuffer1.getMemory();
 	    		mp4AvcCscStruct.write(sceMpegAvcDecodeYCbCrBuffer1);
 
 	    		result = Modules.sceMpegbaseModule.sceMpegBaseYCrCbCopy(destinationAddr, sceMpegAvcDecodeYCbCrBuffer1, 0x3);
@@ -1015,7 +999,6 @@ public class sceMpeg extends HLEModule {
 	    		mp4AvcCscStruct.buffer5 = mpegAvcYuvStruct.getValue32(20);
 	    		mp4AvcCscStruct.buffer6 = mpegAvcYuvStruct.getValue32(24);
 	    		mp4AvcCscStruct.buffer7 = mpegAvcYuvStruct.getValue32(28);
-	    		mp4AvcCscStruct.bufferMemory = data.getMemory();
 	    		TPointer buffer = bufferAddr.getPointer(i * 4);
 	    		result = Modules.sceMpegbaseModule.hleMpegBaseCscAvc(buffer, TPointer.NULL, frameWidth, Modules.sceMpegbaseModule.getPixelMode(), mp4AvcCscStruct);
 	        	if (result != 0) {
@@ -1208,7 +1191,7 @@ public class sceMpeg extends HLEModule {
     		return TPointer.NULL;
     	}
 
-    	return new TPointer(data.getMemory(), esBufferAddr | MemoryMap.START_RAM);
+    	return new TPointer(getMEMemory(), esBufferAddr);
     }
 
     private int copyStreamData(TPointer data, TPointer streamAddr, TPointer auAddr, int mode) {
@@ -1605,8 +1588,10 @@ public class sceMpeg extends HLEModule {
     		dataAligned.setValue8(1716 + i, (byte) 0);
     	}
 
-    	dataAligned.setValue32(1720, esBuffer1); // First esBuffer, fixed address in ME memory
-    	dataAligned.setValue32(1724, esBuffer2); // Second esBuffer, fixed address in ME memory
+    	int esBuffer1 = MEEmulator.getInstance().malloc(esBufferSize);
+    	int esBuffer2 = MEEmulator.getInstance().malloc(esBufferSize);
+    	dataAligned.setValue32(1720, esBuffer1); // First esBuffer
+    	dataAligned.setValue32(1724, esBuffer2); // Second esBuffer
 
     	TPointer videocodecBuffer = new TPointer(dataAligned, 0xB300);
     	TPointer audiocodecBuffer = new TPointer(dataAligned, 0xB500);
@@ -1729,6 +1714,11 @@ public class sceMpeg extends HLEModule {
     		// Next data stream
     		dataStream.nextDataStream();
     	}
+
+    	int esBuffer1 = data.getValue32(1720);
+    	int esBuffer2 = data.getValue32(1724);
+    	MEEmulator.getInstance().free(esBuffer1);
+    	MEEmulator.getInstance().free(esBuffer2);
 
     	return 0;
     }
@@ -2423,7 +2413,7 @@ public class sceMpeg extends HLEModule {
      * @return
      */
     @HLEFunction(nid = 0x0E3C2E9D, version = 150, checkInsideInterrupt = true)
-    public int sceMpegAvcDecode(@CheckArgument("checkMpeg") TPointer32 mpeg, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=24, usage=Usage.inout) TPointer auAddr, int frameWidth, @CanBeNull TPointer32 bufferAddr, @BufferInfo(usage=Usage.out) TPointer32 gotFrameAddr) {
+    public int sceMpegAvcDecode(@CheckArgument("checkMpeg") TPointer32 mpeg, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=24, usage=Usage.inout) TPointer auAddr, int frameWidth, @CanBeNull @BufferInfo(usage = Usage.in) TPointer32 bufferAddr, @BufferInfo(usage=Usage.out) TPointer32 gotFrameAddr) {
     	TPointer data = mpeg.getPointer();
     	SceMpegAu au = new SceMpegAu();
     	au.read(auAddr);
@@ -2529,7 +2519,6 @@ public class sceMpeg extends HLEModule {
 	    		mp4AvcCscStruct.buffer5 = mpegAvcYuvStruct.getValue32(20);
 	    		mp4AvcCscStruct.buffer6 = mpegAvcYuvStruct.getValue32(24);
 	    		mp4AvcCscStruct.buffer7 = mpegAvcYuvStruct.getValue32(28);
-	    		mp4AvcCscStruct.bufferMemory = data.getMemory();
 	    		TPointer buffer = bufferAddr.getPointer(i * 4);
 	    		if (buffer.isNull()) {
 	    			return ERROR_MPEG_INVALID_VALUE;
@@ -2733,7 +2722,6 @@ public class sceMpeg extends HLEModule {
     	TPointer data = mpeg.getPointer();
 
     	SceMp4AvcCscStruct sceMp4AvcCscStruct = new SceMp4AvcCscStruct();
-    	sceMp4AvcCscStruct.bufferMemory = sceMpegAvcCscBuffer1.getMemory();
     	sceMp4AvcCscStruct.height = sourceAddr.getValue32(0);
     	sceMp4AvcCscStruct.width = sourceAddr.getValue32(4);
     	sceMp4AvcCscStruct.mode0 = sourceAddr.getValue32(8);

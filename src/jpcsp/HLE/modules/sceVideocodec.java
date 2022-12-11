@@ -17,7 +17,6 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE.modules;
 
 import static jpcsp.Allegrex.compiler.RuntimeContext.setLog4jMDC;
-import static jpcsp.Allegrex.compiler.RuntimeContextLLE.isMainMemory;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_AVC_INVALID_VALUE;
 import static jpcsp.HLE.modules.sceMpegbase.getIntBuffer;
 import static jpcsp.HLE.modules.sceMpegbase.releaseIntBuffer;
@@ -30,7 +29,6 @@ import org.apache.log4j.Logger;
 
 import jpcsp.Emulator;
 import jpcsp.Memory;
-import jpcsp.MemoryMap;
 import jpcsp.HLE.BufferInfo;
 import jpcsp.HLE.BufferInfo.LengthInfo;
 import jpcsp.HLE.BufferInfo.Usage;
@@ -41,10 +39,10 @@ import jpcsp.HLE.Modules;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.kernel.types.IAction;
 import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
-import jpcsp.HLE.modules.SysMemUserForUser.SysMemInfo;
 import jpcsp.HLE.modules.sceMpegbase.YCbCrImageState;
 import jpcsp.media.codec.CodecFactory;
 import jpcsp.media.codec.IVideoCodec;
+import jpcsp.mediaengine.MEEmulator;
 import jpcsp.memory.IMemoryReader;
 import jpcsp.memory.IMemoryWriter;
 import jpcsp.memory.MemoryReader;
@@ -59,9 +57,8 @@ public class sceVideocodec extends HLEModule {
     private static final int videocodecDecodeDelay = 4000;
     // Based on JpcspTrace tests, sceVideocodecDelete delays for 40ms
     public static final int videocodecDeleteDelay = 40000;
-    public static final int EDRAM_MEMORY_MASK = 0x03FFFFFF;
-    protected SysMemInfo memoryInfo;
-    protected SysMemInfo edramInfo;
+    protected int memoryAddr;
+    protected int edramAddr;
     protected int frameCount;
     protected int bufferY1;
     protected int bufferY2;
@@ -179,9 +176,9 @@ public class sceVideocodec extends HLEModule {
     		videoCodec = null;
     	}
 
-    	if (memoryInfo != null) {
-    		Modules.SysMemUserForUserModule.free(memoryInfo);
-    		memoryInfo = null;
+    	if (memoryAddr != 0) {
+    		MEEmulator.getInstance().free(memoryAddr);
+    		memoryAddr = 0;
     	}
 
     	for (int i = 0; i < buffers.length; i++) {
@@ -190,9 +187,9 @@ public class sceVideocodec extends HLEModule {
     		}
     	}
 
-    	if (edramInfo != null) {
-    		Modules.SysMemUserForUserModule.free(edramInfo);
-    		edramInfo = null;
+    	if (edramAddr != 0) {
+    		MEEmulator.getInstance().free(edramAddr);
+    		edramAddr = 0;
     	}
 	}
 
@@ -221,7 +218,7 @@ public class sceVideocodec extends HLEModule {
 
     	int result = videoCodec.decode(mp4Buffer, 0, mp4Size);
     	if (log.isDebugEnabled()) {
-    		log.debug(String.format("sceVideocodecDecode videoCodec returned 0x%X from 0x%X data bytes", result, mp4Size));
+    		log.debug(String.format("sceVideocodecDecode videoCodec returned 0x%X from 0x%08X, 0x%X data bytes", result, mp4Data, mp4Size));
     	}
 
     	releaseIntBuffer(mp4Buffer);
@@ -253,13 +250,8 @@ public class sceVideocodec extends HLEModule {
         		int sizeCr2 = alignUp((frameWidth >> 5) * (frameHeight >> 1) * 8, 0x1FF);
         		int size = 256 + (sizeY1 + sizeY2 + sizeCr1 + sizeCr2) * 2 * buffers.length;
 
-        		TPointer base;
-        		if (isMainMemory(mp4Memory)) {
-        			memoryInfo = Modules.SysMemUserForUserModule.malloc(SysMemUserForUser.KERNEL_PARTITION_ID, "sceVideocodecDecode", SysMemUserForUser.PSP_SMEM_Low, size, 0);
-        			base = new TPointer(mp4Memory, memoryInfo.addr);
-        		} else {
-        			base = new TPointer(mp4Memory, 0x00000000).forceNonNull();
-        		}
+        		int baseAddr = MEEmulator.getInstance().malloc(size);
+        		TPointer base = new TPointer(getMEMemory(), baseAddr);
 
         		defaultBufferUnknown1 = new TPointer(base);
         		defaultBufferUnknown1.clear(36);
@@ -506,7 +498,7 @@ public class sceVideocodec extends HLEModule {
             releaseIntBuffer(cr);
 
         	for (int i = 0; i < 8; i++) {
-		    	mpegAvcYuvStruct.setValue32(i * 4, buffers[buffersIndex][i].getAddress() & EDRAM_MEMORY_MASK);
+		    	mpegAvcYuvStruct.setValue32(i * 4, buffers[buffersIndex][i].getAddress());
 		    	if (log.isTraceEnabled()) {
 		    		log.trace(String.format("sceVideocodecDecode YUV buffer[%d]=%s", i, buffers[buffersIndex][i]));
 		    	}
@@ -514,7 +506,7 @@ public class sceVideocodec extends HLEModule {
 
         	mpegAvcYuvStruct.setValue32(32, videoCodec.hasImage()); // 0 or 1
 
-        	TPointer bufferUnknown1 = mpegAvcYuvStruct.getPointer(36);
+        	TPointer bufferUnknown1 = mpegAvcYuvStruct.getPointer(getMEMemory(), 36);
         	if (bufferUnknown1.isNull()) {
         		bufferUnknown1 = defaultBufferUnknown1;
         		mpegAvcYuvStruct.setPointer(36, bufferUnknown1);
@@ -527,7 +519,7 @@ public class sceVideocodec extends HLEModule {
         	bufferUnknown1.setUnsignedValue8(32, 0x00); // 0x00 or 0x01 or 0x02
         	bufferUnknown1.setUnsignedValue8(33, 0x01);
 
-        	TPointer bufferUnknown2 = mpegAvcYuvStruct.getPointer(40);
+        	TPointer bufferUnknown2 = mpegAvcYuvStruct.getPointer(getMEMemory(), 40);
         	if (bufferUnknown2.isNull()) {
         		bufferUnknown2 = defaultBufferUnknown2;
         		mpegAvcYuvStruct.setPointer(40, bufferUnknown2);
@@ -580,15 +572,15 @@ public class sceVideocodec extends HLEModule {
     	int frameBufferWidthCb = frameBufferWidthY / 2;
 
 		if (videoCodec.hasImage()) {
-        	if (memoryInfo == null) {
+        	if (memoryAddr == 0) {
         		int sizeY = frameBufferWidthY * frameHeight;
         		int sizeCr = frameBufferWidthCr * (frameHeight / 2);
         		int sizeCb = frameBufferWidthCr * (frameHeight / 2);
         		int size = (sizeY + sizeCr + sizeCb) * 2;
 
-        		memoryInfo = Modules.SysMemUserForUserModule.malloc(SysMemUserForUser.KERNEL_PARTITION_ID, "sceVideocodecDecode", SysMemUserForUser.PSP_SMEM_Low, size, 0);
+        		memoryAddr = MEEmulator.getInstance().malloc(size);
 
-        		bufferY1 = memoryInfo.addr & EDRAM_MEMORY_MASK;
+        		bufferY1 = memoryAddr;
         		bufferY2 = bufferY1 + sizeY;
         		bufferCr1 = bufferY1 + sizeY;
         		bufferCb1 = bufferCr1 + sizeCr;
@@ -603,10 +595,10 @@ public class sceVideocodec extends HLEModule {
     	int bufferCb = buffer1 ? bufferCb1 : bufferCb2;
 
     	if (videoCodec.hasImage()) {
-    		Memory mem = Memory.getInstance();
-        	mem.memset(bufferY | MemoryMap.START_RAM, (byte) 0x80, frameBufferWidthY * frameHeight);
-        	mem.memset(bufferCr | MemoryMap.START_RAM, (byte) (buffer1 ? 0x50 : 0x80), frameBufferWidthCr * (frameHeight / 2));
-        	mem.memset(bufferCb | MemoryMap.START_RAM, (byte) 0x80, frameBufferWidthCb * (frameHeight / 2));
+    		Memory mem = getMEMemory();
+        	mem.memset(bufferY, (byte) 0x80, frameBufferWidthY * frameHeight);
+        	mem.memset(bufferCr, (byte) (buffer1 ? 0x50 : 0x80), frameBufferWidthCr * (frameHeight / 2));
+        	mem.memset(bufferCb, (byte) 0x80, frameBufferWidthCb * (frameHeight / 2));
 
         	frameCount++;
     	}
@@ -639,8 +631,8 @@ public class sceVideocodec extends HLEModule {
     		return;
     	}
 
-    	Memory mp4Memory = buffer.getMemory();
-    	int mp4Data = buffer.getValue32(36) | MemoryMap.START_RAM;
+    	Memory mp4Memory = MEEmulator.getInstance().getMEMemory();
+    	int mp4Data = buffer.getValue32(36);
     	int mp4Size = buffer.getValue32(40);
 
     	buffer.setValue32(8, 0);
@@ -757,14 +749,13 @@ public class sceVideocodec extends HLEModule {
     @HLEFunction(nid = 0x2D31F5B1, version = 150)
     public int sceVideocodecGetEDRAM(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=videocodecBufferSize, usage=Usage.inout) TPointer buffer, int type) {
     	int size = (buffer.getValue32(24) + 63) | 0x3F;
-    	edramInfo = Modules.SysMemUserForUserModule.malloc(SysMemUserForUser.KERNEL_PARTITION_ID, "sceVideocodecEDRAM", SysMemUserForUser.PSP_SMEM_Low, size, 0);
-    	if (edramInfo == null) {
+    	edramAddr = MEEmulator.getInstance().malloc(size);
+    	if (edramAddr == 0) {
     		return -1;
     	}
 
-    	int addrEDRAM = edramInfo.addr & EDRAM_MEMORY_MASK;
-    	buffer.setValue32(20, alignUp(addrEDRAM, 63));
-    	buffer.setValue32(92, addrEDRAM);
+    	buffer.setValue32(20, alignUp(edramAddr, 63));
+    	buffer.setValue32(92, edramAddr);
 
     	return 0;
     }
@@ -774,9 +765,9 @@ public class sceVideocodec extends HLEModule {
     	buffer.setValue32(20, 0);
     	buffer.setValue32(92, 0);
 
-    	if (edramInfo != null) {
-    		Modules.SysMemUserForUserModule.free(edramInfo);
-    		edramInfo = null;
+    	if (edramAddr != 0) {
+    		MEEmulator.getInstance().free(edramAddr);
+    		edramAddr = 0;
     	}
 
     	return 0;

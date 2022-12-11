@@ -116,7 +116,8 @@ public class MEProcessor extends Processor {
 
 	private MEProcessor() {
 		setLogger(log);
-		meMemory = new MEMemory(RuntimeContextLLE.getMMIO(), log);
+		Memory mainMemory = RuntimeContextLLE.hasMMIO() ? RuntimeContextLLE.getMMIO() : Memory.getInstance();
+		meMemory = new MEMemory(mainMemory, log);
 		cpu.setMemory(meMemory);
 
 		// CPUID is 1 for the ME
