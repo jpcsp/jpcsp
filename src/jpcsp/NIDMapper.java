@@ -384,7 +384,11 @@ public class NIDMapper {
         	info.overwrite(address, false);
         	addressMap.put(address, info);
     	} else {
-    		info = new NIDInfo(nid, address, moduleName, variableExport);
+        	if (module.pspfilename != null && module.pspfilename.startsWith("flash0:/kd/")) {
+        		log.warn(String.format("NID 0x%08X from module '%s' (%s) not found in any HLE module", nid, moduleName, module.pspfilename));
+        	}
+
+        	info = new NIDInfo(nid, address, moduleName, variableExport);
     		if (requiresSyscall) {
     			int syscall = getNewSyscallNumber();
     			info.setSyscall(syscall);;
