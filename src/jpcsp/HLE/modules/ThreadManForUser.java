@@ -1846,6 +1846,29 @@ public class ThreadManForUser extends HLEModule {
      * @param address     address of the callback
      * @param gp          value of the $gp register
      * @param afterAction action to be executed after the completion of the callback
+     * @param registerA0  first parameter of the callback ($a0)
+     * @param registerA1  second parameter of the callback ($a1)
+     * @param registerA2  third parameter of the callback ($a2)
+     * @param registerA3  fourth parameter of the callback ($a3)
+     */
+    public void executeCallback(int address, int gp, IAction afterAction, int registerA0, int registerA1, int registerA2, int registerA3) {
+        if (log.isDebugEnabled()) {
+            log.debug(String.format("Execute callback 0x%08X($a0=0x%08X, $a1=0x%08X, $a2=0x%08X, $a3=0x%08X), afterAction=%s", address, registerA0, registerA1, registerA2, registerA3, afterAction));
+        }
+
+        callAddress(null, address, afterAction, true, true, new int[]{registerA0, registerA1, registerA2, registerA3}, gp);
+    }
+
+    /**
+     * Execute the code at the given address.
+     * The code is executed in the context of the currentThread.
+     * This call can return before the completion of the callback. Use the
+     * "afterAction" parameter to trigger some actions that need to be executed
+     * after the callback (e.g. to evaluate a return value in cpu.gpr[2]).
+     *
+     * @param address     address of the callback
+     * @param gp          value of the $gp register
+     * @param afterAction action to be executed after the completion of the callback
      * @param returnVoid  the callback has a void return value, i.e. $v0/$v1 have to be restored
      * @param preserveCpuState preserve the complete CpuState while executing the callback.
      *                    All the registers will be restored after the callback execution.
