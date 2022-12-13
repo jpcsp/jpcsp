@@ -16,23 +16,47 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules;
 
+import static jpcsp.HLE.Modules.ThreadManForUserModule;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_SUBINTR_ALREADY_REGISTERED;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_SUBINTR_NOT_REGISTERED;
+
 import org.apache.log4j.Logger;
 
+import jpcsp.HLE.AfterCallbackAction;
+import jpcsp.HLE.BufferInfo;
+import jpcsp.HLE.CanBeNull;
+import jpcsp.HLE.BufferInfo.LengthInfo;
+import jpcsp.HLE.BufferInfo.Usage;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLEModule;
-import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.Modules;
+import jpcsp.HLE.PspString;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.TPointer32;
 import jpcsp.HLE.kernel.types.pspSysEventHandler;
 
 public class sceSysEventForKernel extends HLEModule {
     public static Logger log = Modules.getLogger("sceSysEventForKernel");
+    private TPointer sysEventHandlers;
 
-    @HLEUnimplemented
+	@Override
+	public void start() {
+		sysEventHandlers = TPointer.NULL;
+
+		super.start();
+	}
+
     @HLEFunction(nid = 0xAEB300AE, version = 150)
-    public int sceKernelIsRegisterSysEventHandler() {
-    	return 0;
+    public boolean sceKernelIsRegisterSysEventHandler(@BufferInfo(lengthInfo = LengthInfo.fixedLength, length = pspSysEventHandler.SIZEOF, usage = Usage.in) TPointer handler) {
+    	TPointer current = sysEventHandlers;
+    	while (current.isNotNull()) {
+    		if (current.equals(handler)) {
+    				break;
+    		}
+    		current = pspSysEventHandler.getNext(current);
+    	}
+
+    	return current.isNotNull();
     }
 
     /**
@@ -41,15 +65,23 @@ public class sceSysEventForKernel extends HLEModule {
      * @param handler			the handler to register
      * @return					0 on success, < 0 on error
      */
-    @HLEUnimplemented
     @HLEFunction(nid = 0xCD9E4BB5, version = 150)
-    public int sceKernelRegisterSysEventHandler(TPointer handler) {
+    public int sceKernelRegisterSysEventHandler(@BufferInfo(lengthInfo = LengthInfo.fixedLength, length = pspSysEventHandler.SIZEOF, usage = Usage.in) TPointer handler) {
     	pspSysEventHandler sysEventHandler = new pspSysEventHandler();
     	sysEventHandler.read(handler);
 
     	if (log.isDebugEnabled()) {
     		log.debug(String.format("sceKernelRegisterSysEventHandler handler: %s", sysEventHandler));
     	}
+
+    	if (sceKernelIsRegisterSysEventHandler(handler)) {
+    		return ERROR_KERNEL_SUBINTR_ALREADY_REGISTERED;
+    	}
+
+    	sysEventHandler.busy = false;
+    	sysEventHandler.gp = getProcessor().cpu._gp;
+    	sysEventHandler.next = sysEventHandlers;
+    	sysEventHandler.write(handler);
 
     	if ("SceFatfsSysEvent".equals(sysEventHandler.name)) {
     		Modules.sceMSstorModule.installDrivers();
@@ -64,9 +96,34 @@ public class sceSysEventForKernel extends HLEModule {
      * @param handler			the handler to unregister
      * @return					0 on success, < 0 on error
      */
-    @HLEUnimplemented
     @HLEFunction(nid = 0xD7D3FDCD, version = 150)
-    public int sceKernelUnregisterSysEventHandler(TPointer handler) {
+    public int sceKernelUnregisterSysEventHandler(@BufferInfo(lengthInfo = LengthInfo.fixedLength, length = pspSysEventHandler.SIZEOF, usage = Usage.in) TPointer handler) {
+    	if (pspSysEventHandler.isBusy(handler)) {
+    		return -1;
+    	}
+
+    	TPointer current = sysEventHandlers;
+    	TPointer previous = TPointer.NULL;
+
+    	while (current.isNotNull()) {
+			TPointer next = pspSysEventHandler.getNext(current);
+    		if (current.equals(handler)) {
+    			if (previous.isNull()) {
+    				sysEventHandlers = next;
+    			} else {
+    				pspSysEventHandler.setNext(previous, next);
+    			}
+    			break;
+    		}
+
+    		previous = current;
+    		current = next;
+    	}
+
+    	if (current.isNull()) {
+    		return ERROR_KERNEL_SUBINTR_NOT_REGISTERED;
+    	}
+
     	return 0;
     }
 
@@ -82,10 +139,32 @@ public class sceSysEventForKernel extends HLEModule {
      * @param breakHandler		the pointer to the event handler having interrupted
      * @return					0 on success, < 0 on error
      */
-    @HLEUnimplemented
     @HLEFunction(nid = 0x36331294, version = 150)
-    public int sceKernelSysEventDispatch(int eventTypeMask, int eventId, String eventName, int param, TPointer32 resultAddr, int breakNonzero, int breakHandler) {
-    	return 0;
+    public int sceKernelSysEventDispatch(int eventTypeMask, int eventId, PspString eventName, int param, TPointer32 resultAddr, int breakNonzero, @CanBeNull @BufferInfo(usage = Usage.out) TPointer32 breakHandler) {
+		pspSysEventHandler sysEventHandler = new pspSysEventHandler();
+    	TPointer current = sysEventHandlers;
+
+    	int result = 0;
+    	while (current.isNotNull()) {
+    		if (pspSysEventHandler.isMatchingTypeMask(current, eventTypeMask)) {
+    			pspSysEventHandler.setBusy(current, true);
+    			sysEventHandler.read(current);
+    			AfterCallbackAction afterCallbackAction = new AfterCallbackAction(sysEventHandler.handler);
+        		ThreadManForUserModule.executeCallback(sysEventHandler.handler.getAddress(), sysEventHandler.gp, afterCallbackAction, eventId, eventName.getAddress(), param, resultAddr.getAddress());
+    			pspSysEventHandler.setBusy(current, false);
+
+    			result = afterCallbackAction.getReturnValue();
+    			if (result < 0 && breakNonzero != 0) {
+    				breakHandler.setPointer(current);
+    				break;
+    			}
+    			result = 0;
+    		}
+
+    		current = pspSysEventHandler.getNext(current);
+    	}
+
+    	return result;
     }
 
     /**
@@ -93,9 +172,8 @@ public class sceSysEventForKernel extends HLEModule {
      *
      * @return					0 on error, handler on success
      */
-    @HLEUnimplemented
     @HLEFunction(nid = 0x68D55505, version = 150)
     public int sceKernelReferSysEventHandler() {
-    	return 0;
+    	return sysEventHandlers.getAddress();
     }
 }
