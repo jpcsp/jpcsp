@@ -188,6 +188,7 @@ public class Modules {
     public static sceAmctrl sceAmctrlModule = new sceAmctrl();
     public static sceNwman sceNwmanModule = new sceNwman();
     public static sceUsbPspcm sceUsbPspcmModule = new sceUsbPspcm();
+    public static sceAvcodec sceAvcodecModule = new sceAvcodec();
 
     public static Logger log = Logger.getLogger("hle");
 

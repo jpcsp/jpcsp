@@ -101,15 +101,17 @@ public class HLEModuleManager {
      * They will then replace the HLE equivalent.
      */
 	private static final String[] moduleFileNamesToBeLoaded = {
-			  "flash0:/kd/utility.prx"
+			// The order of the modules is important, it should match the boot order
+			  "flash0:/kd/dmacman.prx"
+			, "flash0:/kd/memlmd_01g.prx"
+			, "flash0:/kd/lowio.prx"
+			, "flash0:/kd/wlan.prx"
+			, "flash0:/kd/wlanfirm_01g.prx"
+			, "flash0:/kd/utility.prx"
 			, "flash0:/kd/vshbridge.prx"
 			, "flash0:/vsh/module/paf.prx"
 			, "flash0:/vsh/module/common_gui.prx"
 			, "flash0:/vsh/module/common_util.prx"
-			, "flash0:/kd/wlan.prx"
-			, "flash0:/kd/wlanfirm_01g.prx"
-			, "flash0:/kd/memlmd_01g.prx"
-			, "flash0:/kd/lowio.prx"
 //			, "flash0:/kd/loadcore.prx"
 //			, "flash0:/kd/loadexec_01g.prx"
 //			, "flash0:/kd/modulemgr.prx"
@@ -307,7 +309,8 @@ public class HLEModuleManager {
         pspvmc(Modules.pspvmcModule),
         sceAmctrl(Modules.sceAmctrlModule),
         sceNwman(Modules.sceNwmanModule),
-        sceUsbPspcm(Modules.sceUsbPspcmModule, new String[] { "usbpspcm", "PSP_MODULE_USB_PSPCM", "PSP_USB_MODULE_PSPCM", "sceUSB_PSPComm_Driver" }, "flash0:/kd/usbpspcm.prx");
+        sceUsbPspcm(Modules.sceUsbPspcmModule, new String[] { "usbpspcm", "PSP_MODULE_USB_PSPCM", "PSP_USB_MODULE_PSPCM", "sceUSB_PSPComm_Driver" }, "flash0:/kd/usbpspcm.prx"),
+        sceAvcodec(Modules.sceAvcodecModule);
 
     	private HLEModule module;
     	private boolean loadedByDefault;
