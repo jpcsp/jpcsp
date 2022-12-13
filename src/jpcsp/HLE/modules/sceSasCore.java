@@ -1208,4 +1208,16 @@ public class sceSasCore extends HLEModule {
 
         return 0;
     }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xB0F9F98F, version = 150, moduleName = "sceSasCore_driver")
+    public int sceSasCoreInit() {
+        return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xE143A1EA, version = 150, moduleName = "sceSasCore_driver")
+    public int sceSasCoreExit() {
+        return 0;
+    }
 }

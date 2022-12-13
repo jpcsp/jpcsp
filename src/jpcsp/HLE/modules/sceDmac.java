@@ -29,6 +29,10 @@ public class sceDmac extends HLEModule {
     public static Logger log = Modules.getLogger("sceDmac");
 
     @HLEFunction(nid = 0x617F3FE6, version = 150)
+	@HLEFunction(nid = 0xC7D33466, version = 150, moduleName = "sceDmacplus_driver")
+	@HLEFunction(nid = 0x558CDFAB, version = 620, moduleName = "sceDmacplus_driver")
+	@HLEFunction(nid = 0x70DB6434, version = 635, moduleName = "sceDmacplus_driver")
+	@HLEFunction(nid = 0x2C5FC1E3, version = 660, moduleName = "sceDmacplus_driver")
     public int sceDmacMemcpy(TPointer dest, TPointer source, int size) {
         Memory.getInstance().memcpyWithVideoCheck(dest.getAddress(), source.getAddress(), size);
 
@@ -37,6 +41,7 @@ public class sceDmac extends HLEModule {
 
     @HLEUnimplemented
 	@HLEFunction(nid = 0xD97F94D8, version = 150)
+	@HLEFunction(nid = 0xD57D5BC2, version = 600, moduleName = "sceDmacplus_driver")
 	public int sceDmacTryMemcpy() {
     	return 0;
 	}

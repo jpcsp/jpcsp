@@ -38,7 +38,6 @@ public class sceMeVideo extends HLEModule {
     public static final int VIDEOCODEC_OPEN_TYPE1_UNKNOWN32 = 0xB69E3;
 
     // Called by sceVideocodecOpen
-	@HLEUnimplemented
 	@HLEFunction(nid = 0xC441994C, version = 150)
 	public int sceMeVideo_driver_C441994C(int type, TPointer buffer) {
     	switch (type) {
@@ -94,7 +93,6 @@ public class sceMeVideo extends HLEModule {
 	}
 
 	// Called by sceVideocodecDecode
-	@HLEUnimplemented
 	@HLEFunction(nid = 0x8768915D, version = 150)
 	public int sceMeVideo_driver_8768915D(int type, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=videocodecBufferSize, usage=Usage.inout) TPointer buffer) {
 		return Modules.sceVideocodecModule.hleVideocodecDecode(buffer, type, null);

@@ -16,10 +16,15 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules;
 
+import jpcsp.HLE.BufferInfo;
+import jpcsp.HLE.BufferInfo.LengthInfo;
+import jpcsp.HLE.BufferInfo.Usage;
+import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLEModule;
 import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.PspString;
+import jpcsp.HLE.TPointer;
 
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_ERROR;
 
@@ -31,7 +36,16 @@ import jpcsp.Allegrex.CpuState;
 public class KDebugForKernel extends HLEModule {
     public static Logger log = Modules.getLogger("KDebugForKernel");
     protected static Logger kprintf = Logger.getLogger("kprintf");
-    private long dispsw = 0L;
+    private long dispsw;
+    private TPointer sm1Operations;
+
+	@Override
+	public void start() {
+		dispsw = 0L;
+		sm1Operations = TPointer.NULL;
+
+		super.start();
+	}
 
     @HLEUnimplemented
 	@HLEFunction(nid = 0xE7A3874D, version = 150)
@@ -144,10 +158,16 @@ public class KDebugForKernel extends HLEModule {
 		return 0;
 	}
 
-    @HLEUnimplemented
 	@HLEFunction(nid = 0xE892D9A1, version = 150)
 	public int sceKernelSm1ReferOperations() {
-		return 0;
+		return sm1Operations.getAddress();
+	}
+
+	@HLEFunction(nid = 0x02668C61, version = 150)
+	public int sceKernelSm1RegisterOperations(@CanBeNull @BufferInfo(lengthInfo = LengthInfo.fixedLength, length = 60, usage = Usage.in) TPointer sm1Operations) {
+    	this.sm1Operations = sm1Operations;
+
+    	return 0;
 	}
 
     @HLEUnimplemented

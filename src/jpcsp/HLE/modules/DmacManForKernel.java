@@ -440,4 +440,58 @@ public class DmacManForKernel extends HLEModule {
 	public int DmacManForKernel_32757C57(@CanBeNull TPointer setupLinkCallback) {
     	return 0;
 	}
+
+    @HLEUnimplemented
+	@HLEFunction(nid = 0x1C46158A, version = 150)
+	public int sceKernelDmaExit() {
+    	return 0;
+	}
+
+    @HLEUnimplemented
+	@HLEFunction(nid = 0x1FC036B7, version = 150)
+	public int DmacManForKernel_1FC036B7() {
+    	return 0;
+	}
+
+    @HLEUnimplemented
+	@HLEFunction(nid = 0x2E3BC333, version = 150)
+	public int sceKernelDmaChReserve() {
+    	return 0;
+	}
+
+    @HLEUnimplemented
+	@HLEFunction(nid = 0x7B9634E1, version = 150)
+	public int sceKernelDmaSoftRequest() {
+    	return 0;
+	}
+
+    @HLEUnimplemented
+	@HLEFunction(nid = 0x904110FC, version = 150)
+	public int sceKernelDmaOpAssignMultiple() {
+    	return 0;
+	}
+
+    @HLEUnimplemented
+	@HLEFunction(nid = 0xA84B084B, version = 150)
+	public int sceKernelDmaOpAllCancel() {
+    	return 0;
+	}
+
+    @HLEUnimplemented
+	@HLEFunction(nid = 0xD3F62265, version = 150)
+	public int sceKernelDmaOnDebugMode() {
+    	return 0;
+	}
+
+    @HLEUnimplemented
+	@HLEFunction(nid = 0xD8BC3120, version = 150)
+	public int sceKernelDmaChExclude() {
+    	return 0;
+	}
+
+    @HLEUnimplemented
+	@HLEFunction(nid = 0xE18A93A5, version = 150)
+	public int DmacManForKernel_E18A93A5() {
+    	return 0;
+	}
 }

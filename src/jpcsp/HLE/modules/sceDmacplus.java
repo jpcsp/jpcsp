@@ -214,4 +214,45 @@ public class sceDmacplus extends HLEModule {
 
     	return 0;
     }
+
+    @HLEUnimplemented
+	@HLEFunction(nid = 0x241601AE, version = 150)
+	@HLEFunction(nid = 0x33CD36DD, version = 660)
+	public int sceDmacplusLcdcGetFormat() {
+    	return 0;
+	}
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x9C492B9B, version = 660)
+    public int sceDmacplus_driver_9C492B9B() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x4B980588, version = 150)
+    @HLEFunction(nid = 0x9EBF7D3E, version = 660)
+    public int sceDmacplusSc2MeNormal16() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xFD183BCF, version = 150)
+    @HLEFunction(nid = 0xB0EC610D, version = 660)
+    public int sceDmacplusSc128LLI() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x58C380BB, version = 150)
+    @HLEFunction(nid = 0xCCCF6069, version = 660)
+    public int sceDmacplusLcdcGetBaseAddr() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xBE693828, version = 150)
+    @HLEFunction(nid = 0xDBD8526F, version = 660)
+    public int sceDmacplusMe2ScNormal16() {
+    	return 0;
+    }
 }

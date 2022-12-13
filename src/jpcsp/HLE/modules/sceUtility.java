@@ -186,6 +186,9 @@ public class sceUtility extends HLEModule {
 		storeCheckoutState = new NotImplementedUtilityDialogState("sceUtilityStoreCheckout");
 		psnState = new NotImplementedUtilityDialogState("sceUtilityPsn");
 		installState = new InstallUtilityDialogState("sceUtilityInstall");
+		dnasDialogState = new NotImplementedUtilityDialogState("sceUtilityDNAS");
+		authDialogState = new NotImplementedUtilityDialogState("sceUtilityAuthDialog");
+		autoConnectDialogState = new NotImplementedUtilityDialogState("sceUtilityAutoConnect");
         startedDialogState = null;
 
         utilityPrivateModules = new HashMap<String, String>();
@@ -309,6 +312,9 @@ public class sceUtility extends HLEModule {
     protected GamedataInstallUtilityDialogState gamedataInstallState;
 	protected UtilityDialogState storeCheckoutState;
 	protected UtilityDialogState psnState;
+    protected UtilityDialogState dnasDialogState;
+    protected UtilityDialogState authDialogState;
+    protected UtilityDialogState autoConnectDialogState;
     protected UtilityDialogState startedDialogState;
     private static final String dummyNetParamName = "NetConf #%d";
     private final static int utilityThreadActionRegister = _s0; // $s0 is preserved across calls
@@ -5550,6 +5556,415 @@ public class sceUtility extends HLEModule {
 				break;
 		}
 
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x3A15CD0A, version = 620)
+    public int sceUtilityAutoConnectInitStart(@BufferInfo(lengthInfo=LengthInfo.variableLength, usage=Usage.inout) TPointer paramsAddr) {
+		return autoConnectDialogState.executeInitStart(paramsAddr);
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0xD23665F4, version = 620)
+    public int sceUtilityAutoConnectUpdate(int drawSpeed) {
+		return autoConnectDialogState.executeUpdate(drawSpeed);
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0xD4C2BD73, version = 620)
+    public int sceUtilityAutoConnectGetStatus() {
+		return autoConnectDialogState.executeGetStatus();
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x0E0C27AF, version = 620)
+    public int sceUtilityAutoConnectAbort() {
+		return autoConnectDialogState.executeAbort();
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x9F313D14, version = 620)
+    public int sceUtilityAutoConnectShutdownStart() {
+		return autoConnectDialogState.executeShutdownStart();
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x943CBA46, version = 500)
+    public int sceUtilityAuthDialogInitStart(@BufferInfo(lengthInfo=LengthInfo.variableLength, usage=Usage.inout) TPointer paramsAddr) {
+		return authDialogState.executeInitStart(paramsAddr);
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x16A1A8D8, version = 500)
+    public int sceUtilityAuthDialogGetStatus() {
+		return authDialogState.executeGetStatus();
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x147F7C85, version = 500)
+    public int sceUtilityAuthDialogUpdate(int drawSpeed) {
+		return authDialogState.executeUpdate(drawSpeed);
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x0F3EEAAC, version = 500)
+    public int sceUtilityAuthDialogShutdownStart() {
+		return authDialogState.executeShutdownStart();
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0xDDE5389D, version = 500)
+    public int sceUtilityDNASInitStart(@BufferInfo(lengthInfo=LengthInfo.variableLength, usage=Usage.inout) TPointer paramsAddr) {
+		return dnasDialogState.executeInitStart(paramsAddr);
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0xA50E5B30, version = 500)
+    public int sceUtilityDNASGetStatus() {
+		return dnasDialogState.executeGetStatus();
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x4A833BA4, version = 500)
+    public int sceUtilityDNASUpdate(int drawSpeed) {
+		return dnasDialogState.executeUpdate(drawSpeed);
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x149A7895, version = 500)
+    public int sceUtilityDNASShutdownStart() {
+		return dnasDialogState.executeShutdownStart();
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x0027D953, version = 150)
+	public int sceUtility_private_0027D953() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x0C0AE566, version = 150)
+	public int sceUtility_private_0C0AE566() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x0D6B23A4, version = 150)
+	public int sceUtility_private_0D6B23A4() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x10D1B3FF, version = 150)
+	public int sceUtility_private_10D1B3FF() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x14E94D25, version = 150)
+	public int sceUtility_private_14E94D25() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x186A2C84, version = 150)
+	public int sceUtility_private_186A2C84() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x1E82FB49, version = 150)
+	public int sceUtility_private_1E82FB49() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x26D0B065, version = 150)
+	public int sceUtility_private_26D0B065() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x29AFE096, version = 150)
+	public int sceUtility_private_29AFE096() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x31516141, version = 150)
+	public int sceUtility_private_31516141() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x34340686, version = 150)
+	public int sceUtility_private_34340686() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x363A12E2, version = 150)
+	public int sceUtility_private_363A12E2() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x369D25E4, version = 150)
+	public int sceUtility_private_369D25E4() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x39E7692B, version = 150)
+	public int sceUtility_private_39E7692B() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x40FBA532, version = 150)
+	public int sceUtility_private_40FBA532() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x421E2726, version = 150)
+	public int sceUtility_private_421E2726() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x4F6FFC7C, version = 150)
+	public int sceUtility_private_4F6FFC7C() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x5809B44A, version = 150)
+	public int sceUtility_private_5809B44A() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x59EB3A17, version = 150)
+	public int sceUtility_private_59EB3A17() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x5C494AC6, version = 150)
+	public int sceUtility_private_5C494AC6() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x5ED16EBA, version = 150)
+	public int sceUtility_private_5ED16EBA() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x69AB28E8, version = 150)
+	public int sceUtility_private_69AB28E8() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x756A93B3, version = 150)
+	public int sceUtility_private_756A93B3() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x78EC982D, version = 150)
+	public int sceUtility_private_78EC982D() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x7E0D4BCD, version = 150)
+	public int sceUtility_private_7E0D4BCD() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x7EBD6208, version = 150)
+	public int sceUtility_private_7EBD6208() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x8024FCA7, version = 150)
+	public int sceUtility_private_8024FCA7() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x86AA70BC, version = 150)
+	public int sceUtility_private_86AA70BC() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x8D681EE0, version = 150)
+	public int sceUtility_private_8D681EE0() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x966912D2, version = 150)
+	public int sceUtility_private_966912D2() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x981FFD72, version = 150)
+	public int sceUtility_private_981FFD72() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0xA1348D82, version = 150)
+	public int sceUtility_private_A1348D82() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0xA25E0194, version = 150)
+	public int sceUtility_private_A25E0194() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0xA6B323E1, version = 150)
+	public int sceUtility_private_A6B323E1() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0xAC7FD75C, version = 150)
+	public int sceUtility_private_AC7FD75C() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0xACB67A01, version = 150)
+	public int sceUtility_private_ACB67A01() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0xB34EC4AD, version = 150)
+	public int sceUtility_private_B34EC4AD() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0xBAFFB9D5, version = 150)
+	public int sceUtility_private_BAFFB9D5() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0xBBCD1885, version = 150)
+	public int sceUtility_private_BBCD1885() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0xC1916D25, version = 150)
+	public int sceUtility_private_C1916D25() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0xC7D5983F, version = 150)
+	public int sceUtility_private_C7D5983F() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0xCDEEBEE2, version = 150)
+	public int sceUtility_private_CDEEBEE2() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0xCE484145, version = 150)
+	public int sceUtility_private_CE484145() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0xDF025E50, version = 150)
+	public int sceUtility_private_DF025E50() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0xE0F5DEC1, version = 150)
+	public int sceUtility_private_E0F5DEC1() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0xE8EE4E87, version = 150)
+	public int sceUtility_private_E8EE4E87() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0xEA446CD5, version = 150)
+	public int sceUtility_private_EA446CD5() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0xED4E37CA, version = 150)
+	public int sceUtility_private_ED4E37CA() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0xFC841AC3, version = 150)
+	public int sceUtility_private_FC841AC3() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x02598DB8, version = 150)
+	public int sceUtility_netparam_internal_02598DB8() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x09905636, version = 150)
+	public int sceUtility_netparam_internal_09905636() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x5D63AA06, version = 150)
+	public int sceUtility_netparam_internal_5D63AA06() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x6B1BC62C, version = 150)
+	public int sceUtility_netparam_internal_6B1BC62C() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0xF062AEA6, version = 150)
+	public int sceUtilityInit() {
+		// Called by module_start
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x20C68C34, version = 150)
+	public int sceUtilityEnd() {
 		return 0;
 	}
 }

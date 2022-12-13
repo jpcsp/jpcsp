@@ -66,4 +66,58 @@ public class sceGpio extends HLEModule {
     public int sceGpioDisableIntr() {
     	return 0;
     }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x0C5B2EAF, version = 660)
+    public int sceGpioDisableTimerCapture() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x2605F404, version = 660)
+    public int sceGpioEnableTimerCapture() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x1BB49B65, version = 660)
+    public int sceGpioQueryIntr() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x2B280C43, version = 660)
+    public int sceGpioGetPortMode() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x2FFF2F8B, version = 660)
+    public int sceGpioPortInvert() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x4DE658CC, version = 660)
+    public int sceGpioGetCapturePort() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x9C4CFE04, version = 660)
+    public int sceGpioSetCapturePort() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xA21E44CB, version = 660)
+    public int sceGpioGetIntrMode() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xEF1F40F5, version = 660)
+    public int sceGpioEnableIntr() {
+    	return 0;
+    }
 }

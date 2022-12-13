@@ -1014,6 +1014,12 @@ public class sceSysreg extends HLEModule {
     	return 0;
     }
 
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xB6C10DF0, version = 150)
+    public int sceSysregAtaBusClockDisable() {
+    	return 0;
+    }
+
     @HLEFunction(nid = 0xE2A5D1EE, version = 150)
     public int sceSysregGetTachyonVersion() {
     	return Model.getTachyonVersion();
@@ -1082,6 +1088,54 @@ public class sceSysreg extends HLEModule {
     @HLEUnimplemented
     @HLEFunction(nid = 0xA16E55F4, version = 150)
     public int sceSysregSpiIoDisable(int spiId) {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x6417CDD6, version = 150)
+    public int sceSysregSircsClkEnable() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x20388C9E, version = 150)
+    public int sceSysregSircsClkDisable() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x4C49A8BC, version = 150)
+    public int sceSysregSircsIoEnable() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x26FA0928, version = 150)
+    public int sceSysregSircsIoDisable() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x7725CA08, version = 150)
+    public int sceSysregUartClkEnable() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xA3E4154C, version = 150)
+    public int sceSysregUartClkDisable() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x7FD7A631, version = 150)
+    public int sceSysregUartIoEnable() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xBB823481, version = 150)
+    public int sceSysregUartIoDisable() {
     	return 0;
     }
 }

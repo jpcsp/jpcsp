@@ -1236,4 +1236,148 @@ public class sceWlan extends HLEModule implements IAccessPointCallback {
     public int sceWlanGPUnRegisterCallback(int callbackUid) {
     	return 0;
     }
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x05FE320C, version = 150)
+	public int sceWlanDrv_lib_05FE320C() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x19E51F54, version = 150)
+	public int sceWlanDrv_lib_19E51F54() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x1AE1B369, version = 150)
+	public int sceWlanDrv_lib_1AE1B369() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x40B0AA4A, version = 150)
+	public int sceWlanDrv_lib_40B0AA4A() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x4ADEA1CF, version = 150)
+	public int sceWlanDrv_lib_4ADEA1CF() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x4C14BACA, version = 150)
+	public int sceWlanDrv_lib_4C14BACA() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x6D5C839E, version = 150)
+	public int sceWlanDrv_lib_6D5C839E() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x7FF54BD2, version = 150)
+	public int sceWlanDrv_lib_7FF54BD2() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x81579D36, version = 150)
+	public int sceWlanDrv_lib_81579D36() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x0387523A, version = 150)
+	public int sceWlanDrv_driver_0387523A() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x041810C3, version = 150)
+	public int sceWlanDrv_driver_041810C3() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x53F89D4E, version = 150)
+	public int sceWlanDrv_driver_53F89D4E() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x5E3A5AD3, version = 150)
+	public int sceWlanDrv_driver_5E3A5AD3() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x60A078E9, version = 150)
+	public int sceWlanDrv_driver_60A078E9() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x67645D5F, version = 150)
+	public int sceWlanDrv_driver_67645D5F() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x7C0EC2A9, version = 150)
+	public int sceWlanDrv_driver_7C0EC2A9() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x7DD3787C, version = 150)
+	public int sceWlanDrv_driver_7DD3787C() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0xA082E6A2, version = 150)
+	public int sceWlanDrv_driver_A082E6A2() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0xA9E6A56D, version = 150)
+	public int sceWlanDrv_driver_A9E6A56D() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0xB17481BB, version = 150)
+	public int sceWlanDrv_driver_B17481BB() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0xC4BCD411, version = 150)
+	public int sceWlanDrv_driver_C4BCD411() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0xEDD207B1, version = 150)
+	public int sceWlanDrv_driver_EDD207B1() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0xEE744B5C, version = 150)
+	public int sceWlanDrv_driver_EE744B5C() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0xF713143F, version = 150)
+	public int sceWlanDrv_driver_F713143F() {
+		return 0;
+	}
 }

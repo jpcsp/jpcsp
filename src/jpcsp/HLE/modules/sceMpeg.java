@@ -3596,4 +3596,16 @@ public class sceMpeg extends HLEModule {
 
 		return 0;
     }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x42C679F6, version = 150)
+    public int sceMpeg_42C679F6() {
+        return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x75E21135, version = 150)
+    public int sceMpeg_75E21135() {
+        return 0;
+    }
 }

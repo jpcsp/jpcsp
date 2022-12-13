@@ -36,7 +36,6 @@ public class sceMeAudio extends HLEModule {
 	public static final int AUDIOCODEC_AT3P_UNKNOWN_64 = 0x2E8;
 
     // Called by sceAudiocodecCheckNeedMem
-	@HLEUnimplemented
 	@HLEFunction(nid = 0x81956A0B, version = 150)
 	public int sceMeAudio_driver_81956A0B(int codecType, TPointer workArea) {
 		int neededMem = 0;
@@ -67,14 +66,12 @@ public class sceMeAudio extends HLEModule {
 	}
 
 	// Called by sceAudiocodecInit
-	@HLEUnimplemented
 	@HLEFunction(nid = 0x6AD33F60, version = 150)
 	public int sceMeAudio_driver_6AD33F60(int codecType, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=audiocodecBufferSize, usage=Usage.inout) TPointer workArea) {
 		return Modules.sceAudiocodecModule.hleAudiocodecInit(workArea, codecType, 2);
 	}
 
 	// Called by sceAudiocodecDecode
-	@HLEUnimplemented
 	@HLEFunction(nid = 0x9A9E21EE, version = 150)
 	public int sceMeAudio_driver_9A9E21EE(int codecType, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=audiocodecBufferSize, usage=Usage.inout) TPointer workArea) {
 		return Modules.sceAudiocodecModule.hleAudiocodecDecode(workArea, codecType);

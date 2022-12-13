@@ -23,6 +23,7 @@ import static jpcsp.util.Utilities.writeUnaligned32;
 import org.apache.log4j.Logger;
 
 import jpcsp.HLE.BufferInfo;
+import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.BufferInfo.LengthInfo;
 import jpcsp.HLE.BufferInfo.Usage;
 import jpcsp.crypto.CryptoEngine;
@@ -164,5 +165,17 @@ public class memlmd extends HLEModule {
 	@HLEFunction(nid = 0xCF03556B, version = 660)
 	public int sceUtilsGetLoadModuleABLengthByPolling(@BufferInfo(lengthInfo = LengthInfo.nextParameter, usage = Usage.inout) TPointer loadModuleBuffer, int size, @BufferInfo(usage = Usage.out) TPointer32 lengthAddr) {
     	return sceUtilsGetLoadModuleABLength(loadModuleBuffer, size, lengthAddr);
+	}
+
+    @HLEUnimplemented
+	@HLEFunction(nid = 0xEA94592C, version = 660)
+	public int memlmd_EA94592C(@CanBeNull TPointer unknown1, int unknown2) {
+		return 0;
+	}
+
+    @HLEUnimplemented
+	@HLEFunction(nid = 0x76B7E315, version = 660)
+	public int memlmd_76B7E315(int unknown) {
+		return 0;
 	}
 }
