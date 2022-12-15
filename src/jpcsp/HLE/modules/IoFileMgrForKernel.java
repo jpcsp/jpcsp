@@ -84,4 +84,70 @@ public class IoFileMgrForKernel extends HLEModule {
     public int sceIoAddHook(@BufferInfo(lengthInfo = LengthInfo.fixedLength, length = 20, usage = Usage.in) TPointer hook) {
     	return 0;
     }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x18881E58, version = 150)
+    public int sceIoGetFdDebugInfo() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x1FC0620B, version = 150)
+    public int sceIoGetThreadCwd() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x49356C12, version = 150)
+    public int sceIoGetIobUserLevel() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x76DA16E3, version = 150)
+    public int sceIoTerminateFd() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x947D7A06, version = 150)
+    public int sceIoReopen() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xC30581F4, version = 150)
+    public int sceIoChangeThreadCwd() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xC658603A, version = 150)
+    public int sceIoCloseAll() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xDCCD6185, version = 150)
+    public int sceIoGetUID() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xE5323C5B, version = 150)
+    public int IoFileMgrForKernel_E5323C5B() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xE972F70B, version = 150)
+    public int IoFileMgrForKernel_E972F70B() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xE4D75BC0, version = 150)
+    public int g_deleted_error() {
+    	return 0;
+    }
 }

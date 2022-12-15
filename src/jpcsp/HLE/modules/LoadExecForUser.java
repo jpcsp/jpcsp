@@ -20,14 +20,17 @@ import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLELogging;
 import jpcsp.HLE.HLEModule;
+import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.PspString;
 import jpcsp.HLE.SceKernelErrorException;
+import jpcsp.HLE.TPointer;
 import jpcsp.HLE.TPointer32;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_PROHIBIT_LOADEXEC_DEVICE;
+import static jpcsp.HLE.Modules.scePspNpDrm_userModule;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_ILLEGAL_LOADEXEC_FILENAME;
 import jpcsp.Emulator;
 import jpcsp.GeneralJpcspException;
@@ -283,6 +286,72 @@ public class LoadExecForUser extends HLEModule {
     	mem.write32(parameterArea + 4, 0);
     	mem.write32(parameterArea + 8, -1);
 
+    	return 0;
+    }
+
+    @HLEFunction(nid = 0xAA5FC85B, version = 150, checkInsideInterrupt = true)
+    @HLEFunction(nid = 0x8ADA38D3, version = 150, checkInsideInterrupt = true)
+    public int sceKernelLoadExecNpDrm(PspString fileName, @CanBeNull TPointer optionAddr) {
+        // Flush system memory to mimic a real PSP reset.
+        Modules.SysMemUserForUserModule.reset();
+
+        byte[] key = null;
+        if (optionAddr.isNotNull()) {
+            int optSize = optionAddr.getValue32(0);  // Size of the option struct.
+            int argSize = optionAddr.getValue32(4);  // Number of args (strings).
+            int argAddr = optionAddr.getValue32(8);  // Pointer to a list of strings.
+            TPointer keyAddr = optionAddr.getPointer(12); // Pointer to an encryption key.
+
+            if (keyAddr.isNotNull()) {
+            	key = keyAddr.getArray8(16);
+            }
+
+            if (log.isDebugEnabled()) {
+                log.debug(String.format("sceKernelLoadExecNpDrm (params: optSize=%d, argSize=%d, argAddr=0x%08X, keyAddr=%s)", optSize, argSize, argAddr, keyAddr));
+            }
+        }
+
+        // SPRX modules can't be decrypted yet.
+        if (scePspNpDrm_userModule.isDLCDecryptionEnabled()) {
+            log.warn(String.format("sceKernelLoadExecNpDrm detected encrypted DLC module: %s", fileName.getString()));
+            return SceKernelErrors.ERROR_NPDRM_INVALID_PERM;
+        }
+
+        int result;
+        try {
+            SeekableDataInput moduleInput = Modules.IoFileMgrForUserModule.getFile(fileName.getString(), IoFileMgrForUser.PSP_O_RDONLY);
+            if (moduleInput != null) {
+                byte[] moduleBytes = new byte[(int) moduleInput.length()];
+                moduleInput.readFully(moduleBytes);
+                moduleInput.close();
+                ByteBuffer moduleBuffer = ByteBuffer.wrap(moduleBytes);
+
+                SceModule module = Emulator.getInstance().load(fileName.getString(), moduleBuffer, true, Modules.ModuleMgrForUserModule.isSignChecked(fileName.getString()), key);
+                Emulator.getClock().resume();
+
+                if ((module.fileFormat & Loader.FORMAT_ELF) == Loader.FORMAT_ELF) {
+                    result = 0;
+                } else {
+                    log.warn("sceKernelLoadExecNpDrm - failed, target is not an ELF");
+                    result = SceKernelErrors.ERROR_KERNEL_ILLEGAL_LOADEXEC_FILENAME;
+                }
+            } else {
+                result = SceKernelErrors.ERROR_KERNEL_PROHIBIT_LOADEXEC_DEVICE;
+            }
+        } catch (GeneralJpcspException e) {
+            log.error("sceKernelLoadExecNpDrm", e);
+            result = SceKernelErrors.ERROR_KERNEL_PROHIBIT_LOADEXEC_DEVICE;
+        } catch (IOException e) {
+            log.error(String.format("sceKernelLoadExecNpDrm - Error while loading module '%s'", fileName), e);
+            result = SceKernelErrors.ERROR_KERNEL_PROHIBIT_LOADEXEC_DEVICE;
+        }
+
+        return result;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xD1FB50DC, version = 500)
+    public int LoadExecForUser_D1FB50DC() {
     	return 0;
     }
 }

@@ -2272,7 +2272,15 @@ public class Utilities {
     	return (value & flag) != 0;
     }
 
+    public static boolean hasFlag(long value, long flag) {
+    	return (value & flag) != 0;
+    }
+
     public static boolean notHasFlag(int value, int flag) {
+    	return !hasFlag(value, flag);
+    }
+
+    public static boolean notHasFlag(long value, long flag) {
     	return !hasFlag(value, flag);
     }
 
@@ -2300,11 +2308,23 @@ public class Utilities {
     	return 1 << bit;
     }
 
+    public static long getLongFlagFromBit(int bit) {
+    	return 1L << bit;
+    }
+
     public static boolean hasBit(int value, int bit) {
     	return hasFlag(value, getFlagFromBit(bit));
     }
 
     public static boolean notHasBit(int value, int bit) {
+    	return !hasBit(value, bit);
+    }
+
+    public static boolean hasBit(long value, int bit) {
+    	return hasFlag(value, getLongFlagFromBit(bit));
+    }
+
+    public static boolean notHasBit(long value, int bit) {
     	return !hasBit(value, bit);
     }
 

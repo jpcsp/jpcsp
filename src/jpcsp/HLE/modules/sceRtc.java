@@ -175,6 +175,7 @@ public class sceRtc extends HLEModule {
     }
 
     @HLEFunction(nid = 0x779242A2, version = 150)
+    @HLEFunction(nid = 0x3E66CB7E, version = 660)
     public int sceRtcConvertLocalTimeToUTC(TPointer64 localPtr, TPointer64 utcPtr) {
     	// Subtract the offset of the local time zone to UTC
         TimeZone localTimeZone = getLocalTimeZone();
@@ -184,11 +185,13 @@ public class sceRtc extends HLEModule {
     }
 
     @HLEFunction(nid = 0x42307A17, version = 150)
+    @HLEFunction(nid = 0x00F66D06, version = 660)
     public boolean sceRtcIsLeapYear(int year) {
         return (year % 4 == 0) && (year % 100 != 0) || (year % 400 == 0);
     }
 
     @HLEFunction(nid = 0x05EF322C, version = 150)
+    @HLEFunction(nid = 0x1DAB3CF3, version = 660)
     public int sceRtcGetDaysInMonth(int year, int month) {
         Calendar cal = new GregorianCalendar(year, month - 1, 1);
         int days = cal.getActualMaximum(Calendar.DAY_OF_MONTH);
@@ -211,6 +214,7 @@ public class sceRtc extends HLEModule {
      * @return The day of the week.
      */
     @HLEFunction(nid = 0x57726BC1, version = 150)
+    @HLEFunction(nid = 0x321A839A, version = 660)
     public int sceRtcGetDayOfWeek(int year, int month, int day) {
         Calendar cal = Calendar.getInstance();
         cal.set(year, month - 1, day);
@@ -265,6 +269,7 @@ public class sceRtc extends HLEModule {
     }
 
     @HLEFunction(nid = 0x3A807CC8, version = 150)
+    @HLEFunction(nid = 0x40B07E72, version = 660)
     public int sceRtcSetTime_t(TPointer dateAddr, int time) {
         ScePspDateTime dateTime = ScePspDateTime.fromUnixTime(time);
         dateTime.write(dateAddr);
@@ -273,6 +278,7 @@ public class sceRtc extends HLEModule {
     }
 
     @HLEFunction(nid = 0x27C4594C, version = 150)
+    @HLEFunction(nid = 0xE86D8FC0, version = 660)
     public int sceRtcGetTime_t(ScePspDateTime dateTime, TPointer32 timeAddr) {
         Calendar cal = Calendar.getInstance();
         cal.set(dateTime.year, dateTime.month - 1, dateTime.day, dateTime.hour, dateTime.minute, dateTime.second);
@@ -313,6 +319,7 @@ public class sceRtc extends HLEModule {
     }
 
     @HLEFunction(nid = 0x7ACE4C04, version = 150)
+    @HLEFunction(nid = 0xCEF8FE8E, version = 660)
     public int sceRtcSetWin32FileTime(TPointer dateAddr, long time) {
         ScePspDateTime dateTime = ScePspDateTime.fromFILETIMETime(time);
         dateTime.write(dateAddr);
@@ -321,6 +328,7 @@ public class sceRtc extends HLEModule {
     }
 
     @HLEFunction(nid = 0xCF561893, version = 150)
+    @HLEFunction(nid = 0xB2B6578C, version = 660)
     public int sceRtcGetWin32FileTime(ScePspDateTime dateTime, TPointer64 timeAddr) {
         Calendar cal = Calendar.getInstance();
         cal.set(dateTime.year, dateTime.month - 1, dateTime.day, dateTime.hour, dateTime.minute, dateTime.second);
@@ -364,6 +372,7 @@ public class sceRtc extends HLEModule {
     }
 
     @HLEFunction(nid = 0x9ED0AE87, version = 150)
+    @HLEFunction(nid = 0x281144FE, version = 660)
     public int sceRtcCompareTick(TPointer64 firstPtr, TPointer64 secondPtr) {
         long tick1 = firstPtr.getValue();
         long tick2 = secondPtr.getValue();
@@ -384,48 +393,56 @@ public class sceRtc extends HLEModule {
     }
 
     @HLEFunction(nid = 0x26D25A5D, version = 150)
+    @HLEFunction(nid = 0xB84AC7D7, version = 660)
     public int sceRtcTickAddMicroseconds(TPointer64 dstPtr, TPointer64 srcPtr, long value) {
         log.debug("sceRtcTickAddMicroseconds redirecting to hleRtcTickAdd64(1)");
         return hleRtcTickAdd64(dstPtr, srcPtr, value, 1);
     }
 
     @HLEFunction(nid = 0xF2A4AFE5, version = 150)
+    @HLEFunction(nid = 0x89FA4262, version = 660)
     public int sceRtcTickAddSeconds(TPointer64 dstPtr, TPointer64 srcPtr, long value) {
         log.debug("sceRtcTickAddSeconds redirecting to hleRtcTickAdd64(1000000)");
         return hleRtcTickAdd64(dstPtr, srcPtr, value, 1000000L);
     }
 
     @HLEFunction(nid = 0xE6605BCA, version = 150)
+    @HLEFunction(nid = 0x77138347, version = 660)
     public int sceRtcTickAddMinutes(TPointer64 dstPtr, TPointer64 srcPtr, long value) {
         log.debug("sceRtcTickAddMinutes redirecting to hleRtcTickAdd64(60*1000000)");
         return hleRtcTickAdd64(dstPtr, srcPtr, value, PSP_TIME_SECONDS_IN_MINUTE * 1000000L);
     }
 
     @HLEFunction(nid = 0x26D7A24A, version = 150)
+    @HLEFunction(nid = 0x8413CADC, version = 660)
     public int sceRtcTickAddHours(TPointer64 dstPtr, TPointer64 srcPtr, int value) {
         log.debug("sceRtcTickAddHours redirecting to hleRtcTickAdd32(60*60*1000000)");
         return hleRtcTickAdd32(dstPtr, srcPtr, value, PSP_TIME_SECONDS_IN_HOUR * 1000000L);
     }
 
     @HLEFunction(nid = 0xE51B4B7A, version = 150)
+    @HLEFunction(nid = 0xCB0538FD, version = 660)
     public int sceRtcTickAddDays(TPointer64 dstPtr, TPointer64 srcPtr, int value) {
         log.debug("sceRtcTickAddDays redirecting to hleRtcTickAdd32(24*60*60*1000000)");
         return hleRtcTickAdd32(dstPtr, srcPtr, value, PSP_TIME_SECONDS_IN_DAY * 1000000L);
     }
 
     @HLEFunction(nid = 0xCF3A2CA8, version = 150)
+    @HLEFunction(nid = 0x80F21937, version = 660)
     public int sceRtcTickAddWeeks(TPointer64 dstPtr, TPointer64 srcPtr, int value) {
         log.debug("sceRtcTickAddWeeks redirecting to hleRtcTickAdd32(7*24*60*60*1000000)");
         return hleRtcTickAdd32(dstPtr, srcPtr, value, PSP_TIME_SECONDS_IN_WEEK * 1000000L);
     }
 
     @HLEFunction(nid = 0xDBF74F1B, version = 150)
+    @HLEFunction(nid = 0xE45726F6, version = 660)
     public int sceRtcTickAddMonths(TPointer64 dstPtr, TPointer64 srcPtr, int value) {
         log.debug("sceRtcTickAddMonths redirecting to hleRtcTickAdd32(30*24*60*60*1000000)");
         return hleRtcTickAdd32(dstPtr, srcPtr, value, PSP_TIME_SECONDS_IN_MONTH * 1000000L);
     }
 
     @HLEFunction(nid = 0x42842C77, version = 150)
+    @HLEFunction(nid = 0xAAAE90FF, version = 660)
     public int sceRtcTickAddYears(TPointer64 dstPtr, TPointer64 srcPtr, int value) {
         log.debug("sceRtcTickAddYears redirecting to hleRtcTickAdd32(365*24*60*60*1000000)");
         return hleRtcTickAdd32(dstPtr, srcPtr, value, PSP_TIME_SECONDS_IN_YEAR * 1000000L);
@@ -433,23 +450,27 @@ public class sceRtc extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0xC663B3B9, version = 150)
+    @HLEFunction(nid = 0x1A86F5FD, version = 660)
     public int sceRtcFormatRFC2822() {
     	return 0;
     }
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x7DE6711B, version = 150)
+    @HLEFunction(nid = 0x27FAEC90, version = 660)
     public int sceRtcFormatRFC2822LocalTime() {
     	return 0;
     }
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x0498FB3C, version = 150)
+    @HLEFunction(nid = 0x1FCE9E23, version = 660)
     public int sceRtcFormatRFC3339() {
     	return 0;
     }
 
     @HLEFunction(nid = 0x27F98543, version = 150)
+    @HLEFunction(nid = 0x8DED141A, version = 660)
     public int sceRtcFormatRFC3339LocalTime(TPointer resultString, TPointer64 srcPtr) {
     	Date date = getDateFromTick(srcPtr.getValue());
     	String result = formatRFC3339(date);
@@ -465,12 +486,14 @@ public class sceRtc extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0xDFBC5F16, version = 150)
+    @HLEFunction(nid = 0xC3A806EE, version = 660)
     public int sceRtcParseDateTime() {
     	return 0;
     }
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x28E1E988, version = 150)
+    @HLEFunction(nid = 0xBDA60897, version = 660)
     public int sceRtcParseRFC3339() {
     	return 0;
     }
@@ -487,6 +510,7 @@ public class sceRtc extends HLEModule {
     }
 
 	@HLEFunction(nid = 0x203CEB0D, version = 200)
+	@HLEFunction(nid = 0x7C6E9610, version = 660)
 	public int sceRtcGetLastReincarnatedTime(TPointer64 tickAddr) {
         // Returns the last tick that was saved upon a battery shutdown.
         // Just return our current tick, since there's no need to mimick such behavior.
@@ -496,6 +520,7 @@ public class sceRtc extends HLEModule {
 	}
 
 	@HLEFunction(nid = 0x62685E98, version = 200)
+	@HLEFunction(nid = 0xE98FEC46, version = 660)
 	public int sceRtcGetLastAdjustedTime(TPointer64 tickAddr) {
         // Returns the last time that was manually set by the user.
         // Just return our current tick, since there's no need to mimick such behavior.
@@ -505,6 +530,7 @@ public class sceRtc extends HLEModule {
 	}
 
 	@HLEFunction(nid = 0x1909C99B, version = 200)
+	@HLEFunction(nid = 0xCF4E0EE0, version = 660)
 	public int sceRtcSetTime64_t(TPointer dateAddr, long time) {
         ScePspDateTime dateTime = ScePspDateTime.fromUnixTime(time);
         dateTime.write(dateAddr);
@@ -513,6 +539,7 @@ public class sceRtc extends HLEModule {
 	}
 
 	@HLEFunction(nid = 0xE1C93E47, version = 200)
+	@HLEFunction(nid = 0x94225550, version = 660)
 	public int sceRtcGetTime64_t(ScePspDateTime dateTime, TPointer64 timeAddr) {
         Calendar cal = Calendar.getInstance();
         cal.set(dateTime.year, dateTime.month - 1, dateTime.day, dateTime.hour, dateTime.minute, dateTime.second);
@@ -529,18 +556,21 @@ public class sceRtc extends HLEModule {
 
 	@HLEUnimplemented
 	@HLEFunction(nid = 0xFB3B18CD, version = 271)
+	@HLEFunction(nid = 0x530A903E, version = 660)
 	public int sceRtcRegisterCallback(int callbackId) {
 		return 0;
 	}
 
 	@HLEUnimplemented
 	@HLEFunction(nid = 0x6A676D2D, version = 271)
+	@HLEFunction(nid = 0x7D8E37E1, version = 660)
 	public int sceRtcUnregisterCallback(int callbackId) {
 		return 0;
 	}
 
 	@HLEUnimplemented
 	@HLEFunction(nid = 0xF5FCC995 , version = 150)
+	@HLEFunction(nid = 0xED15334F , version = 660)
 	public int sceRtcGetCurrentNetworkTick(TPointer64 networkTick) {
 		networkTick.setValue(hleGetCurrentTick());
 
@@ -553,6 +583,7 @@ public class sceRtc extends HLEModule {
 
 	@HLEUnimplemented
 	@HLEFunction(nid = 0xC2DDBEB5, version = 150)
+	@HLEFunction(nid = 0x366669D6, version = 660)
 	public int sceRtcGetAlarmTick(TPointer64 alarmTick) {
 		alarmTick.setValue(0L);
 
@@ -561,6 +592,7 @@ public class sceRtc extends HLEModule {
 
 	@HLEUnimplemented
     @HLEFunction(nid = 0xCEEF238F, version = 150)
+    @HLEFunction(nid = 0xB44BDAED, version = 660)
     public int sceRtcGetCurrentSecureTick(TPointer64 currentTick) {
 		return sceRtcGetCurrentTick(currentTick);
     }
@@ -573,8 +605,79 @@ public class sceRtc extends HLEModule {
     }
 
 	@HLEUnimplemented
-    @HLEFunction(nid = 0x508BA64B, version = 150)
-    public int sceRtc_508BA64B(@CanBeNull @BufferInfo(usage=Usage.in) TPointer64 unknown) {
+	@HLEFunction(nid = 0x17C26C00, version = 150)
+	@HLEFunction(nid = 0x66054C2A, version = 660)
+	public int sceRtcSetCurrentSecureTick() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x48D07D70, version = 150)
+	public int sceRtcResume() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x81FCDA34, version = 150)
+	@HLEFunction(nid = 0xCF76CFE5, version = 660)
+	public int sceRtcIsAlarmed() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+    @HLEFunction(nid = 0x508BA64B, version = 660)
+    public int sceRtc_driver_508BA64B(@CanBeNull @BufferInfo(usage=Usage.in) TPointer64 unknown) {
 		return 0;
     }
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x912BEE56, version = 150)
+	public int sceRtcInit() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x9763C138, version = 150)
+	@HLEFunction(nid = 0x929620CE, version = 660)
+	public int sceRtcSetCurrentTick() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x9CC2797E, version = 150)
+	public int sceRtcSuspend() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0xC0F36B91, version = 150)
+	public int sceRtc_driver_C0F36B91() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0xC66D9686, version = 150)
+	public int sceRtc_driver_C66D9686() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0xCE27DE2F, version = 150)
+	public int sceRtcEnd() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0xC499AF2F, version = 150)
+	@HLEFunction(nid = 0x1C1859DF, version = 660)
+	public int sceRtcReset() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0xF0B5571C, version = 150)
+	@HLEFunction(nid = 0x852255B8, version = 660)
+	public int sceRtcSynchronize() {
+		return 0;
+	}
 }

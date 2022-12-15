@@ -147,4 +147,190 @@ public class LoadExecForKernel extends HLEModule {
     public int sceKernelLoadExec_11412288(TPointer callback) {
     	return 0;
     }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x00745486, version = 150)
+    public int sceKernelLoadExecVSHMs4() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x032A7938, version = 150)
+    public int LoadExecForKernel_032A7938() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x077BA314, version = 150)
+    public int LoadExecForKernel_077BA314() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x16A68007, version = 150)
+    public int LoadExecForKernel_16A68007() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x1B305B09, version = 150)
+    public int sceKernelLoadExecVSHDiscDebug() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x1B8AB02E, version = 150)
+    public int LoadExecForKernel_1B8AB02E() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x1F08547A, version = 150)
+    public int sceKernelInvokeExitCallback() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x1F88A490, version = 150)
+    public int sceKernelRegisterExitCallback() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x24114598, version = 150)
+    public int sceKernelUnregisterExitCallback() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x2B8813AF, version = 150)
+    public int sceKernelLoadExecBufferVSHUsbWlanDebug() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x40564748, version = 150)
+    public int LoadExecForKernel_40564748() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x47A5A49C, version = 150)
+    public int LoadExecForKernel_47A5A49C() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x4FB44D27, version = 150)
+    public int sceKernelLoadExecVSHMs1() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x7CABED9B, version = 150)
+    public int sceKernelLoadExecVSHMs5() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x7CAFE77F, version = 150)
+    public int LoadExecForKernel_7CAFE77F() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x87C3589C, version = 150)
+    public int LoadExecForKernel_87C3589C() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x8C4679D3, version = 150)
+    public int LoadExecForKernel_8C4679D3() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x9BD32619, version = 150)
+    public int LoadExecForKernel_9BD32619() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xA6658F10, version = 150)
+    public int LoadExecForKernel_A6658F10() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xB343FDAB, version = 150)
+    public int LoadExecForKernel_B343FDAB() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xB57D0DEC, version = 150)
+    public int sceKernelCheckExitCallback() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xBC26BEEF, version = 150)
+    public int LoadExecForKernel_BC26BEEF() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xC11E6DF1, version = 150)
+    public int LoadExecForKernel_C11E6DF1() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xC540E3B3, version = 150)
+    public int LoadExecForKernel_C540E3B3() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xC7C83B1E, version = 150)
+    public int LoadExecForKernel_C7C83B1E() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xCC6A47D2, version = 150)
+    public int sceKernelLoadExecVSHMs3() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xD4B49C4B, version = 150)
+    public int sceKernelLoadExecVSHDiscUpdater() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xDBD0CF1B, version = 150)
+    public int LoadExecForKernel_DBD0CF1B() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xE1972A24, version = 150)
+    public int LoadExecForKernel_E1972A24() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xE704ECC3, version = 150)
+    public int LoadExecForKernel_E704ECC3() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xAE9EFC0D, version = 150)
+    public int _unkCbInfo() {
+    	return 0;
+    }
 }

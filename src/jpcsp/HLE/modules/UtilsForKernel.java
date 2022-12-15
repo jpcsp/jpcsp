@@ -30,6 +30,7 @@ import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.TPointer32;
+import jpcsp.HLE.TPointerFunction;
 
 import java.io.IOException;
 import java.util.zip.Inflater;
@@ -39,6 +40,10 @@ import org.apache.log4j.Logger;
 
 public class UtilsForKernel extends HLEModule {
     public static Logger log = Modules.getLogger("UtilsForKernel");
+    public TPointerFunction clockHandler;
+    public TPointerFunction timeHandler;
+    public TPointerFunction getTimeOfDayHandler;
+    public TPointerFunction rtcTickHandler;
 
     @HLEUnimplemented
     @HLEFunction(nid = 0xA6B0A6B8, version = 150)
@@ -103,9 +108,28 @@ public class UtilsForKernel extends HLEModule {
     	return decompressedLength;
     }
 
-    @HLEUnimplemented
     @HLEFunction(nid = 0x78934841, version = 150)
     public int sceKernelGzipDecompress(@BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.out) TPointer dest, int destSize, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=0x100, usage=Usage.in) TPointer src, @CanBeNull @BufferInfo(usage=Usage.out) TPointer32 crc32Addr) {
     	return Modules.sceDefltModule.sceGzipDecompress(dest, destSize, src, crc32Addr);
+    }
+
+    @HLEFunction(nid = 0x23A0C5BA, version = 150)
+    public int sceKernelRegisterRtcFunc(TPointerFunction clockHandler, TPointerFunction timeHandler, TPointerFunction getTimeOfDayHandler, TPointerFunction rtcTickHandler) {
+    	this.clockHandler = clockHandler;
+    	this.timeHandler = timeHandler;
+    	this.getTimeOfDayHandler = getTimeOfDayHandler;
+    	this.rtcTickHandler = rtcTickHandler;
+
+    	return 0;
+    }
+
+    @HLEFunction(nid = 0x41887EF4, version = 150)
+    public int sceKernelReleaseRtcFunc() {
+    	clockHandler = TPointerFunction.NULL;
+    	timeHandler = TPointerFunction.NULL;
+    	getTimeOfDayHandler = TPointerFunction.NULL;
+    	rtcTickHandler = TPointerFunction.NULL;
+
+    	return 0;
     }
 }

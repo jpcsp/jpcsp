@@ -16,6 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules;
 
+import static jpcsp.HLE.Modules.ThreadManForUserModule;
 import static jpcsp.hardware.Model.MODEL_PSP_STREET;
 import static jpcsp.hardware.Model.getModel;
 import static jpcsp.util.Utilities.setBit;
@@ -24,6 +25,7 @@ import java.util.Arrays;
 
 import org.apache.log4j.Logger;
 
+import jpcsp.Emulator;
 import jpcsp.HLE.BufferInfo;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLEModule;
@@ -31,6 +33,7 @@ import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.TPointer32;
+import jpcsp.HLE.TPointerFunction;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.BufferInfo.LengthInfo;
 import jpcsp.HLE.BufferInfo.Usage;
@@ -137,8 +140,53 @@ public class sceSyscon extends HLEModule {
     private int alarm;
     private int tachyonTemp = 13094; // Unsigned value, expected to be larger or equal to 13094
     private int polestarStatusCount;
+    private final Callback[] callbacks = new Callback[SceSysconCallbacks.SYSCON_CB_COUNT.ordinal()];
 
-	@Override
+    private static enum SceSysconCallbacks {
+        SYSCON_CB_LOW_BATTERY,
+        SYSCON_CB_POWER_SWITCH,
+        SYSCON_CB_ALARM,
+        SYSCON_CB_AC_SUPPLY,
+        SYSCON_CB_HP_CONNECT,
+        SYSCON_CB_WLAN_SWITCH,
+        SYSCON_CB_HOLD_SWITCH,
+        SYSCON_CB_UMD_SWITCH,
+        SYSCON_CB_HR_POWER,
+        SYSCON_CB_WLAN_POWER,
+        SYSCON_CB_GSENSOR,
+        UNUSED,
+        SYSCON_CB_BT_POWER,
+        SYSCON_CB_BT_SWITCH,
+        SYSCON_CB_HR_WAKEUP,
+        SYSCON_CB_AC_SUPPLY2,
+        SYSCON_CB_HR_UNK16,
+        SYSCON_CB_HR_UNK17,
+        SYSCON_CB_UNK18,
+        SYSCON_CB_USB_UNK19,
+        SYSCON_CB_COUNT
+    }
+
+    protected static class Callback {
+    	private TPointerFunction callback;
+    	private int param;
+    	private int gp;
+
+    	public Callback(TPointerFunction callback, int param) {
+			this.callback = callback;
+			this.param = param;
+			gp = Emulator.getProcessor().cpu._gp;
+		}
+
+    	public void call(boolean enabled) {
+    		if (callback == null || callback.isNull()) {
+    			return;
+    		}
+
+    		ThreadManForUserModule.executeCallback(callback.getAddress(), gp, null, enabled ? 1 : 0, param);
+    	}
+    }
+
+    @Override
 	public void start() {
 		Arrays.fill(scratchPad, 0);
 
@@ -392,6 +440,12 @@ public class sceSyscon extends HLEModule {
     	log.error(String.format("writePolestarRegister unimplemented reg=0x%02X, value=0x%04X", reg, value));
     }
 
+    private int hleSysconSetCallback(TPointerFunction callback, int param, SceSysconCallbacks id) {
+    	callbacks[id.ordinal()] = new Callback(callback, param);
+
+    	return 0;
+    }
+
     /**
      * Set the wlan switch callback, that will be ran when the wlan switch changes.
      *
@@ -400,10 +454,9 @@ public class sceSyscon extends HLEModule {
      *
      * @return 0.
      */
-    @HLEUnimplemented
 	@HLEFunction(nid = 0x50446BE5, version = 150)
-	public int sceSysconSetWlanSwitchCallback(TPointer callback, int argp) {
-    	return 0;
+	public int sceSysconSetWlanSwitchCallback(TPointerFunction callback, int argp) {
+    	return hleSysconSetCallback(callback, argp, SceSysconCallbacks.SYSCON_CB_WLAN_SWITCH);
 	}
 
     /**
@@ -442,10 +495,13 @@ public class sceSyscon extends HLEModule {
      *
      * @return 0 on success.
      */
-    @HLEUnimplemented
 	@HLEFunction(nid = 0x48448373, version = 150)
 	public int sceSysconCtrlWlanPower(boolean power) {
-    	return 0;
+		if (!power) {
+			log.warn(String.format("sceSysconCtrlWlanPower power=%b", power));
+		}
+
+		return 0;
 	}
 
     /**
@@ -500,13 +556,34 @@ public class sceSyscon extends HLEModule {
      * Reset the device.
      *
      * @param device The device identifier, passed to the syscon.
-     * @param reset The resetting mode ([0, 1 or 2]).
+     * @param mode The resetting mode ([0, 1 or 2]).
      * 
      * @return 0 on success.
      */
-    @HLEUnimplemented
 	@HLEFunction(nid = 0x8CBC7987, version = 150)
-	public int sceSysconResetDevice(int device, int reset) {
+	public int sceSysconResetDevice(int device, int mode) {
+		switch (device) {
+			case PSP_SYSCON_DEVICE_PSP:
+				if (mode != 1 && mode != 2) {
+					return SceKernelErrors.ERROR_INVALID_MODE;
+				}
+				log.warn(String.format("sceSysconResetDevice device=PSP, mode=%d", mode));
+				break;
+			case PSP_SYSCON_DEVICE_UMD:
+				log.warn(String.format("sceSysconResetDevice device=UMD, mode=%d", mode));
+				break;
+			case PSP_SYSCON_DEVICE_WLAN:
+				if (log.isDebugEnabled()) {
+					log.debug(String.format("sceSysconResetDevice device=WLAN, mode=%d", mode));
+				}
+				break;
+			case PSP_SYSCON_DEVICE_BT:
+				log.warn(String.format("sceSysconResetDevice device=BlueTooth, mode=%d", mode));
+				break;
+			default:
+				log.warn(String.format("sceSysconResetDevice unknown device=%d, mode=%d", device, mode));
+				break;
+		}
     	return 0;
 	}
 
@@ -917,11 +994,10 @@ public class sceSyscon extends HLEModule {
      * @param callbackArgument The second argument that will be passed to the callback.
      * @return                 0.
      */
-    @HLEUnimplemented
 	@HLEFunction(nid = 0xAD555CE5, version = 150)
 	@HLEFunction(nid = 0x599EB8A0, version = 660)
-	public int sceSysconSetLowBatteryCallback(TPointer callback, int callbackArgument) {
-    	return 0;
+	public int sceSysconSetLowBatteryCallback(TPointerFunction callback, int callbackArgument) {
+    	return hleSysconSetCallback(callback, callbackArgument, SceSysconCallbacks.SYSCON_CB_LOW_BATTERY);
     }
 
     @HLEUnimplemented
@@ -938,11 +1014,10 @@ public class sceSyscon extends HLEModule {
      * @param callbackArgument The second argument that will be passed to the callback.
      * @return                 0.
      */
-    @HLEUnimplemented
 	@HLEFunction(nid = 0xE540E532, version = 150)
 	@HLEFunction(nid = 0x657DCEF7, version = 660)
-	public int sceSysconSetAcSupplyCallback(TPointer callback, int callbackArgument) {
-    	return 0;
+	public int sceSysconSetAcSupplyCallback(TPointerFunction callback, int callbackArgument) {
+    	return hleSysconSetCallback(callback, callbackArgument, SceSysconCallbacks.SYSCON_CB_AC_SUPPLY);
     }
 
     /**
@@ -1018,7 +1093,8 @@ public class sceSyscon extends HLEModule {
      * @return      0 on success.
      */
     @HLEUnimplemented
-	@HLEFunction(nid = 0x7208FF18, version = 661)
+	@HLEFunction(nid = 0x9C4266FC, version = 150)
+	@HLEFunction(nid = 0x7E3A82AF, version = 660)
 	public int sceSysconCtrlBtPower(boolean power) {
     	return 0;
     }
@@ -1029,16 +1105,616 @@ public class sceSyscon extends HLEModule {
     	return 0;
     }
 
-    @HLEUnimplemented
-	@HLEFunction(nid = 0x9BC5E33B, version = 660)
-	public int sceSyscon_driver_9BC5E33B(int unknown) {
-    	return 0;
-    }
-
 	@HLEFunction(nid = 0x3B657A27)
 	public int sceSysconGetTachyonTemp(TPointer32 tempAddr) {
     	tempAddr.setValue(getTachyonTemp());
 
     	return 0;
     }
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x011AC062, version = 150)
+	public int sceSysconBatteryGetElecAD() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x01792223, version = 150)
+	public int sceSysconGetHoldSwitch() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x031CCDD7, version = 150)
+	public int sceSysconBatteryGetSerial() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x040982CD, version = 150)
+	public int sceSyscon_driver_040982CD() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x05734D21, version = 150)
+	public int sceSysconIsFalling() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x081826B4, version = 150)
+	public int sceSysconSuspend() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x09076E54, version = 150)
+	public int sceSysconGetBattVoltAD() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x0A771482, version = 150)
+	public int sceSysconInit() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x0E4FC766, version = 150)
+	public int sceSysconSetPollingMode() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x0E5FA7EA, version = 150)
+	public int sceSysconGetFallingDetectTime() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x1083C71D, version = 150)
+	public int sceSysconGetWlanLedCtrl() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x12518439, version = 150)
+	public int sceSyscon_driver_12518439() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x138747DE, version = 150)
+	public int sceSysconGetUmdSwitch() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x1602ED0D, version = 150)
+	public int sceSysconCmdCancel() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x17E7753D, version = 150)
+	public int sceSysconPowerSuspend() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x1C5D4229, version = 150)
+	public int sceSysconCtrlTachyonVmePower() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x204F23FF, version = 150)
+	public int sceSysconGetBaryonStatus2() {
+		return 0;
+	}
+
+	@HLEFunction(nid = 0x21AC8621, version = 150)
+	public int sceSysconSetHRPowerCallback(TPointerFunction callback, int callbackArgument) {
+    	return hleSysconSetCallback(callback, callbackArgument, SceSysconCallbacks.SYSCON_CB_HR_POWER);
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x248335CD, version = 150)
+	public int sceSyscon_driver_248335CD() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x26307D84, version = 150)
+	public int sceSyscon_driver_26307D84() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x27F94EE6, version = 150)
+	public int sceSysconForbidChargeBattery() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x28F7032E, version = 150)
+	public int _sceSysconGetUsbPowerType() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x294A7ED9, version = 150)
+	public int sceSysconGetGSensorCarib() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x2B6BA4AB, version = 150)
+	public int sceSysconBatteryGetVoltAD() {
+		return 0;
+	}
+
+	@HLEFunction(nid = 0x2B7A0D32, version = 150)
+	public int sceSysconSetAlarmCallback(TPointerFunction callback, int callbackArgument) {
+    	return hleSysconSetCallback(callback, callbackArgument, SceSysconCallbacks.SYSCON_CB_ALARM);
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x2BE8EBC2, version = 150)
+	public int sceSysconSetUSBStatus() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x3032943A, version = 150)
+	public int sceSysconGetBtPowerCtrl() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x327A82F2, version = 150)
+	public int sceSysconCtrlAnalogXYPolling() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x374373A8, version = 150)
+	public int sceSyscon_driver_374373A8() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x38CBE06E, version = 150)
+	public int sceSysconGetTachyonWDTStatus() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x38DA2411, version = 150)
+	public int sceSysconGetBattVolt() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x3932315D, version = 150)
+	public int sceSysconGetTachyonAvcPowerCtrl() {
+		return 0;
+	}
+
+	@HLEFunction(nid = 0x39456DE1, version = 150)
+	public int sceSysconSetHRWakeupCallback(TPointerFunction callback, int callbackArgument) {
+    	return hleSysconSetCallback(callback, callbackArgument, SceSysconCallbacks.SYSCON_CB_HR_WAKEUP);
+	}
+
+	@HLEFunction(nid = 0x399708EB, version = 150)
+	public int sceSysconSetHoldSwitchCallback(TPointerFunction callback, int callbackArgument) {
+    	return hleSysconSetCallback(callback, callbackArgument, SceSysconCallbacks.SYSCON_CB_HOLD_SWITCH);
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x3DE38336, version = 150)
+	public int sceSysconReadPommelReg() {
+		return 0;
+	}
+
+	@HLEFunction(nid = 0x3E0C521B, version = 150)
+	public int sceSysconSetGSensorCallback(TPointerFunction callback, int callbackArgument) {
+    	return hleSysconSetCallback(callback, callbackArgument, SceSysconCallbacks.SYSCON_CB_GSENSOR);
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x3E16A759, version = 150)
+	public int sceSysconBatteryGetCap() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x3E4BD909, version = 150)
+	public int sceSysconGetDigitalKey() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x3FA9F842, version = 150)
+	public int sceSysconBatteryGetStatus() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x3FB3FD08, version = 150)
+	public int sceSysconWriteClock() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x457D8D7C, version = 150)
+	public int sceSysconCtrlLcdPower() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x47378317, version = 150)
+	public int sceSysconCtrlUsbPower() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x47C04A04, version = 150)
+	public int sceSysconGetPowerSwitch() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x56931095, version = 150)
+	public int sceSysconResume() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x579A30EA, version = 150)
+	public int sceSysconGetBtSwitch() {
+		return 0;
+	}
+
+	@HLEFunction(nid = 0x5C4C1130, version = 150)
+	public int sceSysconSetBtPowerCallback(TPointerFunction callback, int callbackArgument) {
+    	return hleSysconSetCallback(callback, callbackArgument, SceSysconCallbacks.SYSCON_CB_BT_POWER);
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x5EDEDED6, version = 150)
+	public int sceSysconPermitChargeBattery() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x5EE92F3C, version = 150)
+	public int sceSysconSetDebugHandlers() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x64257B5C, version = 150)
+	public int sceSysconGetHddPowerCtrl() {
+		return 0;
+	}
+
+	@HLEFunction(nid = 0x672B79E8, version = 150)
+	public int sceSysconSetHPConnectCallback(TPointerFunction callback, int callbackArgument) {
+    	return hleSysconSetCallback(callback, callbackArgument, SceSysconCallbacks.SYSCON_CB_HP_CONNECT);
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x67B66898, version = 150)
+	public int sceSysconGetBtPowerStatus() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x6C388E02, version = 150)
+	public int sceSyscon_driver_6C388E02() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x755CF72B, version = 150)
+	public int sceSyscon_driver_755CF72B() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x7686E7A7, version = 150)
+	public int sceSysconBatteryGetInfo() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x806D4D6C, version = 150)
+	public int sceSysconWritePolestarReg() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x82D9F1BB, version = 150)
+	public int sceSysconCtrlTachyonVoltage() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x833017E5, version = 150)
+	public int sceSysconGetDvePowerCtrl() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x862A93DE, version = 150)
+	public int _sceSysconGetBaryonTimeStamp() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x86D4CAD8, version = 150)
+	public int sceSysconGetBaryonStatus() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x88EAAB07, version = 150)
+	public int sceSysconCtrlDvePower() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x89A2024D, version = 150)
+	public int sceSysconCtrlCharge() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x8DD190A1, version = 150)
+	public int sceSysconBatteryGetIFC() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x8E54A128, version = 150)
+	public int sceSysconBatteryGetRCap() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x8F4AD2CA, version = 150)
+	public int sceSysconBatteryNop() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x90EAEA2B, version = 150)
+	public int sceSyscon_driver_90EAEA2B() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x92D16FC7, version = 150)
+	public int sceSysconEnd() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x93A3B23E, version = 150)
+	public int sceSysconSetGSensorCarib() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x9497E906, version = 150)
+	public int sceSysconGetLcdPowerCtrl() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x97765E27, version = 150)
+	public int sceSyscon_driver_97765E27() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x9BC5E33B, version = 150)
+	public int sceSysconCtrlTachyonAvcPower(boolean power) {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x9E82A08C, version = 150)
+	public int sceSysconGetTachyonVmePowerCtrl() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x9F39BDC8, version = 150)
+	public int sceSysconCtrlTachyonAwPower() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x9FB6B045, version = 150)
+	public int sceSysconGetVideoCable() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0xA0FA8CF7, version = 150)
+	public int sceSysconCtrlHddPower() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0xA2DAACB4, version = 150)
+	public int sceSysconWriteGSensorReg() {
+		return 0;
+	}
+
+	@HLEFunction(nid = 0xAA1B32D4, version = 150)
+	public int sceSysconSetAcSupply2Callback(TPointerFunction callback, int callbackArgument) {
+    	return hleSysconSetCallback(callback, callbackArgument, SceSysconCallbacks.SYSCON_CB_AC_SUPPLY2);
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0xB5B06B81, version = 150)
+	public int sceSysconGetWlanPowerCtrl() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0xB5FA7580, version = 150)
+	public int sceSysconGetGSensorVersion() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0xB72DDFD2, version = 150)
+	public int sceSysconSetAffirmativeRertyMode() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0xB761D385, version = 150)
+	public int sceSyscon_driver_B761D385() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0xBADF1260, version = 150)
+	public int sceSyscon_driver_BADF1260() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0xC56D0B5A, version = 150)
+	public int sceSysconCtrlGSensor() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0xC8DB7B74, version = 150)
+	public int sceSysconIsAlarmed() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0xD06FA2C6, version = 150)
+	public int sceSysconBatteryGetTempAD() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0xD1216838, version = 150)
+	public int sceSysconReadGSensorReg() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0xD1B501E8, version = 150)
+	public int sceSysconWritePommelReg() {
+		return 0;
+	}
+
+	@HLEFunction(nid = 0xD2C053E7, version = 150)
+	public int sceSysconSetWlanPowerCallback(TPointerFunction callback, int callbackArgument) {
+    	return hleSysconSetCallback(callback, callbackArgument, SceSysconCallbacks.SYSCON_CB_WLAN_POWER);
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0xD38A3708, version = 150)
+	public int sceSysconGetHRPowerCtrl() {
+		return 0;
+	}
+
+	@HLEFunction(nid = 0xD6C2FD5F, version = 150)
+	public int sceSysconSetUmdSwitchCallback(TPointerFunction callback, int callbackArgument) {
+    	return hleSysconSetCallback(callback, callbackArgument, SceSysconCallbacks.SYSCON_CB_UMD_SWITCH);
+	}
+
+	@HLEFunction(nid = 0xD76A105E, version = 150)
+	public int sceSysconSetPowerSwitchCallback(TPointerFunction callback, int callbackArgument) {
+    	return hleSysconSetCallback(callback, callbackArgument, SceSysconCallbacks.SYSCON_CB_POWER_SWITCH);
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0xD8471760, version = 150)
+	public int sceSysconReadPolestarReg() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0xDEB91FF2, version = 150)
+	public int sceSysconGetTachyonAwPowerCtrl() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0xDF20C984, version = 150)
+	public int sceSyscon_driver_DF20C984() {
+		return 0;
+	}
+
+	@HLEFunction(nid = 0xE19BC2DF, version = 150)
+	public int sceSysconSetBtSwitchCallback(TPointerFunction callback, int callbackArgument) {
+    	return hleSysconSetCallback(callback, callbackArgument, SceSysconCallbacks.SYSCON_CB_BT_SWITCH);
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0xE58B9388, version = 150)
+	public int sceSysconGetHRPowerStatus() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0xE8C20DB5, version = 150)
+	public int sceSysconGetGValue() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0xEB11E9DE, version = 150)
+	public int sceSysconGetUsbPowerCtrl() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0xEF31EF4E, version = 150)
+	public int sceSysconGetHRWakeupStatus() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0xF0D1443F, version = 150)
+	public int sceSysconGetPowerError() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0xF350F666, version = 150)
+	public int sceSysconCmdSync() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0xF87A1D11, version = 150)
+	public int sceSysconBatteryGetChargeTime() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0xF8F6E1F4, version = 150)
+	public int sceSysconBatteryGetTotalElec() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0xFB148FB6, version = 150)
+	public int sceSysconGetPolestarVersion() {
+		return 0;
+	}
 }

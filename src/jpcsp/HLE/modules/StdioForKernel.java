@@ -29,13 +29,85 @@ public class StdioForKernel extends HLEModule {
     public static Logger log = Modules.getLogger("StdioForKernel");
 
     @HLEFunction(nid = 0xCAB439DF, version = 150)
-    public int StdioForKernel_printf(CpuState cpu, PspString formatString) {
+    public int printf(CpuState cpu, PspString formatString) {
     	return Modules.SysMemUserForUserModule.hleKernelPrintf(cpu, formatString, log);
     }
 
     @HLEUnimplemented
     @HLEFunction(nid = 0xD97C8CB9, version = 150)
     public int puts() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x11A5127A, version = 150)
+    public int fdgets() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x2CCF071A, version = 150)
+    public int fdprintf() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x2D8551AB, version = 150)
+    public int sceKernelStdoutReset() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x36B23B8B, version = 150)
+    public int fdputs() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x4F78930A, version = 150)
+    public int fdputc() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x7E338487, version = 150)
+    public int getchar() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x9662BF86, version = 150)
+    public int sceKernelStderrReset() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x98220F3E, version = 150)
+    public int sceKernelStdoutReopen() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xBFF7E760, version = 150)
+    public int gets() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xD2B2A2A7, version = 150)
+    public int fdgetc() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xD768752A, version = 150)
+    public int putchar() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xFB5380C5, version = 150)
+    public int sceKernelStderrReopen() {
     	return 0;
     }
 }

@@ -94,4 +94,19 @@ public class StdioForUser extends HLEModule {
 
     	return 0;
     }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x6F797E03, version = 300)
+    public int sceKernelRegisterStderrPipe(int msgPipeUid) {
+    	SceKernelMppInfo msgPipeInfo = Managers.msgPipes.getMsgPipeInfo(msgPipeUid);
+    	if (msgPipeInfo == null) {
+    		return SceKernelErrors.ERROR_KERNEL_ILLEGAL_ARGUMENT;
+    	}
+
+    	log.info(String.format("sceKernelRegisterStderrPipe %s", msgPipeInfo));
+
+    	Modules.IoFileMgrForUserModule.hleRegisterStdPipe(IoFileMgrForUser.STDERR_ID, msgPipeInfo);
+
+    	return 0;
+    }
 }

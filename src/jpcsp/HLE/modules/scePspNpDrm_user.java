@@ -25,10 +25,8 @@ import static jpcsp.util.Utilities.notHasBit;
 import static jpcsp.util.Utilities.readUnaligned32;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.Arrays;
 
-import jpcsp.GeneralJpcspException;
 import jpcsp.HLE.BufferInfo;
 import jpcsp.HLE.BufferInfo.LengthInfo;
 import jpcsp.HLE.CanBeNull;
@@ -38,17 +36,13 @@ import jpcsp.HLE.HLEModule;
 import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.PspString;
 import jpcsp.HLE.TPointer;
-import jpcsp.Emulator;
-import jpcsp.Loader;
 import jpcsp.crypto.CryptoEngine;
-import jpcsp.filesystems.SeekableDataInput;
 import jpcsp.HLE.BufferInfo.Usage;
 import jpcsp.HLE.VFS.IVirtualFile;
 import jpcsp.HLE.VFS.SeekableDataInputVirtualFile;
 import jpcsp.HLE.VFS.crypto.EDATVirtualFile;
 import jpcsp.HLE.VFS.crypto.PGDVirtualFile;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
-import jpcsp.HLE.kernel.types.SceModule;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.modules.IoFileMgrForUser.IoInfo;
 import jpcsp.settings.AbstractBoolSettingsListener;
@@ -255,65 +249,6 @@ public class scePspNpDrm_user extends HLEModule {
         // Open the file with flags ORed with PSP_O_FGAMEDATA and send it to the IoFileMgr.
         int fd = Modules.IoFileMgrForUserModule.hleIoOpen(name, flags | 0x40000000, permissions, true);
         return sceNpDrmEdataSetupKey(fd);
-    }
-
-    @HLEFunction(nid = 0xAA5FC85B, version = 150, checkInsideInterrupt = true)
-    public int sceKernelLoadExecNpDrm(PspString fileName, @CanBeNull TPointer optionAddr) {
-        // Flush system memory to mimic a real PSP reset.
-        Modules.SysMemUserForUserModule.reset();
-
-        byte[] key = null;
-        if (optionAddr.isNotNull()) {
-            int optSize = optionAddr.getValue32(0);  // Size of the option struct.
-            int argSize = optionAddr.getValue32(4);  // Number of args (strings).
-            int argAddr = optionAddr.getValue32(8);  // Pointer to a list of strings.
-            TPointer keyAddr = optionAddr.getPointer(12); // Pointer to an encryption key.
-
-            if (keyAddr.isNotNull()) {
-            	key = keyAddr.getArray8(16);
-            }
-
-            if (log.isDebugEnabled()) {
-                log.debug(String.format("sceKernelLoadExecNpDrm (params: optSize=%d, argSize=%d, argAddr=0x%08X, keyAddr=%s)", optSize, argSize, argAddr, keyAddr));
-            }
-        }
-
-        // SPRX modules can't be decrypted yet.
-        if (isDLCDecryptionEnabled()) {
-            log.warn(String.format("sceKernelLoadExecNpDrm detected encrypted DLC module: %s", fileName.getString()));
-            return SceKernelErrors.ERROR_NPDRM_INVALID_PERM;
-        }
-
-        int result;
-        try {
-            SeekableDataInput moduleInput = Modules.IoFileMgrForUserModule.getFile(fileName.getString(), IoFileMgrForUser.PSP_O_RDONLY);
-            if (moduleInput != null) {
-                byte[] moduleBytes = new byte[(int) moduleInput.length()];
-                moduleInput.readFully(moduleBytes);
-                moduleInput.close();
-                ByteBuffer moduleBuffer = ByteBuffer.wrap(moduleBytes);
-
-                SceModule module = Emulator.getInstance().load(fileName.getString(), moduleBuffer, true, Modules.ModuleMgrForUserModule.isSignChecked(fileName.getString()), key);
-                Emulator.getClock().resume();
-
-                if ((module.fileFormat & Loader.FORMAT_ELF) == Loader.FORMAT_ELF) {
-                    result = 0;
-                } else {
-                    log.warn("sceKernelLoadExecNpDrm - failed, target is not an ELF");
-                    result = SceKernelErrors.ERROR_KERNEL_ILLEGAL_LOADEXEC_FILENAME;
-                }
-            } else {
-                result = SceKernelErrors.ERROR_KERNEL_PROHIBIT_LOADEXEC_DEVICE;
-            }
-        } catch (GeneralJpcspException e) {
-            log.error("sceKernelLoadExecNpDrm", e);
-            result = SceKernelErrors.ERROR_KERNEL_PROHIBIT_LOADEXEC_DEVICE;
-        } catch (IOException e) {
-            log.error(String.format("sceKernelLoadExecNpDrm - Error while loading module '%s'", fileName), e);
-            result = SceKernelErrors.ERROR_KERNEL_PROHIBIT_LOADEXEC_DEVICE;
-        }
-
-        return result;
     }
 
     @HLEUnimplemented
