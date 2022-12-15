@@ -78,6 +78,7 @@ public class RuntimeContext {
 	public  static int[] memoryInt;
 	public  static Processor processor;
 	public  static CpuState cpu;
+	public  static int syscallRa;
 	public  static Memory memory;
 	public  static       boolean enableDebugger = true;
 	public  static final String debuggerName = "syncDebugger";
@@ -159,8 +160,9 @@ public class RuntimeContext {
         IExecutable executable = getExecutable(address);
         if (executable == null) {
             // TODO Return to interpreter
-            log.error("jumpCall - Cannot find executable");
-            throw new RuntimeException("Cannot find executable");
+        	String msg = String.format("jumpCall - Cannot find executable 0x%08X", address);
+            log.error(msg);
+            throw new RuntimeException(msg);
         }
 
 		int returnValue;

@@ -19,6 +19,7 @@ package jpcsp.HLE.modules;
 import jpcsp.NIDMapper;
 import jpcsp.Processor;
 import jpcsp.Allegrex.Cp0State;
+import jpcsp.Allegrex.compiler.RuntimeContext;
 import jpcsp.HLE.BufferInfo;
 import jpcsp.HLE.BufferInfo.LengthInfo;
 import jpcsp.HLE.BufferInfo.Usage;
@@ -223,10 +224,9 @@ public class InterruptManager extends HLEModule {
 		return IntrManager.getInstance().isInsideInterrupt();
 	}
 
-	@HLEUnimplemented
 	@HLEFunction(nid = 0xA0F88036, version = 150)
 	public int sceKernelGetSyscallRA() {
-		return 0;
+		return RuntimeContext.syscallRa;
 	}
 
 	@HLEUnimplemented

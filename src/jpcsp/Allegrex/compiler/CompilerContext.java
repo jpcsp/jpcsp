@@ -2051,6 +2051,10 @@ public class CompilerContext implements ICompilerContext {
     public void visitSyscall(int opcode) {
     	flushInstructionCount(false, false);
 
+    	// Set RuntimeContext.syscallRa, to be used by sceKernelGetSyscallRA()
+    	loadImm(getCodeInstruction().getAddress());
+        mv.visitFieldInsn(Opcodes.PUTSTATIC, runtimeContextInternalName, "syscallRa", "I");
+
     	int code = (opcode >> 6) & 0x000FFFFF;
     	NIDMapper nidMapper = NIDMapper.getInstance();
     	int syscallAddr = nidMapper.getAddressBySyscall(code);
@@ -2140,6 +2144,10 @@ public class CompilerContext implements ICompilerContext {
 	        	storeHilo();
     		}
     	}
+
+    	// Reset RuntimeContext.syscallRa to 0
+    	loadImm(0);
+        mv.visitFieldInsn(Opcodes.PUTSTATIC, runtimeContextInternalName, "syscallRa", "I");
 
     	// For code blocks consisting of a single syscall instruction
     	// or a syscall without any preceding instruction,
