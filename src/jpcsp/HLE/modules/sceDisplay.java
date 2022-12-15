@@ -1100,9 +1100,10 @@ public class sceDisplay extends HLEModule {
                 || bufferwidth <= 0
                 || pixelformat < 0 || pixelformat > 3
                 || (sync != PSP_DISPLAY_SETBUF_IMMEDIATE && sync != PSP_DISPLAY_SETBUF_NEXTFRAME)) {
-            // First time is usually initializing GE, so we can ignore it
-            if (setGeBufCalledAtLeastOnce) {
-                log.warn(String.format("hleDisplaySetGeBuf topaddr=0x%08X, bufferwidth=%d, pixelformat=%d bad params", topaddr, bufferwidth, pixelformat));
+            // First time is usually initializing GE, so we can ignore it,
+        	// also bufferwidth=0 is common and can be ignored
+            if (setGeBufCalledAtLeastOnce && bufferwidth != 0) {
+        		log.warn(String.format("hleDisplaySetGeBuf topaddr=0x%08X, bufferwidth=%d, pixelformat=%d bad params", topaddr, bufferwidth, pixelformat));
                 gotBadGeBufParams = true;
             } else {
                 if (log.isDebugEnabled()) {
@@ -1902,7 +1903,8 @@ public class sceDisplay extends HLEModule {
 
         // bufferwidth can only be 0 when topaddr is NULL
         if (bufferwidth == 0 && topaddr != 0) {
-            return hleDisplaySetFrameBufError(topaddr, bufferwidth, pixelformat, syncType, ERROR_INVALID_SIZE, "bad bufferwidth");
+        	// Do not display any WARNing
+        	return ERROR_INVALID_SIZE;
         }
 
         if (pixelformat < 0 || pixelformat > TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888) {

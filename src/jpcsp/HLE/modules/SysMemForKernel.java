@@ -16,6 +16,8 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules;
 
+import static jpcsp.HLE.Modules.InitForKernelModule;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_ERROR;
 import static jpcsp.HLE.modules.SysMemUserForUser.KERNEL_PARTITION_ID;
 import static jpcsp.HLE.modules.SysMemUserForUser.USER_PARTITION_ID;
 import static jpcsp.HLE.modules.SysMemUserForUser.VSHELL_PARTITION_ID;
@@ -34,6 +36,7 @@ import java.util.List;
 import jpcsp.Memory;
 import jpcsp.MemoryMap;
 import jpcsp.State;
+import jpcsp.HLE.AfterCallbackAction;
 import jpcsp.HLE.BufferInfo;
 import jpcsp.HLE.BufferInfo.LengthInfo;
 import jpcsp.HLE.BufferInfo.Usage;
@@ -46,6 +49,7 @@ import jpcsp.HLE.StringInfo;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.TPointer32;
+import jpcsp.HLE.TPointerFunction;
 import jpcsp.HLE.kernel.managers.SceUidManager;
 import jpcsp.HLE.kernel.types.MemoryChunk;
 import jpcsp.HLE.kernel.types.MemoryChunkList;
@@ -83,6 +87,7 @@ public class SysMemForKernel extends HLEModule {
     private int uidTypeListCount;
     private int uidTypeListMetaRoot;
     private int systemStatus;
+    private TPointerFunction rebootKernelFunction;
 
     private static class HeapBlockInformation {
     	protected SysMemInfo sysMemInfo;
@@ -237,6 +242,8 @@ public class SysMemForKernel extends HLEModule {
 		gameInfo.umdCacheOn = 0;
 
 		uidHeap = sceKernelCreateHeap(SysMemUserForUser.KERNEL_PARTITION_ID, 0x2000, 1, "UID Heap");
+
+		rebootKernelFunction = TPointerFunction.NULL;
 
 		initUidBasic();
 
@@ -543,7 +550,6 @@ public class SysMemForKernel extends HLEModule {
     	return 0;
     }
 
-    @HLEUnimplemented
 	@HLEFunction(nid = 0xCD617A94, version = 260)
 	@HLEFunction(nid = 0xAB5E85E5, version = 620)	
 	@HLEFunction(nid = 0x3C4C5630, version = 635)
@@ -552,12 +558,31 @@ public class SysMemForKernel extends HLEModule {
     	// Has no parameters
     	if (gameInfoMem == null) {
     		gameInfoMem = Modules.SysMemUserForUserModule.malloc(SysMemUserForUser.KERNEL_PARTITION_ID, "SceKernelGameInfo", SysMemUserForUser.PSP_SMEM_Low, SceKernelGameInfo.SIZEOF, 0);
-    		gameInfoPtr = new TPointer(Memory.getInstance(), gameInfoMem.addr);
+    		gameInfoPtr = new TPointer(getMemory(), gameInfoMem.addr);
     		gameInfoPtr.setValue32(0, SceKernelGameInfo.SIZEOF);
     	}
     	gameInfo.gameId = State.discId;
     	gameInfo.sdkVersion = Modules.SysMemUserForUserModule.hleKernelGetCompiledSdkVersion();
     	gameInfo.compilerVersion = Modules.SysMemUserForUserModule.hleKernelGetCompilerVersion();
+    	switch (InitForKernelModule.sceKernelInitApitype()) {
+	        case InitForKernel.SCE_INIT_APITYPE_EMU_EBOOT_EF:
+	        case InitForKernel.SCE_INIT_APITYPE_EMU_BOOT_EF:
+	        case InitForKernel.SCE_INIT_APITYPE_NPDRM_EF:
+	        case InitForKernel.SCE_INIT_APITYPE_DISC_EMU_EF1:
+	        case InitForKernel.SCE_INIT_APITYPE_UNK:
+	        case InitForKernel.SCE_INIT_APITYPE_UNK_DEBUG:
+	        case InitForKernel.SCE_INIT_APITYPE_EF2:
+	        case InitForKernel.SCE_INIT_APITYPE_EF3:
+	        case InitForKernel.SCE_INIT_APITYPE_EF4:
+	        case InitForKernel.SCE_INIT_APITYPE_EF5:
+	        case InitForKernel.SCE_INIT_APITYPE_EF6:
+	        case InitForKernel.SCE_INIT_APITYPE_MLNAPP_EF:
+	        	gameInfo.unk112 = 0x7F;
+	        	break;
+        	default:
+        		gameInfo.unk112 = 0;
+        		break;
+    	}
     	gameInfo.str88 = "6.61";
     	gameInfo.str180 = "";
     	gameInfo.str196 = "00.00";
@@ -592,7 +617,6 @@ public class SysMemForKernel extends HLEModule {
 		return dst.getAddress();
 	}
 
-	@HLEUnimplemented
 	@HLEFunction(nid = 0xE860BE8F, version = 150)
 	public int sceKernelQueryMemoryBlockInfo(int id, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=56, usage=Usage.out) TPointer infoPtr) {
 		SysMemInfo info = Modules.SysMemUserForUserModule.getSysMemInfo(id);
@@ -613,7 +637,6 @@ public class SysMemForKernel extends HLEModule {
 		return 0;
 	}
 
-	@HLEUnimplemented
 	@HLEFunction(nid = 0xC90B0992, version = 150)
 	public int sceKernelGetUIDcontrolBlock(int id, TPointer32 controlBlockAddr) {
     	Memory mem = Memory.getInstance();
@@ -733,14 +756,12 @@ public class SysMemForKernel extends HLEModule {
     	return 0;
 	}
 
-	@HLEUnimplemented
     @HLEFunction(nid = 0xFEFC8666, version = 150)
     @HLEFunction(nid = 0x034129FB, version = 660)
     public int sceKernelCreateUIDtype(String name, int size, @CanBeNull TPointer32 funcTable, @CanBeNull TPointer32 metaFuncTable, @BufferInfo(usage=Usage.out) TPointer32 uidTypeOut) {
     	return sceKernelCreateUIDtypeInherit("Basic", name, size, funcTable, metaFuncTable, uidTypeOut);
     }
 
-    @HLEUnimplemented
     @HLEFunction(nid = 0x89A74008, version = 150)
     @HLEFunction(nid = 0x0A34C078, version = 660)
     public int sceKernelCreateUID(TPointer uidType, String name, int k1, @BufferInfo(usage=Usage.out) TPointer32 outUid) {
@@ -790,7 +811,6 @@ public class SysMemForKernel extends HLEModule {
     	return 0;
     }
 
-    @HLEUnimplemented
     @HLEFunction(nid = 0x2E3402CC, version = 150)
     @HLEFunction(nid = 0xA7622297, version = 660)
     public int sceKernelRenameUID(int id, String name) {
@@ -815,7 +835,6 @@ public class SysMemForKernel extends HLEModule {
     	return 0;
     }
 
-    @HLEUnimplemented
     @HLEFunction(nid = 0x8F20C4C0, version = 150)
     @HLEFunction(nid = 0x361F0F88, version = 660)
     public int sceKernelDeleteUID(int id) {
@@ -900,7 +919,6 @@ public class SysMemForKernel extends HLEModule {
     	return 0;
     }
 
-    @HLEUnimplemented
     @HLEFunction(nid = 0x41FFC7F9, version = 150)
     @HLEFunction(nid = 0x44BDF332, version = 660)
     public int sceKernelGetUIDcontrolBlockWithType(int id, TPointer32 uidType, @BufferInfo(usage=Usage.out) TPointer32 controlBlockAddr) {
@@ -921,7 +939,6 @@ public class SysMemForKernel extends HLEModule {
     	return 0;
     }
 
-    @HLEUnimplemented
     @HLEFunction(nid = 0x235C2646, version = 660)
     public int sceKernelCallUIDObjCommonFunction(TPointer32 uid, TPointer32 uidWithFunc, int funcId) {
     	SceSysmemUidCB sceSysmemUidCB = new SceSysmemUidCB();
@@ -972,9 +989,10 @@ public class SysMemForKernel extends HLEModule {
     	return 0;
     }
 
-    @HLEUnimplemented
     @HLEFunction(nid = 0x96A3CE2C, version = 150)
-    public int sceKernelSetRebootKernel(TPointer rebootKernelFunction) {
+    public int sceKernelSetRebootKernel(TPointerFunction rebootKernelFunction) {
+    	this.rebootKernelFunction = rebootKernelFunction;
+
     	return 0;
     }
 
@@ -1122,5 +1140,17 @@ public class SysMemForKernel extends HLEModule {
     @HLEFunction(nid = 0xEB4C0E1B, version = 150)
     public int sceKernelQueryBlockSize() {
 		return 0;
+    }
+
+    @HLEFunction(nid = 0xE73FBC0B, version = 150)
+    public int sceKernelRebootKernel(int arg) {
+    	if (rebootKernelFunction.isNull()) {
+    		return ERROR_KERNEL_ERROR;
+    	}
+
+    	AfterCallbackAction afterCallbackAction = new AfterCallbackAction(rebootKernelFunction);
+    	Modules.ThreadManForUserModule.executeCallback(null, rebootKernelFunction.getAddress(), afterCallbackAction, false, arg);
+
+    	return afterCallbackAction.getReturnValue();
     }
 }

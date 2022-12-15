@@ -28,6 +28,7 @@ import static jpcsp.Allegrex.Common._zr;
 import static jpcsp.Emulator.exitCalled;
 import static jpcsp.HLE.HLEModuleManager.HLESyscallNid;
 import static jpcsp.HLE.Modules.ModuleMgrForUserModule;
+import static jpcsp.HLE.kernel.managers.SceUidManager.hasUidPurpose;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_ILLEGAL_ARGUMENT;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_ILLEGAL_PRIORITY;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_ILLEGAL_THREAD;
@@ -1520,6 +1521,7 @@ public class ThreadManForUser extends HLEModule {
         }
         thread.freeStack();
 
+        Modules.ThreadManForKernelModule.freeKTLSEntries(thread.uid);
         Managers.eventFlags.onThreadDeleted(thread);
         Managers.semas.onThreadDeleted(thread);
         Managers.mutex.onThreadDeleted(thread);
@@ -4375,55 +4377,31 @@ public class ThreadManForUser extends HLEModule {
 
     @HLEFunction(nid = 0x57CF62DD, version = 150)
     public int sceKernelGetThreadmanIdType(int uid) {
-        if (SceUidManager.checkUidPurpose(uid, "ThreadMan-thread", false)) {
+        if (hasUidPurpose(uid, "ThreadMan-thread")) {
             return SCE_KERNEL_TMID_Thread;
-        }
-
-        if (SceUidManager.checkUidPurpose(uid, "ThreadMan-sema", false)) {
+        } else if (hasUidPurpose(uid, "ThreadMan-sema")) {
         	return SCE_KERNEL_TMID_Semaphore;
-        }
-
-        if (SceUidManager.checkUidPurpose(uid, "ThreadMan-eventflag", false)) {
+        } else if (hasUidPurpose(uid, "ThreadMan-eventflag")) {
         	return SCE_KERNEL_TMID_EventFlag;
-        }
-
-        if (SceUidManager.checkUidPurpose(uid, "ThreadMan-Mbx", false)) {
+        } else if (hasUidPurpose(uid, "ThreadMan-Mbx")) {
         	return SCE_KERNEL_TMID_Mbox;
-        }
-
-        if (SceUidManager.checkUidPurpose(uid, "ThreadMan-Vpl", false)) {
+        } else if (hasUidPurpose(uid, "ThreadMan-Vpl")) {
         	return SCE_KERNEL_TMID_Vpl;
-        }
-
-        if (SceUidManager.checkUidPurpose(uid, "ThreadMan-Fpl", false)) {
+        } else if (hasUidPurpose(uid, "ThreadMan-Fpl")) {
         	return SCE_KERNEL_TMID_Fpl;
-        }
-
-        if (SceUidManager.checkUidPurpose(uid, "ThreadMan-MsgPipe", false)) {
+        } else if (hasUidPurpose(uid, "ThreadMan-MsgPipe")) {
         	return SCE_KERNEL_TMID_Mpipe;
-        }
-
-        if (SceUidManager.checkUidPurpose(uid, pspBaseCallback.callbackUidPurpose, false)) {
+        } else if (hasUidPurpose(uid, pspBaseCallback.callbackUidPurpose)) {
         	return SCE_KERNEL_TMID_Callback;
-        }
-
-        if (SceUidManager.checkUidPurpose(uid, "ThreadMan-ThreadEventHandler", false)) {
+        } else if (hasUidPurpose(uid, "ThreadMan-ThreadEventHandler")) {
         	return SCE_KERNEL_TMID_ThreadEventHandler;
-        }
-
-        if (SceUidManager.checkUidPurpose(uid, "ThreadMan-Alarm", false)) {
+        } else if (hasUidPurpose(uid, "ThreadMan-Alarm")) {
         	return SCE_KERNEL_TMID_Alarm;
-        }
-
-        if (SceUidManager.checkUidPurpose(uid, "ThreadMan-VTimer", false)) {
+        } else if (hasUidPurpose(uid, "ThreadMan-VTimer")) {
         	return SCE_KERNEL_TMID_VTimer;
-        }
-
-        if (SceUidManager.checkUidPurpose(uid, "ThreadMan-Mutex", false)) {
+        } else if (hasUidPurpose(uid, "ThreadMan-Mutex")) {
         	return SCE_KERNEL_TMID_Mutex;
-        }
-
-        if (SceUidManager.checkUidPurpose(uid, "ThreadMan-LwMutex", false)) {
+        } else if (hasUidPurpose(uid, "ThreadMan-LwMutex")) {
         	return SCE_KERNEL_TMID_LwMutex;
         }
 

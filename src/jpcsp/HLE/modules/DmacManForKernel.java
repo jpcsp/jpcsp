@@ -283,26 +283,28 @@ public class DmacManForKernel extends HLEModule {
 
 		sysMemInfo = Modules.SysMemUserForUserModule.malloc(SysMemUserForUser.KERNEL_PARTITION_ID, "DmacManForKernel", SysMemUserForUser.PSP_SMEM_Low, countOps * DmaOp.SIZEOF, 0);
 
-		TPointer currentOpAddr = new TPointer(getMemory(), sysMemInfo.addr & Memory.addressMask);
-		DmaOp previousOp = null;
-		for (int i = 0; i < countOps; i++) {
-			DmaOp dmaOp = new DmaOp(currentOpAddr);
+		if (sysMemInfo != null) {
+			TPointer currentOpAddr = new TPointer(getMemory(), sysMemInfo.addr & Memory.addressMask);
+			DmaOp previousOp = null;
+			for (int i = 0; i < countOps; i++) {
+				DmaOp dmaOp = new DmaOp(currentOpAddr);
+				if (log.isDebugEnabled()) {
+					log.debug(String.format("Creating %s", currentOpAddr));
+				}
+				dmaOps.put(currentOpAddr.getAddress(), dmaOp);
+				if (previousOp != null) {
+					previousOp.setNext(dmaOp);
+				} else {
+					firstOp = dmaOp;
+				}
+	
+				previousOp = dmaOp;
+				currentOpAddr.add(DmaOp.SIZEOF);
+			}
+
 			if (log.isDebugEnabled()) {
-				log.debug(String.format("Creating %s", currentOpAddr));
+				log.debug(String.format("firstOp %s", firstOp));
 			}
-			dmaOps.put(currentOpAddr.getAddress(), dmaOp);
-			if (previousOp != null) {
-				previousOp.setNext(dmaOp);
-			} else {
-				firstOp = dmaOp;
-			}
-
-			previousOp = dmaOp;
-			currentOpAddr.add(DmaOp.SIZEOF);
-		}
-
-		if (log.isDebugEnabled()) {
-			log.debug(String.format("firstOp %s", firstOp));
 		}
 
 		super.start();

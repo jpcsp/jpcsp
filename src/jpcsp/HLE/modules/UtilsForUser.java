@@ -17,6 +17,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 
 package jpcsp.HLE.modules;
 
+import jpcsp.HLE.AfterCallbackAction;
 import jpcsp.HLE.BufferInfo;
 import jpcsp.HLE.BufferInfo.LengthInfo;
 import jpcsp.HLE.BufferInfo.Usage;
@@ -27,6 +28,10 @@ import jpcsp.HLE.HLEModule;
 import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.TPointer32;
+import jpcsp.HLE.TPointer64;
+import jpcsp.HLE.TPointerFunction;
+
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_NOT_INITIALIZED;
 
 import java.security.MessageDigest;
 import java.util.Calendar;
@@ -39,6 +44,7 @@ import jpcsp.State;
 import jpcsp.Allegrex.compiler.RuntimeContext;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.managers.SystemTimeManager;
+import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.util.Utilities;
 
 import org.apache.log4j.Logger;
@@ -191,6 +197,39 @@ public class UtilsForUser extends HLEModule {
     protected static final int PSP_KERNEL_DCACHE_PROBE_HIT = 1;
     protected static final int PSP_KERNEL_DCACHE_PROBE_HIT_DIRTY = 2;
 
+    private int callHandler(TPointerFunction handler) {
+		if (handler.isNull()) {
+			return 0;
+		}
+
+		AfterCallbackAction afterCallbackAction = new AfterCallbackAction(handler);
+		Modules.ThreadManForUserModule.executeCallback(null, handler.getAddress(), afterCallbackAction, false);
+
+		return afterCallbackAction.getReturnValue();
+    }
+
+    private int callHandler(TPointerFunction handler, int arg) {
+		if (handler.isNull()) {
+			return 0;
+		}
+
+		AfterCallbackAction afterCallbackAction = new AfterCallbackAction(handler);
+		Modules.ThreadManForUserModule.executeCallback(null, handler.getAddress(), afterCallbackAction, false, arg);
+
+		return afterCallbackAction.getReturnValue();
+    }
+
+    private int callHandler(TPointerFunction handler, int arg1, int arg2) {
+		if (handler.isNull()) {
+			return 0;
+		}
+
+		AfterCallbackAction afterCallbackAction = new AfterCallbackAction(handler);
+		Modules.ThreadManForUserModule.executeCallback(null, handler.getAddress(), afterCallbackAction, false, arg1, arg2);
+
+		return afterCallbackAction.getReturnValue();
+    }
+
     @HLELogging(level="trace")
 	@HLEFunction(nid = 0xBFA98062, version = 150)
 	public int sceKernelDcacheInvalidateRange(TPointer addr, int size) {
@@ -308,32 +347,61 @@ public class UtilsForUser extends HLEModule {
 
 	@HLEFunction(nid = 0x91E4F6A7, version = 150)
 	public int sceKernelLibcClock() {
-		return (int) SystemTimeManager.getSystemTime();
+		TPointerFunction clockHandler = Modules.UtilsForKernelModule.clockHandler;
+		if (clockHandler == null) {
+			return (int) SystemTimeManager.getSystemTime();
+		}
+
+		return callHandler(clockHandler);
 	}
 
 	@HLEFunction(nid = 0x27CC57F0, version = 150)
 	public int sceKernelLibcTime(@CanBeNull TPointer32 time_t_addr) {
-        int seconds = (int)(Calendar.getInstance().getTimeInMillis() / 1000);
-        time_t_addr.setValue(seconds);
+		TPointerFunction timeHandler = Modules.UtilsForKernelModule.timeHandler;
+		if (timeHandler == null) {
+	        int seconds = (int)(Calendar.getInstance().getTimeInMillis() / 1000);
+	        time_t_addr.setValue(seconds);
 
-        return seconds;
+	        return seconds;
+		}
+
+		return callHandler(timeHandler, time_t_addr.getAddress());
 	}
 
 	@HLEFunction(nid = 0x71EC4271, version = 150)
 	public int sceKernelLibcGettimeofday(@CanBeNull TPointer32 tp, @CanBeNull TPointer32 tzp) {
-    	Clock.TimeNanos currentTimeNano = Emulator.getClock().currentTimeNanos();
-        int tv_sec = currentTimeNano.seconds;
-        int tv_usec = currentTimeNano.millis * 1000 + currentTimeNano.micros;
-        tp.setValue(0, tv_sec);
-        tp.setValue(4, tv_usec);
+		TPointerFunction getTimeOfDayHandler = Modules.UtilsForKernelModule.getTimeOfDayHandler;
+		if (getTimeOfDayHandler == null) {
+	    	Clock.TimeNanos currentTimeNano = Emulator.getClock().currentTimeNanos();
+	        int tv_sec = currentTimeNano.seconds;
+	        int tv_usec = currentTimeNano.millis * 1000 + currentTimeNano.micros;
+	        tp.setValue(0, tv_sec);
+	        tp.setValue(4, tv_usec);
 
-        // PSP always returning 0 for these 2 values:
-        int tz_minuteswest = 0;
-        int tz_dsttime = 0;
-        tzp.setValue(0, tz_minuteswest);
-        tzp.setValue(4, tz_dsttime);
+	        // PSP always returning 0 for these 2 values:
+	        int tz_minuteswest = 0;
+	        int tz_dsttime = 0;
+	        tzp.setValue(0, tz_minuteswest);
+	        tzp.setValue(4, tz_dsttime);
 
-        return 0;
+	        return 0;
+		}
+
+		return callHandler(getTimeOfDayHandler, tp.getAddress(), tzp.getAddress());
+	}
+
+	@HLEFunction(nid = 0xBDBFCA89, version = 150)
+	public int sceKernelRtcGetTick(@CanBeNull TPointer64 tick) {
+		TPointerFunction rtcTickHandler = Modules.UtilsForKernelModule.rtcTickHandler;
+		if (rtcTickHandler == null) {
+	        return ERROR_NOT_INITIALIZED;
+		}
+
+		if (rtcTickHandler.isNull()) {
+			return ERROR_NOT_INITIALIZED;
+		}
+
+		return callHandler(rtcTickHandler, tick.getAddress());
 	}
 
 	@HLELogging(level="trace")

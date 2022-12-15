@@ -56,6 +56,15 @@ public class SceUidManager {
         return uid.getUid();
     }
 
+    static public boolean hasUidPurpose(int uid, String purpose) {
+        SceUid found = uidMap.get(uid);
+        if (found == null) {
+        	return false;
+        }
+
+        return purpose.equals(found.getPurpose());
+    }
+
     /** classes should call checkUidPurpose before using a SceUID
      * @return true is the uid is ok. */
     static public boolean checkUidPurpose(int uid, String purpose, boolean allowUnknown) {
@@ -64,13 +73,13 @@ public class SceUidManager {
         if (found == null) {
             if (!allowUnknown) {
             	if (!exitCalled()) {
-            		log.warn("Attempt to use unknown SceUID (purpose='" + purpose.toString() + "')");
+            		log.warn(String.format("Attempt to use unknown SceUID=0x%X (purpose='%s')", uid, purpose));
             	}
                 return false;
             }
         } else if (!purpose.equals(found.getPurpose())) {
         	if (!exitCalled()) {
-        		log.error("Attempt to use SceUID for different purpose (purpose='" + purpose.toString() + "',original='" + found.getPurpose().toString() + "')");
+        		log.error(String.format("Attempt to use SceUID=0x%X for different purpose (purpose='%s', original='%s')", uid, purpose, found.getPurpose()));
         	}
             return false;
         }

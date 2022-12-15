@@ -24,9 +24,9 @@ import jpcsp.HLE.BufferInfo.Usage;
 import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLEModule;
-import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.TPointer;
+import jpcsp.util.Utilities;
 
 public class sceLed extends HLEModule {
     public static Logger log = Modules.getLogger("sceLed");
@@ -38,6 +38,25 @@ public class sceLed extends HLEModule {
     public static final int SCE_LED_MODE_BLINK = 2;          /** Set a blink event for a LED. */
     public static final int SCE_LED_MODE_SELECTIVE_EXEC = 3; /** Register LED configuration commands and execute them. */
 
+    public static String getLedName(int led) {
+    	switch (led) {
+    		case PSP_LED_TYPE_MS: return "MemoryStick";
+    		case PSP_LED_TYPE_WLAN: return "WLAN";
+    		case PSP_LED_TYPE_BT: return "BlueTooth";
+    	}
+    	return String.format("Unknown LED_TYPE_%X", led);
+    }
+
+    public static String getLedModeName(int ledMode) {
+    	switch (ledMode) {
+    		case SCE_LED_MODE_OFF: return "Off";
+    		case SCE_LED_MODE_ON: return "On";
+    		case SCE_LED_MODE_BLINK: return "Blink";
+    		case SCE_LED_MODE_SELECTIVE_EXEC: return "Selective Exec";
+    	}
+    	return String.format("Unknown LED_MODE_%X", ledMode);
+    }
+
     /**
      * Set a LED mode.
      * 
@@ -48,9 +67,15 @@ public class sceLed extends HLEModule {
      * 
      * @return SCE_ERROR_OK on success.
      */
-    @HLEUnimplemented
 	@HLEFunction(nid = 0xEA24BE03, version = 150)
 	public int sceLedSetMode(int led, int mode, @CanBeNull @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=20, usage=Usage.in) TPointer config) {
+    	if (log.isInfoEnabled()) {
+    		log.info(String.format("sceLedSetMode %s %s", getLedName(led), getLedModeName(mode)));
+    	}
+    	if (config.isNotNull()) {
+    		log.info(String.format("sceLedSetMode %s %s unknown config: %s", getLedName(led), getLedModeName(mode), Utilities.getMemoryDump(config, 20)));
+    	}
+
     	return 0;
 	}
 }

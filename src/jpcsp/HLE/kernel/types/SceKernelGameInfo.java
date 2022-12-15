@@ -42,36 +42,36 @@ public class SceKernelGameInfo extends pspAbstractMemoryMappedStructureVariableL
 
 	@Override
 	protected void write() {
-		super.write();
+		super.write(); // Size at offset 0
 
-		write32(flags);
-		writeStringNZ(16, str8);
-		writeStringNZ(11, str24);
+		write32(flags); // Offset 4
+		writeStringNZ(16, str8); // Offset 8
+		writeStringNZ(11, str24); // Offset 24
 		write8((byte) 0); // Padding
-		write32(unk36);
-		writeStringNZ(8, qtgp2);
-		writeStringNZ(16, qtgp3);
-		write32(allowReplaceUmd);
-		writeStringNZ(14, gameId);
-		write8((byte) 0); // Padding
-		write8((byte) 0); // Padding
-		write32(unk84);
-		writeStringNZ(8, str88);
-		write32(umdCacheOn);
-		write32(sdkVersion);
-		write32(compilerVersion);
-		write32(dnas);
-		write32(unk112);
-		writeStringNZ(64, str116);
-		writeStringNZ(11, str180);
+		write32(unk36); // Offset 36
+		writeStringNZ(8, qtgp2); // Offset 40
+		writeStringNZ(16, qtgp3); // Offset 48
+		write32(allowReplaceUmd); // Offset 64
+		writeStringNZ(14, gameId); // Offset 68
 		write8((byte) 0); // Padding
 		write8((byte) 0); // Padding
+		write32(unk84); // Offset 84
+		writeStringNZ(8, str88); // Offset 88
+		write32(umdCacheOn); // Offset 96
+		write32(sdkVersion); // Offset 100
+		write32(compilerVersion); // Offset 104
+		write32(dnas); // Offset 108
+		write32(unk112); // Offset 112
+		writeStringNZ(64, str116); // Offset 116
+		writeStringNZ(11, str180); // Offset 180
 		write8((byte) 0); // Padding
 		write8((byte) 0); // Padding
 		write8((byte) 0); // Padding
-		writeStringNZ(8, str196);
-		writeStringNZ(8, unk204);
-		write32(unk212);
-		write32(unk216);
+		write8((byte) 0); // Padding
+		write8((byte) 0); // Padding
+		writeStringNZ(8, str196); // Offset 196
+		writeStringNZ(8, unk204); // Offset 204
+		write32(unk212); // Offset 212
+		write32(unk216); // Offset 216
 	}
 }

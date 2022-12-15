@@ -27,6 +27,7 @@ import jpcsp.HLE.PspString;
 import jpcsp.HLE.TPointer;
 
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_ERROR;
+import static jpcsp.util.Utilities.hasBit;
 
 import org.apache.log4j.Logger;
 
@@ -38,11 +39,13 @@ public class KDebugForKernel extends HLEModule {
     protected static Logger kprintf = Logger.getLogger("kprintf");
     private long dispsw;
     private TPointer sm1Operations;
+    private int deci2pOperations;
 
 	@Override
 	public void start() {
 		dispsw = 0L;
 		sm1Operations = TPointer.NULL;
+		deci2pOperations = 0;
 
 		super.start();
 	}
@@ -84,6 +87,7 @@ public class KDebugForKernel extends HLEModule {
 
     @HLEUnimplemented
 	@HLEFunction(nid = 0x5CE9838B, version = 150)
+	@HLEFunction(nid = 0x2214799B, version = 660)
 	public int sceKernelDebugWrite() {
 		return 0;
 	}
@@ -96,6 +100,7 @@ public class KDebugForKernel extends HLEModule {
 
     @HLEUnimplemented
 	@HLEFunction(nid = 0xDBB5597F, version = 150)
+	@HLEFunction(nid = 0xD4EC38C1, version = 660)
 	public int sceKernelDebugRead() {
 		return 0;
 	}
@@ -108,6 +113,7 @@ public class KDebugForKernel extends HLEModule {
 
     @HLEUnimplemented
 	@HLEFunction(nid = 0xB9C643C9, version = 150)
+	@HLEFunction(nid = 0xE8FE3EE3, version = 660)
 	public int sceKernelDebugEcho() {
 		return 0;
 	}
@@ -182,10 +188,9 @@ public class KDebugForKernel extends HLEModule {
 		return 0;
 	}
 
-    @HLEUnimplemented
 	@HLEFunction(nid = 0x47570AC5, version = 150)
-	public int sceKernelIsToolMode() {
-		return 0;
+	public boolean sceKernelIsToolMode() {
+		return hasBit(dispsw, 30) || hasBit(dispsw, 28);
 	}
 
 	@HLEFunction(nid = 0x27B23800, version = 150)
@@ -204,10 +209,16 @@ public class KDebugForKernel extends HLEModule {
 		return 0;
 	}
 
-    @HLEUnimplemented
 	@HLEFunction(nid = 0xF339073C, version = 150)
 	public int sceKernelDeci2pReferOperations() {
-		return 0;
+		return deci2pOperations;
+	}
+
+	@HLEFunction(nid = 0x604276EB, version = 150)
+	public int sceKernelDeci2pRegisterOperations(int deci2pOperations) {
+    	this.deci2pOperations = deci2pOperations;
+
+    	return 0;
 	}
 
 	@HLEFunction(nid = 0x6CB0BDA4, version = 150)
