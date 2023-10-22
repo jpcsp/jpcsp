@@ -742,7 +742,7 @@ public class IoFileMgrForUser extends HLEModule {
 
         setSettingsListener("emu.extractPGD", new ExtractPGDSettingsListerner());
 
-		defaultTimings.put(IoOperation.open, new IoFileMgrForUser.IoOperationTiming(5));
+		defaultTimings.put(IoOperation.open, new IoFileMgrForUser.IoOperationTiming(500));
 		defaultTimings.put(IoOperation.close, new IoFileMgrForUser.IoOperationTiming(1));
 		defaultTimings.put(IoOperation.seek, new IoFileMgrForUser.IoOperationTiming(1));
 		defaultTimings.put(IoOperation.ioctl, new IoFileMgrForUser.IoOperationTiming(20));
