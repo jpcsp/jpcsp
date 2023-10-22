@@ -756,7 +756,7 @@ public class IoFileMgrForUser extends HLEModule {
 		// Duration of write operation: approx. 5 ms per 0x10000 bytes
 		defaultTimings.put(IoOperation.write, new IoFileMgrForUser.IoOperationTiming(5, 0x10000));
 
-		noDelayTimings.put(IoOperation.open, new IoFileMgrForUser.IoOperationTiming(500));
+		noDelayTimings.put(IoOperation.open, new IoFileMgrForUser.IoOperationTiming());
 		noDelayTimings.put(IoOperation.close, new IoFileMgrForUser.IoOperationTiming());
 		noDelayTimings.put(IoOperation.seek, new IoFileMgrForUser.IoOperationTiming());
 		noDelayTimings.put(IoOperation.ioctl, new IoFileMgrForUser.IoOperationTiming());
