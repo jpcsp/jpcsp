@@ -151,11 +151,6 @@ public class SAVEDATA {
         // Set the the data size to size.
     	writeUnaligned32(buf, 16, size);
 
-        // Ignore PSP_KIRK_CMD_ENCRYPT_FUSE and PSP_KIRK_CMD_DECRYPT_FUSE. 
-        if (kirk_code == KIRK.PSP_KIRK_CMD_ENCRYPT_FUSE || kirk_code == KIRK.PSP_KIRK_CMD_DECRYPT_FUSE) {
-            return; 
-        }
-
         ByteBuffer bBuf = ByteBuffer.wrap(buf).order(ByteOrder.LITTLE_ENDIAN);
         kirk.hleUtilsBufferCopyWithRange(bBuf, size, bBuf, size + 20, kirk_code);
     }
