@@ -1,31 +1,10 @@
-           &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
-     &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
-   &&&&&&&&&*********&&&*********&&&********&&&&*******&&&*********&&&&&&&&&
- &&&&&&&&&&&&&&&&****&&&***&&&&**&&&***&&&&&&&&***&&&&&&&&***&&&&**&&&&&&&&&&&
-&&&&&&&&&&&&&&&&&****&&&***&&&&**&&&***&&&&&&&&***&&&&&&&&***&&&&**&&&&&&&&&&&&
-&&&&&&&&&&&&&&&&&****&&&*********&&&***&&&&&&&&&*****&&&&&*********&&&&&&&&&&&&
-&&&&&&&&&&&&&&&&&****&&&***&&&&&&&&&***&&&&&&&&&&&&***&&&&***&&&&&&&&&&&&&&&&&&
- &&&&&&&&&&&&&&&&****&&&***&&&&&&&&&***&&&&&&&&&&&&***&&&&***&&&&&&&&&&&&&&&&
-  &&&&&&&&&&&*******&&&&***&&&&&&&&&********&&&******&&&&&***&&&&&&&&&&&&&&&
-    &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
-           &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
-
-*******************************************************************************
-[TABLE OF CONTENTS]:
-- Introduction;
-- What's new (changelog);
-- JPCSP FAQ;
-- Building;
-- The Team;
-- Copyright;
-- Links.
-*******************************************************************************
+<p align="center">
+	<img src="resources/jpcsp/icon.png" />
+</p>
 
 
+# Introduction
 
-			        [INTRODUCTION]
-...............................................................................
-...............................................................................
 Jpcsp is the most advanced PlayStation Portable emulator,
 allowing you to play your PSP games on a PC.
 Jpcsp has been started in July 2008 and is developed by a small but active team.
@@ -57,127 +36,121 @@ architecture of this emulator, as well as list all the needed information to
 clarify any possible doubts about it's usage.
 
 Please keep in mind that JPCSP does not support or endorse piracy.
-...............................................................................
 
+# What's New(Changelog)
 
+## JPCSP v1.0 (???)
 
+- Added support for an external software rendering engine;
 
-			   [What's new (changelog)]
-...............................................................................
-...............................................................................
-
-JPCSP v1.0 (???):
-
--> Added support for an external software rendering engine;
-
--> Added a Java implementation for the audio decoding (Atrac3, Atrac3+, MP3 and AAC)
+- Added a Java implementation for the audio decoding (Atrac3, Atrac3+, MP3 and AAC)
    which is improving the compatibility and makes the use of an external audio
    decoder obsolete.
 
--> Added network configuration settings;
+- Added network configuration settings;
 
--> A ProOnline server is now built-in within Jpcsp.
+- A ProOnline server is now built-in within Jpcsp.
    It can be used to play in a local network;
 
--> Added support for the loading of demo games (large encrypted EBOOT.PBP)
+- Added support for the loading of demo games (large encrypted EBOOT.PBP)
 
--> Several improvements in networking support:
+- Several improvements in networking support:
    Compatibility of ProOnline network.
    Auto-detection of port shifting for running 2 Jpcsp on the same computer;
 
--> Added an experimental xBRZ plugin for improved 2D texture scaling
+- Added an experimental xBRZ plugin for improved 2D texture scaling
 
--> Added support of kernel module so that many chinese patched game are worked
+- Added support of kernel module so that many chinese patched game are worked
 
--> Complete rewrite of the video modules (sceMpeg, scePsmfPlayer) for
+- Complete rewrite of the video modules (sceMpeg, scePsmfPlayer) for
    improved compatibility
 
--> Added support to run the PSP original VSH interface
+- Added support to run the PSP original VSH interface
 
--> Added support to run the original PSP complete boot process
+- Added support to run the original PSP complete boot process
    using Low Level Emulation (LLE). This method is able to run the official
    PSP 6.61 EBOOT.PBP and from there, the CFW PROC-C for 6.61.
 
 
 
-JPCSP v0.7 (June 28, 2013):
+## JPCSP v0.7 (June 28, 2013)
 
--> Added support for rendering in software mode, not using the GPU;
+- Added support for rendering in software mode, not using the GPU;
 
--> Added Game Pad support;
+- Added Game Pad support;
 
--> Major performance improvements in the graphic processing (see new Video options);
+- Major performance improvements in the graphic processing (see new Video options);
 
--> Automatic decoding of stereo ATRAC3+ audio using SonicStage;
+- Automatic decoding of stereo ATRAC3+ audio using SonicStage;
 
--> Rendering of fonts using "sceFont". OpenSource fonts are provided as a replacement
+- Rendering of fonts using "sceFont". OpenSource fonts are provided as a replacement
    for the PSP fonts. But the PSP original fonts can be used for maximal compatibility;
 
--> Automatic decryption of encrypted EBOOT.BIN and PGD files.
+- Automatic decryption of encrypted EBOOT.BIN and PGD files.
    Savedata files can also be loaded/saved in an encrypted form, like on a real PSP;
 
--> Added the configuration of regional settings
+- Added the configuration of regional settings
    under "Options" > "Configuration" > "Region";
 
--> Configuration settings can be changed "on the fly",
+- Configuration settings can be changed "on the fly",
    i.e. the changes are effective immediately;
 
--> Draft implementation for the support of Video UMDs;
+- Draft implementation for the support of Video UMDs;
 
--> Basic network support:
+- Basic network support:
    Infrastructure network is almost complete.
    Adhoc network is only working between two Jpcsp, not with a real PSP.
    Port shifting is available to support running two Jpcsp instances on the same computer.
    Signin to the PlayStation Network is not supported at all;
 
--> A lot of compatibility improvements in almost all of the PSP modules;
+- A lot of compatibility improvements in almost all of the PSP modules;
 
--> Major code cleanup in the module architecture (now using Java reflection);
+- Major code cleanup in the module architecture (now using Java reflection);
 
--> New method used for computing FPS. The FPS value is now more reliable but usually lower
+- New method used for computing FPS. The FPS value is now more reliable but usually lower
    than on previous releases. It doesn't mean that the Jpcsp performance is now worse,
    but just that the previous FPS counter was over-optimistic;
 
--> Added Frame skipping option;
+- Added Frame skipping option;
 
--> Added cheat import from cheat.db;
+- Added cheat import from cheat.db;
 
--> Added export function for the current 3D scene in Wavefront .obj/.mtl format,
+- Added export function for the current 3D scene in Wavefront .obj/.mtl format,
    including the textures;
 
--> Added texture modding;
+- Added texture modding;
 
--> Added functions to clear the texture and vertex caches;
+- Added functions to clear the texture and vertex caches;
 
--> Added option to change the PSP clock speed;
+- Added option to change the PSP clock speed;
 
--> Improved integrated Debugger;
-
-
+- Improved integrated Debugger;
 
 
-JPCSP v0.6 (September 18, 2010):
 
--> Included compilation of several "Allegrex" instructions in dynarec for a
+
+## JPCSP v0.6 (September 18, 2010)
+
+- Included compilation of several "Allegrex" instructions in dynarec for a
    much better performance;
 
--> Performed major code cleanups and reorganization;
+- Performed major code cleanups and reorganization;
 
--> Fixed and improved module loading:
+- Fixed and improved module loading:
 	- Corrected import and export's mapping;
 	- Implemented newly discovered loading methods.
 
--> Updated all modules with the most recent findings;
+- Updated all modules with the most recent findings;
 
--> Added all new save/load (savedata) modes;
+- Added all new save/load (savedata) modes;
 
--> Reviewed and improved all kernel object managers:
+- Reviewed and improved all kernel object managers:
 	- Implemented each kernel object manager's attributes;
 	- Added full LwMutex support in a dedicated kernel object manager
 	- Provided corrections for mutex, semaphore and event flag managers;
 	- Properly implemented VPL and FPL handling.
 
--> Improved graphics' handling:
+- Improved graphics' handling:
 	- Splitted rendering into a new RE (rendering engine);
 	- Cleaned up and optimized VideoEngine;
 	- Fully implemented, corrected and organized main GE commands;
@@ -189,13 +162,13 @@ JPCSP v0.6 (September 18, 2010):
 	  to take advantage of dual-core processors and
 	  match the PSP dual-core architecture.
 
--> Implemented a MediaEngine for video and audio playback (based on FFMPEG):
+- Implemented a MediaEngine for video and audio playback (based on FFMPEG):
 	- Added video playback support in sceMpeg and scePsmfPlayer;
 	- Added ATRAC3 audio playback support in sceAtrac3plus;
 	- Improved "UMD Browser" to display images, load videos and play sounds
 	  from the UMD data.
 
--> Improved main GUI and debug tools:
+- Improved main GUI and debug tools:
 	- Added a "Cheats" menu with CWCheat support;
 	- Provided a cleaner organization and display of settings;
 	- Removed "Emulation" menu;
@@ -205,44 +178,38 @@ JPCSP v0.6 (September 18, 2010):
 
 
 
-JPCSP v0.5 (March 09, 2010):
+## JPCSP v0.5 (March 09, 2010)
 
--> Lots of code cleanups;
+- Lots of code cleanups;
 
--> Graphical improvements:
+- Graphical improvements:
 	- Shader improvements;
 	- VideoEngine optimizations;
 	- Textures handling fixes;
 
--> Implementation of interrupts' management:
+- Implementation of interrupts' management:
 	- Implemented Alarm, VTimer and VBlank interrupts;
 
--> Saving/Loading improvements:
+- Saving/Loading improvements:
 	- Implemented LIST_LOAD and LIST_SAVE modes;
 	- Improved mode 8 (MODE_TRY);
 	
--> Improvements for faked MPEG functionalities:
+- Improvements for faked MPEG functionalities:
 	- Implemented partial YCbCr mode support;
 	- Implemented partial PSMFPlayer faking;
 	
--> Inclusion of multi-language packs:
+- Inclusion of multi-language packs:
 	- Added English, French, German, Spanish, Catalan and Lithuanian packs;
 
--> Beginning of threaded IOAsync operations implementation;
+- Beginning of threaded IOAsync operations implementation;
 
--> General fixes for module loading;
+- General fixes for module loading;
 
--> Small improvements of HLE functions.
-...............................................................................
+- Small improvements of HLE functions.
 
+# JPCSP FAQ
 
-
-
-			        [JPCSP FAQ]
-...............................................................................
-...............................................................................
-
-1. Getting started:
+## 1. Getting started
 
 Be sure to have JRE 8 (Java Runtime Environment) installed in your computer
 before attempting to run JPCSP.
@@ -263,7 +230,7 @@ bundle to start JPCSP.
 
 
 
-2. Loading/Running applications:
+## 2. Loading/Running applications
 
 To load an ISO/CSO image, you need to place it under the "umdimages" folder
 (this folder can be changed under Options > Configuration > General).
@@ -279,7 +246,7 @@ legal option is to own a PSP and use it to decrypt your own games' boot file.
 
 
 
-3. Usage:
+## 3. Usage
 
 The "File" menu allows you to load UMD images (Load UMD), homebrew applications
 (Load MemStick), and any other file such as demos (Load File). It also allows 
@@ -306,8 +273,8 @@ The "Help" menu contains the "About" window.
 
 
 
-4. Command-Line options:
-
+## 4. Command-Line options
+```
 Usage: java -Xmx1024m -Xss2m -XX:MaxPermSize=128m -XX:ReservedCodeCacheSize=64m -Djava.library.path=lib/windows-x86 -jar bin/jpcsp.jar <OPTIONS>
 
 Available <OPTIONS>:
@@ -357,9 +324,9 @@ Available <OPTIONS>:
                                flash2/*
                              The following file need to be decrypted on a real PSP using JpcspTrace:
                                flash0/kd/resource/meimg.img
+```
 
-
-5. Requirements:
+## 5. Requirements
 
 Minimum:
 - OS: Windows 32bit or 64bit / Linux 32bit or 64bit / Mac OSX; 
@@ -376,7 +343,7 @@ Recommended:
 
 
 
-6. Advanced features:
+## 6. Advanced features
 
 - Font Override:
 It is possible to override the font used in the log window by editing the 
@@ -387,7 +354,7 @@ Alternatively you can install extended language support in Windows from the
 Regional Settings in Windows Control Panel, you will need a Windows CD and 
 around 300mb disk space.
 
-Please note if a font does not work it is a limitation of Java, not JPCSP.
+	Please note if a font does not work it is a limitation of Java, not JPCSP.
 
 
 - Game Pads:
@@ -405,7 +372,7 @@ game you can save them in a patch file that will get automatically loaded with
 the game. Patch files go in the "patches" directory and are named after the 
 game's Disc ID.
 
-Please note when a game is using a patch file all compatibility settings in 
+	Please note when a game is using a patch file all compatibility settings in 
 the user interface will be overridden regardless of their state.
 
 
@@ -424,14 +391,14 @@ functioning of the current application in the log4j style.
 With this tool you can check which syscalls are called by the application, 
 which code blocks are being compiled by the compiler and so on. 
 
-You can also customize it's usage by going to "Debug" > "Tools" > "Logger" > 
+	You can also customize it's usage by going to "Debug" > "Tools" > "Logger" > 
 "Customize...".
-There you can specify general settings like opening this window at startup,
+	There you can specify general settings like opening this window at startup,
 preview the current log4j settings' file (LogSettings.xml), output the logging
 information into one file (formatted HTML or plain TXT) or several splitted 
 files and even change the logging method in use (GPU log only, for example).
 
-Note: After these modifications are applied, you must press the "Generate new
+	Note: After these modifications are applied, you must press the "Generate new
 settings file" button to update the external log settings' file. The changes in
 "Settings" and "Advanced" tabs are not saved by the emulator so the user can
 easily regenerate the original file.
@@ -443,14 +410,13 @@ breakpoints, step through instructions and override the program counter.
 The contents of the GPR and FPR are present in the side bar.
 Raw memory and VFPU registers are available in separate windows.
 
-There are some other miscellaneous features in the side bar:
--> GPI switches and GPO indicators;
--> GE Capture:
-	The GE is the graphics unit. We allow you to capture and replay 1 
+	There are some other miscellaneous features in the side bar:
+	-> GPI switches and GPO indicators;
+	-> GE Capture:
+		The GE is the graphics unit. We allow you to capture and replay 1 
 	display list. All textures used in the display list will be saved to 
 	the tmp directory.
-
-	For best results run replays in the same game the capture was taken in.
+		For best results run replays in the same game the capture was taken in.
 
 
 * Memory Viewer:
@@ -489,7 +455,7 @@ under "Options" > "Configuration" > "General". The data will be saved in the fil
 Use "Reset Profiler Information" under "Debug" to clear the current profiler data
 and re-start collecting profiler information from now on.
 
-For additional information, see the detailed profiler information below.
+	For additional information, see the detailed profiler information below.
 
 - ISO contents:
 You can dump the current ISO/CSO image's contents into an illustrative .txt
@@ -502,18 +468,18 @@ You can set memory read or write breakpoints: create a file named "Memory.mbrk"
 in the main directory. When this file is present, the DebuggerMemory is automatically
 activated when Jpcsp is started. Expect a small performance drop.
 The format of the file is quite simple:
-
-   R 0xXXXXXXXX
-   W 0xXXXXXXXX
-   RW 0xXXXXXXXX
-   R 0xXXXXXXXX - 0xYYYYYYYY
-   W 0xXXXXXXXX - 0xYYYYYYYY
-   RW 0xXXXXXXXX - 0xYYYYYYYY
-   read|write|read8|write8|read16|write16|read32|write32|pause
-
-to set read (R), write (W) and read-write (RW) breakpoints on a single address
+	```
+	R 0xXXXXXXXX
+	W 0xXXXXXXXX
+	RW 0xXXXXXXXX
+	R 0xXXXXXXXX - 0xYYYYYYYY
+	W 0xXXXXXXXX - 0xYYYYYYYY
+	RW 0xXXXXXXXX - 0xYYYYYYYY
+	read|write|read8|write8|read16|write16|read32|write32|pause
+	```
+	to set read (R), write (W) and read-write (RW) breakpoints on a single address
 or an address range.
-The last line is to enable traces of the corresponding reads and writes. One or
+	The last line is to enable traces of the corresponding reads and writes. One or
 multiple of these options can be specified (e.g., only "write" or "read32|write32").
 When "pause" is specified, the emulator is pausing when reading/writing the selected
 addresses. Otherwise, the emulator is just logging at INFO level the memory access.
@@ -528,9 +494,10 @@ Lamps cannot be exported in Wavefront format, so you will probably need to manua
 lighting to the imported scene.
 You can export the whole 3D scene or only the visible objects (to reduce the size of the
 exported file). The scenes are exported under:
-    <Jpcsp main directory>/export/Export-1/...
-    <Jpcsp main directory>/export/Export-2/...
-
+	```
+ 	<Jpcsp main directory>/export/Export-1/...
+ 	<Jpcsp main directory>/export/Export-2/...
+	```
 
 - Texture modding:
 You can try to modify one or multiple of the textures to perform modding of your application
@@ -549,7 +516,7 @@ Following these steps:
 
 
 
-7. Explanation of the advanced Video options:
+## 7. Explanation of the advanced Video options
 
 I must also admit that the Video configuration options
 (under "Options" > "Configuration" > "Video") are not always self-explanatory.
@@ -684,7 +651,7 @@ So, to the different options:
     provides higher compatibility.
 
 
-8. PSP fonts
+## 8. PSP fonts
 
 When enabling the option "Use non-native fonts from flash0 folder"
 (under "Options" > "Configuration" > "Media"), OpenSource fonts are used as a
@@ -694,7 +661,7 @@ from your PSP can be used. Copy the files under "flash0:/fonts" on your PSP to
 Jpcsp "flash0/fonts" directory.
 
 
-9. FPS and Frame Skipping
+## 9. FPS and Frame Skipping
 
 Starting with r2471, a new FPS counter has been introduced. It produces more reliable
 FPS values reflecting the real number of different frames displayed by the PSP during
@@ -715,9 +682,9 @@ Also, Jpcsp will only skip a maximum of 75% of the frames, a minimum of 25% will
 be displayed. Skipping more than 75% of the frames would make the application run very jerky.
 
 
-10. Profiler
+## 10. Profiler
 
-10.1 What is profiling and how to use it?
+### 10.1 What is profiling and how to use it?
 
 Profiling in Jpcsp is a dynamic analysis of the PSP application being run
 that measures the time spent by the PSP application in different parts
@@ -745,7 +712,7 @@ Also, when enabling the profiler, keep the other compiler option
 "Maximum method size" to its default value of 3000.
 
 
-10.2 How to make the best use of profiling
+### 10.2 How to make the best use of profiling
 
 An application run is typically having the following phases:
 - Intro (developer Logos)
@@ -801,7 +768,7 @@ Note that it doesn't necessarily mean that the performance will be
 improved, but at least it gives some chances to have it improved...
 
 
-10.3 Analyzing the output of the profiler
+### 10.3 Analyzing the output of the profiler
 
 This chapter is just to give an insight on how the development team is analyzing the
 information collected by the profiler.
@@ -836,25 +803,27 @@ at jpcsp.Allegrex.compiler.Profiler.codeLogMaxLength).
 
 After complete disassembled code, the back branches executed the most are separately listed.
 For example:
-	Back Branch 08900C2C 2.520 times (length 11)
-	    08900BF4:[1568FFE8]: bne        $t3, $t0, 0x08900B98
-	    08900BF8:[000B1100]: sll        $v0, $t3, 0x0004
-	    08900BFC:[00803021]: addu       $a2, $a0, $zr <=> move $a2, $a0
-	    08900C00:[03A03821]: addu       $a3, $sp, $zr <=> move $a3, $sp
-	    08900C04:[27A80040]: addiu      $t0, $sp, 64
-	--> 08900C08:[8CE20000]: lw         $v0, 0($a3)
-	    08900C0C:[8CE30004]: lw         $v1, 4($a3)
-	    08900C10:[8CE40008]: lw         $a0, 8($a3)
-	    08900C14:[8CE5000C]: lw         $a1, 12($a3)
-	    08900C18:[24E70010]: addiu      $a3, $a3, 16
-	    08900C1C:[ACC20000]: sw         $v0, 0($a2)
-	    08900C20:[ACC30004]: sw         $v1, 4($a2)
-	    08900C24:[ACC40008]: sw         $a0, 8($a2)
-	    08900C28:[ACC5000C]: sw         $a1, 12($a2)
-	--> 08900C2C:[14E8FFF6]: bne        $a3, $t0, 0x08900C08
-	    08900C30:[24C60010]: addiu      $a2, $a2, 16
-	    08900C34:[03E00008]: jr         $ra
-	    08900C38:[27BD0040]: addiu      $sp, $sp, 64
+```
+    Back Branch 08900C2C 2.520 times (length 11)
+	08900BF4:[1568FFE8]: bne        $t3, $t0, 0x08900B98
+	08900BF8:[000B1100]: sll        $v0, $t3, 0x0004
+	08900BFC:[00803021]: addu       $a2, $a0, $zr <=> move $a2, $a0
+	08900C00:[03A03821]: addu       $a3, $sp, $zr <=> move $a3, $sp
+	08900C04:[27A80040]: addiu      $t0, $sp, 64
+    --> 08900C08:[8CE20000]: lw         $v0, 0($a3)
+	08900C0C:[8CE30004]: lw         $v1, 4($a3)
+	08900C10:[8CE40008]: lw         $a0, 8($a3)
+	08900C14:[8CE5000C]: lw         $a1, 12($a3)
+	08900C18:[24E70010]: addiu      $a3, $a3, 16
+	08900C1C:[ACC20000]: sw         $v0, 0($a2)
+	08900C20:[ACC30004]: sw         $v1, 4($a2)
+	08900C24:[ACC40008]: sw         $a0, 8($a2)
+	08900C28:[ACC5000C]: sw         $a1, 12($a2)
+    --> 08900C2C:[14E8FFF6]: bne        $a3, $t0, 0x08900C08
+	08900C30:[24C60010]: addiu      $a2, $a2, 16
+	08900C34:[03E00008]: jr         $ra
+	08900C38:[27BD0040]: addiu      $sp, $sp, 64
+```
 A back branch is usually (but not necessarily) indicating a loop.
 A few context instructions are also listed before and after the back branch so that
 it can be read more easily. The branching and the target instructions are marked
@@ -893,7 +862,7 @@ number of calls per GE list (total number of calls divided by the number of GE l
 The average per GE list is probably the most relevant information.
 
 
-11. Low-level emulation (LLE) to run the complete PSP firmware
+## 11. Low-level emulation (LLE) to run the complete PSP firmware
 
 For those who want to emulate a real PSP or are interested in modifying the
 PSP firmware, Jpcsp has the capability to run the official PSP firmware (OFW) and from
@@ -931,13 +900,15 @@ The PRO-C 6.61 CFW has been successfully tested. Other CFWs have not yet been te
 If you want to test the complete reboot process, including the pre-IPL, you will need to get
 a dump of a pre-IPL rom from a real PSP. Such a dump has a size of 4KB. Save the dump
 into the Jpcsp main directory with the following naming convention:
-	preIpl_01g.bin   when you emulate a PSP-1000 (Fat)
-	preIpl_02g.bin   when you emulate a PSP-2000 (Slim)
-	preIpl_03g.bin   when you emulate a PSP-3000 (Brite, 3rd generation)
-	preIpl_04g.bin   when you emulate a PSP-3000 (Brite, 4th generation)
-	preIpl_07g.bin   when you emulate a PSP-3000 (Brite, 7th generation)
-	preIpl_09g.bin   when you emulate a PSP-3000 (Brite, 9th generation)
-	preIpl_11g.bin   when you emulate a PSP-E1000 (Street)
+```
+preIpl_01g.bin   when you emulate a PSP-1000 (Fat)
+preIpl_02g.bin   when you emulate a PSP-2000 (Slim)
+preIpl_03g.bin   when you emulate a PSP-3000 (Brite, 3rd generation)
+preIpl_04g.bin   when you emulate a PSP-3000 (Brite, 4th generation)
+preIpl_07g.bin   when you emulate a PSP-3000 (Brite, 7th generation)
+preIpl_09g.bin   when you emulate a PSP-3000 (Brite, 9th generation)
+preIpl_11g.bin   when you emulate a PSP-E1000 (Street)
+```
 Note that all PSP-3000 generations have the same pre-IPL code, but it must be stored for Jpcsp
 using the above file name, depending on the emulated PSP generation.
 When such a file is present, Jpcsp is running the pre-IPL code when pressing the "Reboot" button,
@@ -960,37 +931,31 @@ the point where the snapshot had been taken. This is can be used to shorten the 
 process, if you need to test from a specific point. This feature is however not always
 running perfectly. Try it out with caution.
 
-...............................................................................
+# Building
 
-
-
-
-			   	[Building]
-...............................................................................
-...............................................................................
 JCPSP can be build from the commandline using the ant tool.
 
 To build jcpsp.jar:
-  ant -f build-auto.xml jar
+```
+ant -f build-auto.xml jar
+```
 
 To build release distribution artifacts for all supported operating systems:
-  ant -f build-auto.xml dist
+```
+ant -f build-auto.xml dist
+```
 
 To build release distribution artifacts for a specific operating system:
-  ant -f build-auto.xml dist-windows-x86
-  ant -f build-auto.xml dist-windows-amd64
-  ant -f build-auto.xml dist-linux-x86
-  ant -f build-auto.xml dist-linux-amd64
-  ant -f build-auto.xml dist-macosx
-  
-...............................................................................
+```
+ant -f build-auto.xml dist-windows-x86
+ant -f build-auto.xml dist-windows-amd64
+ant -f build-auto.xml dist-linux-x86
+ant -f build-auto.xml dist-linux-amd64
+ant -f build-auto.xml dist-macosx
+```
 
+# The Team
 
-
-
-			   	[The Team]
-...............................................................................
-...............................................................................
 JPCSP Team (active):
 - gid15
 
@@ -1047,12 +1012,8 @@ Beta-testers:
 - onelight
 ...and a lot more
 
-...............................................................................
+# Credits
 
-
-			   	[Credits]
-...............................................................................
-...............................................................................
 - Chulayuth Asawaroengchai
   the project h264j is a port of the ffmpeg H264 decoder to Java.
   This project has been developed by Chulayuth Asawaroengchai
@@ -1063,13 +1024,8 @@ Beta-testers:
   and integrated into the ffmpeg project. The decoder has been ported by
   gid15 to Java and integrated into Jpcsp.
 
-...............................................................................
+# Credits
 
-
-
-			   	[Copyright]
-...............................................................................
-...............................................................................
 Jpcsp is free software: you can redistribute it and/or modify 
 it under the terms of the GNU General Public License as published by 
 the Free Software Foundation, either version 3 of the License, or 
@@ -1082,14 +1038,9 @@ GNU General Public License for more details.
   
 You should have received a copy of the GNU General Public License 
 along with Jpcsp.  If not, see <http://www.gnu.org/licenses>.
-...............................................................................
 
+# Links
 
-
-
-			   	[Links]
-...............................................................................
-...............................................................................
 JPCSP's Github Code repository:
 - https://github.com/jpcsp/jpcsp
 
@@ -1101,5 +1052,3 @@ Official recent SVN builds can be found at the EmuNewz.net Live Downloads:
 
 JPCSP's external software renderer can be found at EmuNewz.net Live Downloads:
 - http://www.emunewz.net/forum/builds.php?filter=last
-
-...............................................................................
