@@ -1024,7 +1024,7 @@ Beta-testers:
   and integrated into the ffmpeg project. The decoder has been ported by
   gid15 to Java and integrated into Jpcsp.
 
-# Credits
+# Copyright
 
 Jpcsp is free software: you can redistribute it and/or modify 
 it under the terms of the GNU General Public License as published by 
