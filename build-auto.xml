@@ -129,8 +129,8 @@
 				<include name="ms0/**" />
 				<include name="patches/**" />
 				<include name="umdimages/**" />
-				<include name="gpl.txt" />
-				<include name="README.txt" />
+				<include name="COPYING" />
+				<include name="README.md" />
 				<include name="Compiler.xml" />
 				<include name="LogSettings.xml" />
 				<include name="start-${platform.name}*" />
