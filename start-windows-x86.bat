@@ -1,5 +1,5 @@
 @echo off
-rem change to the directory where the script itself; this is required when running as an adminstrator
+rem change to the directory where the script itself; this is required when running as an administrator
 cd /d "%~dp0"
 
 rem check if java is installed
@@ -16,7 +16,7 @@ ver | findstr "5\.1\." 2> nul
 if %errorlevel% equ 0 ( set MAX_MEM_SIZE=768m ) else ( set MAX_MEM_SIZE=1024m )
 
 java -version
-echo Java Executable Path: %JAVA_CMD%
+echo JAVA_HOME Path: %JAVA_HOME%
 
 echo Running JPCSP 32-bit...
 %JAVA_CMD%^
