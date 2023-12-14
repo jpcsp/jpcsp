@@ -14,7 +14,7 @@ set JAVA_CMD="%JAVA_HOME%\bin\java.exe"
 if not exist %JAVA_CMD% ( goto JAVA_MISSING )
 
 rem check java if can run 64-bit application
-java -d64 -version > nul 2>&1
+java -version 2>&1 | findstr /i "64-Bit" > nul
 if not %errorlevel% equ 0 ( goto JAVA_ARCH )
 
 java -version
