@@ -946,7 +946,7 @@ public class ControlsGUI extends javax.swing.JFrame implements KeyListener {
 private void jButtonOKActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonOKActionPerformed
         Settings.getInstance().writeKeys(currentKeys);
         Settings.getInstance().writeController(currentController);
-        String controllerName = (controllerBox.getSelectedItem() != null)? controllerBox.toString() : "";
+        String controllerName = (controllerBox.getSelectedItem() != null) ? controllerBox.toString() : "";
         Settings.getInstance().writeString("controller.controllerName", controllerName);
 
         // Index when several controllers have the same name:
