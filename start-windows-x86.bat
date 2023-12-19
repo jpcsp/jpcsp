@@ -21,7 +21,6 @@ echo Running JPCSP 32-bit...
 %JAVA_CMD%^
     -Xmx%MAX_MEM_SIZE% -Xss2m -XX:ReservedCodeCacheSize=64m^
     -Djava.library.path=lib/windows-x86;lib/jinput-2.0.9-natives-all^
-    -Djinput.useDefaultPlugin=false^
     -Dorg.lwjgl.system.allocator=system^
     -classpath "bin/jpcsp.jar;lib/lwjgl-3.2.3/lwjgl.jar;lib/lwjgl-3.2.3/lwjgl-openal.jar;lib/lwjgl-3.2.3/lwjgl-opengl.jar;lib/lwjgl-3.2.3/lwjgl-jawt.jar;lib/lwjgl-3.2.3/lwjgl-natives-windows-x86.jar;lib/lwjgl-3.2.3/lwjgl-openal-natives-windows-x86.jar;lib/lwjgl-3.2.3/lwjgl-opengl-natives-windows-x86.jar;lib/lwjgl-3.2.3/lwjgl-glfw.jar;lib/lwjgl-3.2.3/lwjgl-glfw-natives-windows-x86.jar"^
     jpcsp.MainGUI %*
