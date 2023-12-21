@@ -24,10 +24,10 @@ public class MetaInformation {
     public static String NAME = "Jpcsp";
     public static String VERSION = "v0.7";
     public static String FULL_NAME = NAME + " " + VERSION;
-    public static String OFFICIAL_SITE = "http://jpcsp.org/";
-    public static String OFFICIAL_FORUM = "http://www.emunewz.net/forum/forumdisplay.php?fid=51";
+    public static String OFFICIAL_SITE = "https://jpcsp.org/";
+    public static String OFFICIAL_FORUM = "https://www.emunewz.net/forum/forumdisplay.php?fid=51";
     public static String OFFICIAL_REPOSITORY = "https://github.com/jpcsp/jpcsp";
-    public static String TEAM = "JPCSP Team: gid15, Hykem, Orphis, shadow.<br/>" +
+    public static String TEAM = "JPCSP Team: gid15, Hykem, Orphis, shadow and nickblame.<br/>" +
             "Past members and contributors: hlide, mad, dreampeppers99, wrayal,<br/> fiveofhearts, Nutzje, aisesal, shashClp, spip2, mozvip, gigaherz, <br/>Drakon, raziel1000, theball, J_BYYX, i30817, tempura.san.";
 
     private MetaInformation() {

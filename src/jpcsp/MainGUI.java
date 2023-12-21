@@ -40,6 +40,7 @@ import java.io.OutputStream;
 import java.io.PrintStream;
 import java.io.RandomAccessFile;
 import java.net.InetAddress;
+import java.net.URISyntaxException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.security.Security;
@@ -48,6 +49,7 @@ import java.util.*;
 import java.util.List;
 
 import javax.swing.*;
+import javax.swing.event.HyperlinkEvent;
 
 import jpcsp.Allegrex.compiler.Profiler;
 import jpcsp.Allegrex.compiler.RuntimeContext;
@@ -1847,7 +1849,19 @@ private void AboutActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:e
                 .append(MetaInformation.TEAM)
                 .append("</font>")
                 .append("</html>");
-        JOptionPane.showMessageDialog(this, message.toString(), MetaInformation.FULL_NAME, JOptionPane.INFORMATION_MESSAGE);
+        JEditorPane msg = new JEditorPane();
+        msg.addHyperlinkListener(link -> { // make all hyperlinks clickable
+            if (link.getEventType().equals(HyperlinkEvent.EventType.ACTIVATED)) {
+                try { Desktop.getDesktop().browse(link.getURL().toURI()); }
+                catch (URISyntaxException | IOException ex) { ex.printStackTrace(); }
+            }
+        });
+        msg.putClientProperty(JEditorPane.HONOR_DISPLAY_PROPERTIES, Boolean.TRUE); // use default look and feel
+        msg.setContentType("text/html");
+        msg.setEditable(false);
+        msg.setOpaque(false);
+        msg.setText(message.toString());
+        JOptionPane.showMessageDialog(this, msg, MetaInformation.FULL_NAME, JOptionPane.INFORMATION_MESSAGE);
 }//GEN-LAST:event_AboutActionPerformed
 
 private void ConfigMenuActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ConfigMenuActionPerformed
