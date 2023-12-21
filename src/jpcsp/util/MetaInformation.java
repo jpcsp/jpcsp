@@ -28,7 +28,7 @@ public class MetaInformation {
     public static String OFFICIAL_FORUM = "https://www.emunewz.net/forum/forumdisplay.php?fid=51";
     public static String OFFICIAL_REPOSITORY = "https://github.com/jpcsp/jpcsp";
     public static String TEAM = "gid15 <br/>";
-    public static String PAST_TEAM = "Hykem, Orphis, shadow, hlide, mad, dreampeppers99, wrayal, <br/>" +
+    public static String PAST_TEAM = "Hykem, Orphis, shadow, nickblame, hlide, mad, dreampeppers99, wrayal, <br/>" +
         "fiveofhearts, Nutzje, aisesal, shashClp, spip2, mozvip, gigaherz, <br/>" +
         "Drakon, raziel1000, theball, J_BYYX, i30817, tempura.san";
 

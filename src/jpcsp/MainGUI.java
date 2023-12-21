@@ -1834,7 +1834,7 @@ private void AboutActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:e
             .append("<hr/>")
             .append("<h2>Jpcsp Present Team</h2>")
             .append("<h3><font color='gray'>" + MetaInformation.TEAM + "</font></h3>")
-            .append("<h2>Jpcsp Past Members and Contributors</h2>")
+            .append("<h2>Past Members and Contributors</h2>")
             .append("<h3><font color='gray'>" + MetaInformation.PAST_TEAM + "</font></h3>")
             .append("</center></body></html>");
         JEditorPane msg = new JEditorPane();
