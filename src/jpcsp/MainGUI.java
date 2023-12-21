@@ -1824,31 +1824,19 @@ private void EnterImageViewerActionPerformed(java.awt.event.ActionEvent evt) {//
 private void AboutActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_AboutActionPerformed
         StringBuilder message = new StringBuilder();
         message
-                .append("<html>")
-                .append("<h2>")
-                .append(MetaInformation.FULL_NAME)
-                .append("</h2>")
-                .append("<hr/>")
-                .append("Official site      : <a href='")
-                .append(MetaInformation.OFFICIAL_SITE)
-                .append("'>")
-                .append(MetaInformation.OFFICIAL_SITE)
-                .append("</a><br/>")
-                .append("Official forum     : <a href='")
-                .append(MetaInformation.OFFICIAL_FORUM)
-                .append("'>")
-                .append(MetaInformation.OFFICIAL_FORUM)
-                .append("</a><br/>")
-                .append("Official repository: <a href='")
-                .append(MetaInformation.OFFICIAL_REPOSITORY)
-                .append("'>")
-                .append(MetaInformation.OFFICIAL_REPOSITORY)
-                .append("</a><br/>")
-                .append("<hr/>")
-                .append("<i>Team:</i> <font color='gray'>")
-                .append(MetaInformation.TEAM)
-                .append("</font>")
-                .append("</html>");
+            .append("<html><body><center>")
+            .append("<h1>" + MetaInformation.FULL_NAME + "</h1>")
+            .append("<hr/>")
+            .append("<h2>Official Links</h2>")
+            .append("<p><b>Website:</b> <a href='" + MetaInformation.OFFICIAL_SITE + "'>" + MetaInformation.OFFICIAL_SITE + "</a></p>")
+            .append("<p><b>Forum:</b> <a href='" + MetaInformation.OFFICIAL_FORUM + "'>" + MetaInformation.OFFICIAL_FORUM + "</a></p>")
+            .append("<p><b>Source repository:</b> <a href='" + MetaInformation.OFFICIAL_REPOSITORY + "'>" + MetaInformation.OFFICIAL_REPOSITORY + "</a></p>")
+            .append("<hr/>")
+            .append("<h2>Jpcsp Present Team</h2>")
+            .append("<h3><font color='gray'>" + MetaInformation.TEAM + "</font></h3>")
+            .append("<h2>Jpcsp Past Members and Contributors</h2>")
+            .append("<h3><font color='gray'>" + MetaInformation.PAST_TEAM + "</font></h3>")
+            .append("</center></body></html>");
         JEditorPane msg = new JEditorPane();
         msg.addHyperlinkListener(link -> { // make all hyperlinks clickable
             if (link.getEventType().equals(HyperlinkEvent.EventType.ACTIVATED)) {
@@ -1861,7 +1849,7 @@ private void AboutActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:e
         msg.setEditable(false);
         msg.setOpaque(false);
         msg.setText(message.toString());
-        JOptionPane.showMessageDialog(this, msg, MetaInformation.FULL_NAME, JOptionPane.INFORMATION_MESSAGE);
+        JOptionPane.showMessageDialog(this, msg, "About", JOptionPane.PLAIN_MESSAGE);
 }//GEN-LAST:event_AboutActionPerformed
 
 private void ConfigMenuActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ConfigMenuActionPerformed
