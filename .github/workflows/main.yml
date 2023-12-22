@@ -12,13 +12,13 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       
       - name: Set up JDK 8
-        uses: actions/setup-java@v2
+        uses: actions/setup-java@v4
         with:
           java-version: '8'
-          distribution: 'adopt'
+          distribution: 'temurin'
         
       - name: Build with Ant
         run: ant -f build-auto.xml dist
@@ -38,31 +38,31 @@ jobs:
           mv dist/*macosx* dist/buildmacOS/
      
       - name: Publishing Windows 32-bit build
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: Windows 32-bit build
           path: dist/buildWindows/x86
 
       - name: Publishing Windows 64-bit build
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: Windows 64-bit build
           path: dist/buildWindows/amd64
       
       - name: Publishing Linux 32-bit build
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: Linux 32-bit build
           path: dist/buildLinux/x86
 
       - name: Publishing Linux 64-bit build
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: Linux 64-bit build
           path: dist/buildLinux/amd64
 
       - name: Publishing macOS build
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: macOS build
           path: dist/buildmacOS
