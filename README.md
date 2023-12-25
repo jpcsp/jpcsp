@@ -2,6 +2,14 @@
 	<img src="resources/jpcsp/icon.png" />
 </p>
 
+<div align="center">
+
+![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/jpcsp/jpcsp/main.yml?style=for-the-badge&label=JPCSP%20Build&color=orange)
+![Website](https://img.shields.io/website?url=https%3A%2F%2Fjpcsp.org%2F&style=for-the-badge&label=jpcsp.org%20website&color=orange)
+![Java version](https://img.shields.io/badge/Java-8-orange?style=for-the-badge)
+![GitHub repo size](https://img.shields.io/github/repo-size/jpcsp/jpcsp?style=for-the-badge&label=Repo%20Size&color=orange)
+
+</div>
 
 # Introduction
 
