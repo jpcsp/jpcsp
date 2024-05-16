@@ -227,7 +227,7 @@ public class sceAta extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x84E14690, version = 150)
-    public int sceAta_driver_84E14690() {
+    public int sceAtaCheckPacketCmdComplete() {
     	return 0;
     }
 
@@ -239,7 +239,7 @@ public class sceAta extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x1F05F48C, version = 150)
-    public int sceAta_driver_1F05F48C() {
+    public int sceAtaCheckXferReady() {
     	return 0;
     }
 
