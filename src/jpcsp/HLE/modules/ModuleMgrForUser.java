@@ -86,8 +86,8 @@ import jpcsp.memory.IMemoryWriter;
 import jpcsp.memory.MemoryReader;
 import jpcsp.memory.MemoryWriter;
 import jpcsp.util.Utilities;
-import libkirk.AES;
-import libkirk.AES.AES_ctx;
+import jpcsp.crypto.AES128;
+import jpcsp.crypto.CryptoEngine;
 
 import org.apache.log4j.Logger;
 
@@ -1244,9 +1244,9 @@ public class ModuleMgrForUser extends HLEModule {
 	        for (int i = 0; i < 16; i++) {
 	        	initKey[i] = (byte) KeyVault.drmModuleKey[i];
 	        }
-	        AES_ctx ctx = new AES_ctx();
-	        AES.AES_set_key(ctx, initKey, 128);
-	        AES.AES_cbc_decrypt(ctx, key, key, 16);
+	        AES128 aes = new AES128("AES/CBC/NoPadding");
+	        byte[] iv = new byte[16];
+	        key = aes.decrypt(key, initKey, iv);
         } else {
         	// The file is not DRM-encrypted
         	key = null;

@@ -45,7 +45,6 @@ import jpcsp.memory.IMemoryWriter;
 import jpcsp.memory.MemoryReader;
 import jpcsp.memory.MemoryWriter;
 import jpcsp.util.Utilities;
-import libkirk.KirkEngine;
 
 public class semaphore extends HLEModule {
 	public static Logger log = Modules.getLogger("semaphore");
@@ -73,13 +72,13 @@ public class semaphore extends HLEModule {
     		// For cmd==2(PSP_KIRK_CMD_ENCRYPT_SIGN), the inSize and outSize are provided in the input data
 			int dataSize = readUnaligned32(in, inOffset + 112);
 			int dataOffset = readUnaligned32(in, inOffset + 116);
-			correctInSize = KirkEngine.KIRK_CMD1_HEADER.SIZEOF + alignUp(dataSize, 15) + dataOffset;
+			correctInSize = KIRK.AES128_CMAC_Header.SIZEOF() + alignUp(dataSize, 15) + dataOffset;
     		correctOutSize = correctInSize;
     	} else if (cmd == KIRK.PSP_KIRK_CMD_DECRYPT_SIGN) {
     		// For cmd==3(PSP_KIRK_CMD_DECRYPT_SIGN), the inSize and outSize are provided in the input data
 			int dataSize = readUnaligned32(in, inOffset + 112);
 			int dataOffset = readUnaligned32(in, inOffset + 116);
-			correctInSize = KirkEngine.KIRK_CMD1_HEADER.SIZEOF + alignUp(dataSize, 15) + dataOffset;
+			correctInSize = KIRK.AES128_CMAC_Header.SIZEOF() + alignUp(dataSize, 15) + dataOffset;
     		correctOutSize = alignUp(dataSize, 15);
     	}
 

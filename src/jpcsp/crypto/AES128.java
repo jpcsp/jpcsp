@@ -39,23 +39,15 @@ public class AES128 {
     private static final byte[] const_Rb = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, (byte) 0x87};
     private byte[] contentKey;
     private ByteArrayOutputStream barros;
-    private static Cipher cipher;
+    private Cipher cipher;
     private static final byte[] iv0 = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
     // Do not use Bouncy Castle as the default implementation is much faster
     public static final boolean useBouncyCastle = false;
 
     public static void init() {
-    	// Run in a background thread as the initialization is taking around 300 milliseconds
-    	Thread staticInit = new Thread(new Runnable() {
-			@Override
-			public void run() {
-				init("AES/CBC/NoPadding");
-			}
-		});
-    	staticInit.start();
     }
 
-    private static void init(String mode) {
+    private void init(String mode) {
         if (cipher == null) {
         	if (useBouncyCastle) {
         		Security.addProvider(new BouncyCastleProvider());
