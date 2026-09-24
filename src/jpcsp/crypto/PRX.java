@@ -805,7 +805,8 @@ public class PRX {
             byte[] buf6 = new byte[0x28];
             byte[] sigbuf = new byte[0x28];
             byte[] sha1buf = new byte[0x14];
-            int unk_0xD4 = 0;
+            byte[] expectedHash = new byte[0x14];
+            int unk_0xD4 = readUnaligned32(buf, 0xD4);
 
             // Copy the first header to buf1.
             System.arraycopy(buf, 0, buf1, 0, 0x150);
@@ -984,7 +985,7 @@ public class PRX {
             }
 
             if ((type >= 2 && type <= 7) || type == 9 || type == 10) {
-                System.arraycopy(buf2, 0x6C, buf4, 0, 0x14);
+                System.arraycopy(buf2, 0x6C, expectedHash, 0, 0x14);
 
                 if (type == 4) {
                     System.arraycopy(buf2, 0, buf2, 0x18, 0x67);
@@ -1017,7 +1018,7 @@ public class PRX {
                 System.arraycopy(buf3, 0, buf2, 0x8, 0x10);
             } else {
                 // Set the SHA1 block size to digest.
-                System.arraycopy(buf2, 0x4, buf4, 0, 0x14);
+                System.arraycopy(buf2, 0x4, expectedHash, 0, 0x14);
                 writeUnaligned32(buf2, 0, 0x14C);
                 System.arraycopy(buf3, 0, buf2, 0x4, 0x14);
             }
@@ -1028,8 +1029,8 @@ public class PRX {
             	log.error(String.format("DecryptPRX: KIRK command PSP_KIRK_CMD_SHA1_HASH returned error %d", result));
             }
 
-            if (Utilities.memcmp(buf2, 0, buf4, 0, 0x14) != 0) {
-            	log.error(String.format("DecryptPRX: SHA1 Hash not matching: %s%s", Utilities.getMemoryDump(buf2, 0, 0x14), Utilities.getMemoryDump(buf4, 0, 0x14)));
+            if (Utilities.memcmp(buf2, 0, expectedHash, 0, 0x14) != 0) {
+            	log.error(String.format("DecryptPRX: SHA1 Hash not matching: %s%s", Utilities.getMemoryDump(buf2, 0, 0x14), Utilities.getMemoryDump(expectedHash, 0, 0x14)));
             }
 
             if ((type >= 2 && type <= 7) || type == 9 || type == 10) {
